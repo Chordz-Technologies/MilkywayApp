@@ -36,7 +36,7 @@ const LoginScreen = () => {
         password: password.trim(),
       });
 
-      if (response.status === 200) {
+      if (response && response?.data?.message === 'Login successful') {
         Alert.alert('Success', 'Login successful!');
         navigation.navigate('DummyHome');
       }

@@ -13,11 +13,15 @@ const BASE_URL = 'https://milkywayapi.beatsacademy.in';
 // };
 
 // Vendor Login using mobile number & password
-export const loginVendor = async (payload: { contact: string; password: string }) => {
-  try {
-    const response = await axios.post(`${BASE_URL}/login/vendor-login/`, payload);
-    return response;
-  } catch (error) {
-    throw error;
-  }
-};
+export const loginVendor = (payload: any) =>
+  axios.post(`${BASE_URL}/login/vendor-login/`, payload);
+
+
+// export const loginVendor = async (payload: { contact: string; password: string }) => {
+//   try {
+//     const response = await axios.post(`${BASE_URL}/login/vendor-login/`, payload);
+//     return response;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
