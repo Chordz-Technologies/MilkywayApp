@@ -5,6 +5,6 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   VerifyOtp: { mobile: string };
-  Register: undefined;
-  DummyHome: undefined; 
+  DummyHome: undefined;
+  VendorRegister: undefined;
 };

@@ -14,25 +14,25 @@ import { styles } from '../styles/LoginStyle';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { loginMilkman } from '../apiServices/authApi';
+import { loginVendor } from '../apiServices/authApi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [showPassword, setShowPassword] = useState(false);
-  const [mobile, setMobile] = useState('');
+  const [contact, setcontact] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
-    if (!mobile || !password) {
-      Alert.alert('Error', 'Please enter mobile number and password');
+    if (!contact || !password) {
+      Alert.alert('Error', 'Please enter contact number and password');
       return;
     }
 
     try {
-      const response = await loginMilkman({
-        mobile: mobile.trim(),
+      const response = await loginVendor({
+        contact: contact.trim(),
         password: password.trim(),
       });
 
@@ -54,7 +54,7 @@ const LoginScreen = () => {
         Alert.alert('Not Registered', 'User not found. Do you want to register?', [
           {
             text: 'Register',
-            onPress: () => navigation.navigate('Register'),
+            onPress: () => navigation.navigate('VendorRegister'),
           },
           {
             text: 'Cancel',
@@ -80,7 +80,7 @@ const LoginScreen = () => {
 
       <Text style={styles.welcomeText}>Milkyway</Text>
 
-      {/* Mobile Input */}
+      {/* contact Input */}
       <View style={styles.inputWrapper}>
         <Icon name="phone" size={20} color="#555" style={styles.icon} />
         <TextInput
@@ -89,8 +89,8 @@ const LoginScreen = () => {
           placeholderTextColor="#888"
           keyboardType="phone-pad"
           autoCapitalize="none"
-          value={mobile}
-          onChangeText={setMobile}
+          value={contact}
+          onChangeText={setcontact}
         />
       </View>
 
@@ -128,18 +128,17 @@ const LoginScreen = () => {
 
       <Text style={styles.registerText}>Register as:</Text>
       <View style={styles.registerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
           <Text style={styles.link}>Vendor</Text>
         </TouchableOpacity>
         <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
           <Text style={styles.link}>Consumer</Text>
         </TouchableOpacity>
         <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
           <Text style={styles.link}>Distributor</Text>
         </TouchableOpacity>
-
       </View>
     </KeyboardAvoidingView>
   );

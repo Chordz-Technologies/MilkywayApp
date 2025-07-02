@@ -43,6 +43,7 @@ const ForgotPasswordScreen = () => {
           maxLength={10}
           value={mobile}
           onChangeText={(text) => setMobile(text.replace(/\D/g, ''))}
+          placeholderTextColor="#888"
         />
       </View>
 
