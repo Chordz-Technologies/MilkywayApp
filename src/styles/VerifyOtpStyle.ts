@@ -5,43 +5,43 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 24,
-    paddingTop: 80,
+    paddingTop: 130,
   },
 
   logo: {
     height: 90,
     width: 90,
     alignSelf: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 27,
     fontWeight: '700',
     color: '#1e40af',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 7,
   },
 
   label: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#555',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 25,
   },
 
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 10,
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   otpBox: {
-    width: 60,
-    height: 60,
+    width: 65,
+    height: 65,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#000',
     borderRadius: 12,
     textAlign: 'center',
     fontSize: 22,
@@ -53,11 +53,11 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+
   otpBoxFocused: {
   borderColor: '#4169E1', 
   borderWidth: 2,
 },
-
 
   continueBtn: {
     backgroundColor: '#007BFF',
@@ -68,16 +68,16 @@ export const styles = StyleSheet.create({
   },
 
   btnText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#fff',
   },
 
   timerText: {
-    marginTop: 16,
+    marginTop: 17,
     textAlign: 'center',
     color: '#444',
-    fontSize: 13,
+    fontSize: 14,
   },
 
   resend: {
@@ -87,10 +87,10 @@ export const styles = StyleSheet.create({
   },
 
   backToLogin: {
-    marginTop: 24,
+    marginTop: 20,
     textAlign: 'center',
     color: '#1e40af',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     textDecorationLine: 'underline',
   },

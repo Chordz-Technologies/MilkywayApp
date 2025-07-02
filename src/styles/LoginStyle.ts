@@ -4,10 +4,9 @@ export const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-        justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 24,
-        marginTop: -60,
+        paddingTop: 100,
     },
     logo: {
         width: 110,
@@ -79,4 +78,5 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginHorizontal: 5,
     },
+    
 });

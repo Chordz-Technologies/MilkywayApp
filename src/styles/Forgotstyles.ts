@@ -5,18 +5,18 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 150,
   },
 
   logo: {
-    height: 100,
-    width: 100,
+    height: 90,
+    width: 90,
     alignSelf: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: 'bold',
     color: '#1e40af',
     textAlign: 'center',
@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#444',
     textAlign: 'center',
     marginBottom: 20,
@@ -34,10 +34,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
+    borderColor: '#000',
+    borderRadius: 18,
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 11,
     backgroundColor: '#fff',
     elevation: 2,
     shadowColor: '#000',
@@ -59,15 +59,23 @@ export const styles = StyleSheet.create({
 
   continueBtn: {
     backgroundColor: '#007BFF',
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 15,
+    borderRadius: 15,
     alignItems: 'center',
     marginTop: 10,
   },
 
   btnText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  backToLogin: {
+    marginTop: 24,
+    textAlign: 'center',
+    color: '#1e40af',
+    fontSize: 15,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });
