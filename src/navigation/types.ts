@@ -1,10 +1,12 @@
-// src/navigation/types.ts
-
 export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
   VerifyOtp: { mobile: string };
-  DummyHome: undefined;
-  VendorRegister: undefined;
+  VendorRegistration: undefined;
+  ConsumerRegistration: undefined;
+  DistributorRegistration: undefined;
+  VendorHome: undefined;
+  ConsumerHome: undefined;
+  DistributorHome: undefined;
 };

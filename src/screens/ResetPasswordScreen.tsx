@@ -8,9 +8,10 @@ import {
   Image,
 } from 'react-native';
 import { styles } from '../styles/ResetPasswordStyles';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { changePassword } from '../apiServices/allApi'; // ✅ import API
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ResetPassword'>;
 
@@ -18,15 +19,28 @@ const ResetPasswordScreen = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute();
+  const { mobile } = route.params as { mobile: string }; // ✅ Get passed mobile
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'Please fill in all fields');
     } else if (newPassword !== confirmNewPassword) {
       Alert.alert('Error', 'Passwords do not match');
     } else {
-      Alert.alert('Success', 'Password has been reset');
-      navigation.navigate('Login');
+      try {
+        const res = await changePassword({ mobile, password: newPassword });
+
+        if (res.status === 200) {
+          Alert.alert('Success', 'Password reset successful');
+          navigation.navigate('Login');
+        } else {
+          Alert.alert('Error', 'Unexpected response');
+        }
+      } catch (error: any) {
+        console.error('Password reset error:', error.response?.data);
+        Alert.alert('Error', error.response?.data?.message || 'Reset failed');
+      }
     }
   };
 
@@ -34,7 +48,6 @@ const ResetPasswordScreen = () => {
     <View style={styles.container}>
       <Image source={require('../assets/newpass.png')} style={styles.logo} />
       <Text style={styles.title}>Set New Password</Text>
-
 
       <Text style={styles.subLabel}>Enter your new password below</Text>
 

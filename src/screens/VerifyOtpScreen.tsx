@@ -6,6 +6,7 @@ import { styles } from '../styles/VerifyOtpStyle';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { verifyOtp } from '../apiServices/allApi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'VerifyOtp'>;
 
@@ -34,12 +35,24 @@ const VerifyOtpScreen = () => {
         }
     };
 
-    const handleOtpSubmit = () => {
+
+    const handleOtpSubmit = async () => {
         const finalOtp = otp.join('');
         if (finalOtp.length !== 4) {
             Alert.alert('Error', 'Please enter 4-digit OTP');
-        } else {
-            navigation.navigate('ResetPassword');
+            return;
+        }
+
+        try {
+            const res = await verifyOtp({ mobile, otp: finalOtp });
+
+            if (res.status === 200) {
+                Alert.alert('Verified', 'OTP verified successfully!');
+                navigation.navigate('ResetPassword'); // Navigate and pass mobile
+            }
+        } catch (error: any) {
+            console.log('OTP verification failed:', error.response?.data);
+            Alert.alert('Verification Failed', error.response?.data?.error || 'Please try again.');
         }
     };
 

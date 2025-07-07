@@ -1,69 +1,70 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { styles } from '../styles/LoginStyle';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { loginVendor } from '../apiServices/authApi';
+import { loginVendor } from '../apiServices/allApi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [contact, setcontact] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
-    if (!contact || !password) {
+    const trimmedContact = contact.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedContact || !trimmedPassword) {
       Alert.alert('Error', 'Please enter contact number and password');
       return;
     }
 
-    try {
-      const response = await loginVendor({
-        contact: contact.trim(),
-        password: password.trim(),
-      });
+    setIsLoading(true);
 
-      if (response && response?.data?.message === 'Login successful') {
-        Alert.alert('Success', 'Login successful!');
-        navigation.navigate('DummyHome');
+    try {
+      const payload = {
+        contact: `+91${String(contact).trim()}`,
+        password: String(password).trim()
+      };
+
+      const response = await loginVendor(payload);
+
+      if (response?.data?.message === 'Login successful') {
+        const role = response?.data?.role?.toLowerCase();
+
+        switch (role) {
+          case 'vendor':
+            navigation.navigate('VendorHome');
+            break;
+          case 'consumer':
+            navigation.navigate('ConsumerHome');
+            break;
+          case 'distributor':
+            navigation.navigate('DistributorHome');
+            break;
+          default:
+            Alert.alert('Error', 'Unknown user role.');
+        }
       }
     } catch (error: any) {
-      console.error(error);
+      console.error('Login API Error:', error?.response?.data);
+
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.detail ||
+        Object.values(error.response?.data || {}).flat()[0] || // Get first field error message
         'Login failed. Please try again';
 
-      if (
-        errorMessage.toLowerCase().includes('user not found') ||
-        errorMessage.toLowerCase().includes('not registered')
-      ) {
-        Alert.alert('Not Registered', 'User not found. Do you want to register?', [
-          {
-            text: 'Register',
-            onPress: () => navigation.navigate('VendorRegister'),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]);
-      } else {
-        Alert.alert('Login Error', errorMessage);
-      }
+      Alert.alert('Login Error', errorMessage);
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,21 +123,23 @@ const LoginScreen = () => {
         <Text style={styles.forgotText}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginText}>Login</Text>
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={isLoading}>
+        <Text style={styles.loginText}>
+          {isLoading ? 'Logging in...' : 'Login'}
+        </Text>
       </TouchableOpacity>
 
       <Text style={styles.registerText}>Register as:</Text>
       <View style={styles.registerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
+        <TouchableOpacity onPress={() => navigation.navigate('VendorRegistration')}>
           <Text style={styles.link}>Vendor</Text>
         </TouchableOpacity>
         <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
+        <TouchableOpacity onPress={() => navigation.navigate('ConsumerRegistration')}>
           <Text style={styles.link}>Consumer</Text>
         </TouchableOpacity>
         <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorRegister')}>
+        <TouchableOpacity onPress={() => navigation.navigate('DistributorRegistration')}>
           <Text style={styles.link}>Distributor</Text>
         </TouchableOpacity>
       </View>

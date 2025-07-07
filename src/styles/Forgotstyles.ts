@@ -78,4 +78,10 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
+  countryCode: {
+    fontSize: 16,
+    paddingHorizontal: 8,
+    color: '#555',
+    alignSelf: 'center',
+  }
 });

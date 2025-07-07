@@ -6,9 +6,13 @@ import Slides from '../screens/Slides';
 import LoginScreen from '../screens/LoginScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
-import DummyHomeScreen from '../screens/DummyHomeScreen'; // placeholder
 import VerifyOtpScreen from '../screens/VerifyOtpScreen';
-import VendorRegistrationScreen from '../screens/VendorRegistrationScreen';
+import VendorRegistrationScreen from '../screens/Vendor/VendorRegistrationScreen';
+import VendorHomeScreen from '../screens/Vendor/VendorHomeScreen';
+import ConsumerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
+import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen';
+import ConsumerRegistrationScreen from '../screens/Consumer/ConsumerRegistrationScreen';
+import DistributorRegistrationScreen from '../screens/Distributor/DistributorRegistrationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,8 +26,12 @@ const AppNavigator = () => {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
-        <Stack.Screen name="VendorRegister" component={VendorRegistrationScreen} />
-        <Stack.Screen name="DummyHome" component={DummyHomeScreen} />
+        <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
+        <Stack.Screen name="ConsumerRegistration" component={ConsumerRegistrationScreen} />
+        <Stack.Screen name="DistributorRegistration" component={DistributorRegistrationScreen} />
+        <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
+        <Stack.Screen name="ConsumerHome" component={ConsumerHomeScreen} />
+        <Stack.Screen name="DistributorHome" component={DistributorHomeScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

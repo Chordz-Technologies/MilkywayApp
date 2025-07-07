@@ -79,7 +79,7 @@ const Slides: React.FC<Props> = ({ navigation }) => {
       >
         {slides.map((slide) => (
           <View style={styles.slide} key={slide.title}>
-             <Text style={styles.title}>{slide.title}</Text>
+            <Text style={styles.title}>{slide.title}</Text>
             <Text style={styles.desc}>{slide.desc}</Text>
             <Image source={slide.image} style={styles.image} />
 
@@ -105,7 +105,7 @@ const Slides: React.FC<Props> = ({ navigation }) => {
               styles.dot,
               {
                 backgroundColor:
-                current === i ? colors.gray : colors.primaryLight,
+                  current === i ? colors.gray : colors.primaryLight,
               },
             ]}
           />
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   startBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 36,
