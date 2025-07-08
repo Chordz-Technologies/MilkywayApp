@@ -1,6 +1,14 @@
+// styles.ts
 import { StyleSheet } from 'react-native';
 
+export const scrollContentStyles = {
+  paddingHorizontal: 24,
+  paddingTop: 5,
+  paddingBottom: 40,
+};
+
 export const styles = StyleSheet.create({
+    // Layout
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
@@ -8,31 +16,22 @@ export const styles = StyleSheet.create({
         paddingTop: 40,
         paddingHorizontal: 24,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 15,
+        marginBottom: 16,
+        paddingLeft: 0,
+    },
+
+    // Typography
     title: {
         fontSize: 25,
         fontWeight: 'bold',
         color: '#00008b',
         marginBottom: 16,
         alignSelf: 'center',
-        alignItems: 'center'
-    },
-    errorBox: {
-        backgroundColor: '#ffe6e6',
-        borderColor: '#ff4d4d',
-        borderWidth: 1,
-        borderRadius: 8,
-        padding: 10,
-        marginBottom: 12,
-        width: '100%',
-    },
-    errorText: {
-        color: '#d32f2f',
-        fontSize: 15,
-        textAlign: 'center',
-    },
-    formGroup: {
-        width: '100%',
-        marginBottom: 16,
+        alignItems: 'center',
     },
     label: {
         fontSize: 16,
@@ -44,92 +43,9 @@ export const styles = StyleSheet.create({
         color: '#d32f2f',
         fontWeight: 'bold',
     },
-    input: {
-        width: '100%',
-        paddingVertical: 15,
-        paddingHorizontal: 14,
-        borderWidth: 1,
-        borderColor: '#bbb',
-        borderRadius: 8,
-        fontSize: 16,
-        color: '#333',
-        backgroundColor: '#fff',
-    },
-    inputBoxRelative: {
-        position: 'relative',
-        width: '100%',
-    },
-    inputWithIcon: {
-        paddingRight: 40,
-    },
     inputText: {
         fontSize: 16,
         color: '#333',
-    },
-    iconInside: {
-        position: 'absolute',
-        right: 10,
-        top: 12,
-        padding: 4,
-    },
-    milkTypeRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        marginTop: 8,
-    },
-    milkTypeButton: {
-        borderWidth: 1,
-        borderColor: '#007AFF',
-        borderRadius: 20,
-        paddingVertical: 8,
-        paddingHorizontal: 18,
-        marginRight: 10,
-        backgroundColor: '#fff',
-    },
-    milkTypeSelected: {
-        backgroundColor: '#007AFF',
-        borderColor: '#007AFF',
-    },
-    milkTypeText: {
-        color: '#007AFF',
-        fontWeight: 'bold',
-        fontSize: 15,
-    },
-    milkTypeTextSelected: {
-        color: '#fff',
-    },
-    milkDetailsSection: {
-        width: '100%',
-        marginBottom: 18,
-        marginTop: 8,
-        backgroundColor: '#f0f8ff',
-        borderRadius: 8,
-        padding: 10,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#007AFF',
-        marginBottom: 8,
-    },
-    milkTypeInputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    cowTypeCapacityInput: {
-        borderWidth: 1,
-        borderColor: '#bbb',
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        fontSize: 15,
-        backgroundColor: '#fff',
-        minWidth: 80,
-        marginRight: 6,
-    },
-    flexGrowInput: {
-        flex: 1,
     },
     cowTypeLabel: {
         fontSize: 15,
@@ -148,6 +64,90 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold',
         textDecorationLine: 'underline',
     },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#007AFF',
+        marginBottom: 8,
+    },
+    milkTypeText: {
+        color: '#007AFF',
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    milkTypeTextSelected: {
+        color: '#fff',
+    },
+
+    // Form Elements
+    formGroup: {
+        width: '100%',
+        marginBottom: 16,
+    },
+    input: {
+        width: '100%',
+        paddingVertical: 15,
+        paddingHorizontal: 14,
+        borderWidth: 1,
+        borderColor: '#bbb',
+        borderRadius: 8,
+        fontSize: 16,
+        color: '#333',
+        backgroundColor: '#fff',
+    },
+    phoneInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        position: 'relative',
+        width: '100%',
+    },
+    countryCode: {
+        position: 'absolute',
+        left: 14,
+        zIndex: 1,
+        fontSize: 16,
+        color: '#333',
+    },
+    phoneInput: {
+        width: '100%',
+        paddingVertical: 15,
+        paddingLeft: 50,
+        paddingRight: 14,
+        borderWidth: 1,
+        borderColor: '#bbb',
+        borderRadius: 8,
+        fontSize: 16,
+        color: '#333',
+        backgroundColor: '#fff',
+    },
+    inputBoxRelative: {
+        position: 'relative',
+        width: '100%',
+    },
+    inputWithIcon: {
+        paddingRight: 40,
+    },
+    cowTypeCapacityInput: {
+        borderWidth: 1,
+        borderColor: '#bbb',
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        fontSize: 15,
+        backgroundColor: '#fff',
+        minWidth: 80,
+        marginRight: 6,
+    },
+    flexGrowInput: {
+        flex: 1,
+    },
+
+    // Buttons
     button: {
         backgroundColor: '#007AFF',
         paddingVertical: 14,
@@ -157,21 +157,69 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 8,
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+    milkTypeButton: {
+        borderWidth: 1,
+        borderColor: '#007AFF',
+        borderRadius: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 18,
+        marginRight: 10,
+        backgroundColor: '#fff',
     },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 15,
-        marginBottom: 16,
-        paddingLeft: 0,
+    milkTypeSelected: {
+        backgroundColor: '#007AFF',
+        borderColor: '#007AFF',
+    },
+
+    // Error Handling
+    errorBox: {
+        backgroundColor: '#ffe6e6',
+        borderColor: '#ff4d4d',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 12,
+        width: '100%',
+    },
+    errorText: {
+        color: '#d32f2f',
+        fontSize: 15,
+        textAlign: 'center',
+    },
+
+    // Icons
+    iconInside: {
+        position: 'absolute',
+        right: 10,
+        top: 12,
+        padding: 4,
     },
     backArrow: {
         marginRight: 20,
         marginLeft: -28,
         paddingBottom: 10,
     },
+
+    // Sections
+    milkDetailsSection: {
+        width: '100%',
+        marginBottom: 18,
+        marginTop: 8,
+        backgroundColor: '#f0f8ff',
+        borderRadius: 8,
+        padding: 10,
+    },
+    milkTypeRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        marginTop: 8,
+    },
+    milkTypeInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
 });
+
+// Export type-safe styles
+export type AppStyles = typeof styles;
