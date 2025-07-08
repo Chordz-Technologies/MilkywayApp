@@ -28,7 +28,6 @@ export default function VendorHomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.headerRow}>
           <Image
             source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
@@ -38,16 +37,15 @@ export default function VendorHomeScreen() {
           <Ionicons name="notifications-outline" size={26} color="#007AFF" />
         </View>
 
-        {/* Profile */}
         <View style={styles.profileCard}>
           <Image
             source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
             style={styles.avatarLarge}
           />
-          <View style={{ marginLeft: 16, flex: 1 }}>
+          <View style={styles.profileInfoWrapper}>
             <Text style={styles.profileName}>Vendor</Text>
             <Text style={styles.profileLocation}>Pune</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <View style={styles.profileRatingRow}>
               <Ionicons name="star" size={16} color="#FFD700" />
               <Text style={styles.profileRating}> 4.8</Text>
             </View>
@@ -57,32 +55,31 @@ export default function VendorHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.statsBox, styles.statsBoxShadow]}>
-            <Ionicons name="people" size={24} color="#007AFF" style={{ marginBottom: 4 }} />
+            <Ionicons name="people" size={24} color="#007AFF" style={styles.iconMarginBottom} />
             <Text style={styles.statsLabel}>Total Customers</Text>
             <Text style={styles.statsValue}>120</Text>
           </View>
           <View style={[styles.statsBox, styles.statsBoxShadow]}>
-            <Ionicons name="alert-circle" size={24} color="#FF6B6B" style={{ marginBottom: 4 }} />
+            <Ionicons name="alert-circle" size={24} color="#FF6B6B" style={styles.iconMarginBottom} />
             <Text style={styles.statsLabel}>Payment Defaulters</Text>
             <Text style={styles.statsValue}>5</Text>
           </View>
         </View>
+
         <View style={[styles.statsBoxWide, styles.statsBoxShadow]}>
-          <Ionicons name="checkmark-done-circle" size={24} color="#4CD964" style={{ marginBottom: 4 }} />
+          <Ionicons name="checkmark-done-circle" size={24} color="#4CD964" style={styles.iconMarginBottom} />
           <Text style={styles.statsLabel}>Customers Paid Bills</Text>
           <Text style={styles.statsValue}>115</Text>
         </View>
 
-        {/* Daily Quote */}
         <View style={styles.quoteCard}>
           <Image
             source={{ uri: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80' }}
             style={styles.milkImage}
           />
-          <View style={{ flex: 1 }}>
+          <View style={styles.profileInfoWrapper}>
             <Text style={styles.dailyQuoteTitle}>Daily Quote</Text>
             <Text style={styles.dailyQuoteText}>
               Start your day with the goodness of fresh milk.
@@ -94,10 +91,9 @@ export default function VendorHomeScreen() {
           </View>
         </View>
 
-        {/* Customer List */}
         <Text style={styles.sectionTitle}>Customer List</Text>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#888" style={{ marginRight: 6 }} />
+          <Ionicons name="search" size={18} color="#888" style={styles.iconMarginRight} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search customers"
@@ -106,9 +102,10 @@ export default function VendorHomeScreen() {
             onChangeText={setSearch}
           />
         </View>
+
         <View style={styles.customerListCard}>
           {filteredCustomers.length === 0 ? (
-            <Text style={{ color: '#888', textAlign: 'center', marginVertical: 12 }}>
+            <Text style={styles.noCustomerText}>
               No customers found.
             </Text>
           ) : (
@@ -121,7 +118,7 @@ export default function VendorHomeScreen() {
                 <Text
                   style={[
                     styles.customerStatus,
-                    c.status === 'Paid' ? styles.statusPaid : styles.statusPending
+                    c.status === 'Paid' ? styles.statusPaid : styles.statusPending,
                   ]}
                 >
                   {c.status}
@@ -131,10 +128,9 @@ export default function VendorHomeScreen() {
           )}
         </View>
 
-        {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsRow}>
-          {['Today\'s Orders', 'Inventory Status', 'Customer Reviews'].map((title, index) => (
+          {["Today's Orders", 'Inventory Status', 'Customer Reviews'].map((title, index) => (
             <View key={index} style={[styles.quickActionBox, styles.quickActionShadow]}>
               <Image
                 source={{ uri: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80' }}
@@ -151,7 +147,6 @@ export default function VendorHomeScreen() {
           ))}
         </View>
 
-        {/* Bottom Navigation (Mock) */}
         <View style={styles.bottomNav}>
           <Ionicons name="home" size={26} color="#007AFF" />
           <Ionicons name="menu" size={26} color="#bbb" />
