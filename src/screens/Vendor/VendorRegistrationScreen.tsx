@@ -1,11 +1,9 @@
 import React, { useState, useRef } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { addVendorRegistration } from '../../apiServices/allApi';
 import { styles } from '../../styles/RegisterStyles';
-
+import { scrollContentStyles } from '../../styles/RegisterStyles';
 interface CowMilkDetail {
   name: string;
   capacity: string;
@@ -69,14 +67,10 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     if (!form.password) { return 'Password is required'; }
     if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
     if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
-    // Email is NOT required anymore
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      return 'Please enter a valid email address';
-    }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return 'Please enter a valid email address'; }
     if (!form.phone.trim()) { return 'Phone number is required'; }
-    if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {
-      return 'Phone number should contain only digits';
-    }
+    if (!/^\d{10}$/.test(form.phone.trim())) { return 'Phone number must be exactly 10 digits'; }
+    if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) { return 'Phone number should contain only digits'; }
     if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
     if (hasCow) {
       const anyValidCow = cowMilk.some(c => {
@@ -155,12 +149,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     <ScrollView
       ref={scrollRef}
       style={styles.container}
-      // eslint-disable-next-line react-native/no-inline-styles
-      contentContainerStyle={{
-        paddingHorizontal: 24,
-        paddingTop: 5,
-        paddingBottom: 40,
-      }}
+      contentContainerStyle={scrollContentStyles}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.titleRow}>
@@ -205,19 +194,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{
-            position: 'absolute',
-            left: 10,
-            zIndex: 1,
-            fontSize: 16,
-            color: '#333',
-          }}>
-            +91
-          </Text>
+        <Text style={styles.label}>
+          Phone Number<Text style={styles.required}> *</Text>
+        </Text>
+        <View style={styles.phoneInputContainer}>
+          <Text style={styles.countryCode}>+91</Text>
           <TextInput
-            style={[styles.input, { paddingLeft: 45 }]} // Add padding to push text after +91
+            style={styles.phoneInput}
             value={form.phone}
             onChangeText={(text) => {
               const cleaned = text.replace(/\D/g, '').slice(0, 10);
@@ -230,7 +213,6 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
           />
         </View>
       </View>
-
       <View style={styles.formGroup}>
         <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
         <View style={styles.inputBoxRelative}>

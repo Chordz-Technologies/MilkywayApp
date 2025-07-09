@@ -1,19 +1,13 @@
 import React, { useRef, useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    Linking,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { addDistributorRegistration } from '../../apiServices/allApi';
+import { scrollContentStyles } from '../../styles/RegisterStyles';
+
 interface DistributorPayload {
     full_name: string;
-    phone_number: number;
+    phone_number?: string;
     address: string;
     society_name: string;
     flat_number: string;
@@ -45,7 +39,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     const validate = () => {
         if (!form.name.trim()) { return 'Full name is required'; }
         if (!form.phone.trim()) { return 'Phone number is required'; }
-        if (!/^\d+$/.test(form.phone.trim())) { return 'Phone number should contain only digits'; }
+        if (!/^\d{10}$/.test(form.phone.trim())) { return 'Phone number must be exactly 10 digits'; }
         if (!form.address.trim()) { return 'Address is required'; }
         if (!form.society.trim()) { return 'Society name is required'; }
         if (!form.flatNo.trim()) { return 'Flat number is required'; }
@@ -82,7 +76,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
         const payload: DistributorPayload = {
             full_name: form.name,
-            phone_number: Number(form.phone),
+            phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
             address: form.address,
             society_name: form.society,
             flat_number: form.flatNo,
@@ -106,11 +100,8 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         <ScrollView
             ref={scrollRef}
             style={styles.container}
-            contentContainerStyle={{
-                paddingHorizontal: 24,
-                paddingTop: 5,
-                paddingBottom: 40,
-            }} keyboardShouldPersistTaps="handled"
+            contentContainerStyle={scrollContentStyles}
+            keyboardShouldPersistTaps="handled"
         >
             <View style={styles.titleRow}>
                 <TouchableOpacity
@@ -141,19 +132,13 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             </View>
 
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{
-                        position: 'absolute',
-                        left: 10,
-                        zIndex: 1,
-                        fontSize: 16,
-                        color: '#333',
-                    }}>
-                        +91
-                    </Text>
+                <Text style={styles.label}>
+                    Phone Number<Text style={styles.required}> *</Text>
+                </Text>
+                <View style={styles.phoneInputContainer}>
+                    <Text style={styles.countryCode}>+91</Text>
                     <TextInput
-                        style={[styles.input, { paddingLeft: 45 }]} // Add padding to push text after +91
+                        style={styles.phoneInput}
                         value={form.phone}
                         onChangeText={(text) => {
                             const cleaned = text.replace(/\D/g, '').slice(0, 10);

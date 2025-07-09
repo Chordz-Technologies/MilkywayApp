@@ -42,10 +42,10 @@ const LoginScreen = () => {
           case 'vendor':
             navigation.navigate('VendorHome');
             break;
-          case 'consumer':
+          case 'customer':
             navigation.navigate('ConsumerHome');
             break;
-          case 'distributor':
+          case 'milkman':
             navigation.navigate('DistributorHome');
             break;
           default:
@@ -91,6 +91,7 @@ const LoginScreen = () => {
           keyboardType="phone-pad"
           autoCapitalize="none"
           value={contact}
+          maxLength={10}
           onChangeText={setcontact}
         />
       </View>
