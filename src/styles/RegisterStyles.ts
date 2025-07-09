@@ -1,4 +1,3 @@
-// styles.ts
 import { StyleSheet } from 'react-native';
 
 export const scrollContentStyles = {
@@ -221,5 +220,3 @@ export const styles = StyleSheet.create({
     },
 });
 
-// Export type-safe styles
-export type AppStyles = typeof styles;

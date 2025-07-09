@@ -252,3 +252,4 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         </ScrollView>
     );
 }
+

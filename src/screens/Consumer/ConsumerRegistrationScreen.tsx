@@ -439,3 +439,4 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
         </ScrollView>
     );
 }
+
