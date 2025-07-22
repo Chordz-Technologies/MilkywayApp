@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-    View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { addCustomerRegistration } from '../../apiServices/allApi';
@@ -19,7 +17,7 @@ interface UserPayload {
     address: string; // Now required
     flat_no: string;
     society_name: string;
-    contact?: number;
+    contact?: string;
     password: string;
     confirm_password?: string;
     gir_milk_litre?: number;
@@ -28,7 +26,7 @@ interface UserPayload {
     buffalo_milk_litre?: number;
 }
 
-export default function ConsumerRegisterScreen({ navigation }: { navigation: any }) {
+export default function ConsumerRegistrationScreen({ navigation }: { navigation: any }) {
     const [cowMilk, setCowMilk] = useState<CowMilkDetail[]>([
         { name: 'Gir Cow', capacity: '' },
         { name: 'Deshi', capacity: '' },
@@ -77,9 +75,13 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
         if (!form.password) { return 'Password is required'; }
         if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
         if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
-        if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return 'Please enter a valid email address';}
+        if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+            return 'Please enter a valid email address';
+        }
         if (!form.phone.trim()) { return 'Phone number is required'; }
-        if (!/^\d{10}$/.test(form.phone.trim())) {return 'Phone number must be exactly 10 digits';}
+        if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {
+            return 'Phone number should contain only digits';
+        }
         if (!form.flatNumber.trim()) { return 'Flat Number is required'; }
         if (!form.societyName.trim()) { return 'Society Name is required'; }
         if (!form.address.trim()) { return 'Address is required'; } // Added validation for address
@@ -122,7 +124,7 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
                 address: form.address.trim(), // Now sending trimmed address, and it's required
                 flat_no: form.flatNumber.trim(),
                 society_name: form.societyName.trim(),
-                contact: form.phone.trim() ? Number(form.phone.trim()) : undefined,
+                contact: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
                 password: form.password,
                 confirm_password: form.confirmPassword,
             };
@@ -137,11 +139,11 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
             }
 
             await addCustomerRegistration(userPayload);
-            showSuccessAlert('User registration successful!');
+            showSuccessAlert('Consumer registration successful!');
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error ||
                 err?.message ||
-                'User registration failed';
+                'Consumer registration failed';
             setError(errorMessage);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         } finally {
@@ -162,11 +164,15 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
 
     return (
         <ScrollView
-              ref={scrollRef}
-              style={styles.container}
-              contentContainerStyle={scrollContentStyles}
-              keyboardShouldPersistTaps="handled"
-            >
+            ref={scrollRef}
+            style={styles.container}
+            contentContainerStyle={{
+                paddingHorizontal: 24,
+                paddingTop: 5,
+                paddingBottom: 40,
+            }}
+            keyboardShouldPersistTaps="handled"
+        >
             <View style={styles.titleRow}>
                 <TouchableOpacity
                     style={styles.backArrow}
@@ -221,26 +227,32 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
                 />
             </View>
 
-           <View style={styles.formGroup}>
-             <Text style={styles.label}>
-               Phone Number<Text style={styles.required}> *</Text>
-             </Text>
-             <View style={styles.phoneInputContainer}>
-               <Text style={styles.countryCode}>+91</Text>
-               <TextInput
-                 style={styles.phoneInput}
-                 value={form.phone}
-                 onChangeText={(text) => {
-                   const cleaned = text.replace(/\D/g, '').slice(0, 10);
-                   handleInputChange('phone', cleaned);
-                 }}
-                 placeholder="Enter phone number"
-                 keyboardType="number-pad"
-                 maxLength={10}
-                 placeholderTextColor="#888"
-               />
-             </View>
-           </View>
+            <View style={styles.formGroup}>
+                <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{
+                        position: 'absolute',
+                        left: 10,
+                        zIndex: 1,
+                        fontSize: 16,
+                        color: '#333',
+                    }}>
+                        +91
+                    </Text>
+                    <TextInput
+                        style={[styles.input, { paddingLeft: 45 }]} // Add padding to push text after +91
+                        value={form.phone}
+                        onChangeText={(text) => {
+                            const cleaned = text.replace(/\D/g, '').slice(0, 10);
+                            handleInputChange('phone', cleaned);
+                        }}
+                        placeholder="Enter phone number"
+                        keyboardType="number-pad"
+                        maxLength={10}
+                        placeholderTextColor="#888"
+                    />
+                </View>
+            </View>
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
@@ -439,4 +451,3 @@ export default function ConsumerRegisterScreen({ navigation }: { navigation: any
         </ScrollView>
     );
 }
-

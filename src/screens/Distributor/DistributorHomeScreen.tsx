@@ -8,13 +8,13 @@ const DistributorHomeScreen = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>🎉 Welcome to Milkyway App!</Text>
-            <Text style={styles.subtitle}>This is a dummy home screen.</Text>
+            <Text style={styles.subtitle}>This is a distributor home screen.</Text>
 
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => navigation.goBack()}
             >
-                <Text style={styles.buttonText}>⬅️ Logout / Go Back</Text>
+                <Text style={styles.buttonText}>⬅️ Go Back</Text>
             </TouchableOpacity>
         </View>
     );

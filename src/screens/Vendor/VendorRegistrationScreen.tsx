@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { addVendorRegistration } from '../../apiServices/allApi';
 import { styles } from '../../styles/RegisterStyles';
@@ -69,10 +67,14 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     if (!form.password) { return 'Password is required'; }
     if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
     if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {return 'Please enter a valid email address';}
+    // Email is NOT required anymore
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      return 'Please enter a valid email address';
+    }
     if (!form.phone.trim()) { return 'Phone number is required'; }
-    if (!/^\d{10}$/.test(form.phone.trim())) {return 'Phone number must be exactly 10 digits';}
-    if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {return 'Phone number should contain only digits';}
+    if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {
+      return 'Phone number should contain only digits';
+    }
     if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
     if (hasCow) {
       const anyValidCow = cowMilk.some(c => {
@@ -149,11 +151,16 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
   return (
     <ScrollView
-          ref={scrollRef}
-          style={styles.container}
-          contentContainerStyle={scrollContentStyles}
-          keyboardShouldPersistTaps="handled"
-        >
+      ref={scrollRef}
+      style={styles.container}
+      // eslint-disable-next-line react-native/no-inline-styles
+      contentContainerStyle={{
+        paddingHorizontal: 24,
+        paddingTop: 5,
+        paddingBottom: 40,
+      }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.titleRow}>
         <TouchableOpacity
           style={styles.backArrow}
