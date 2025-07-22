@@ -1,97 +1,475 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   Image,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { vendorStyles as styles } from '../../styles/VendorHomeStyle';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList } from '../../navigation/types';
+import { allCustomers } from '../../apiServices/allApi';
+import { styles } from '../../styles/vendorhomestyles';
 
-const customers = [
-  { id: '1', name: 'User1', address: 'User Address', status: 'Paid' },
-  { id: '2', name: 'User2', address: 'User Address', status: 'Pending' },
-  { id: '3', name: 'User3', address: 'User Address', status: 'Paid' },
-];
+// =====================================================================
+// 1. Type Definitions
+// =====================================================================
 
-export default function VendorHomeScreen() {
+type VendorHomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'VendorHome'>;
+
+type VendorData = {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  phone: string;
+  email?: string;
+  address?: string;
+  profileImage?: string;
+  businessName?: string;
+  totalCustomers: number;
+  defaulters: number;
+  paidCustomers: number;
+  totalMilkmans: number;
+};
+
+type Customer = {
+  id: string;
+  name: string;
+  address: string;
+  status: 'Paid' | 'Pending';
+  phone: string;
+};
+
+// =====================================================================
+// 2. Component Definition
+// =====================================================================
+
+const VendorHomeScreen = () => {
+  const navigation = useNavigation<VendorHomeNavigationProp>();
+
+  // State variables
   const [search, setSearch] = useState('');
+  const [vendorData, setVendorData] = useState<VendorData | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredCustomers = customers.filter(
-    c =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.address.toLowerCase().includes(search.toLowerCase())
-  );
+  // Handle logout function
+  const handleLogout = useCallback(async () => {
+    try {
+      console.log('Logging out user...');
+      const keysToRemove = [
+        'userID', 'vendorId', 'userToken', 'userRole', 'userContact',
+        'vendorName', 'vendorData', 'loginTimestamp', 'userFullContact',
+      ];
+      await AsyncStorage.multiRemove(keysToRemove);
+      console.log('User data cleared from AsyncStorage');
 
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [navigation]);
+
+  // Get vendor session data from AsyncStorage
+  const getVendorSession = useCallback(async () => {
+    try {
+      const [userID, vendorId, userToken, userRole, userContact, vendorName, vendorData] =
+        await AsyncStorage.multiGet([
+          'userID', 'vendorId', 'userToken', 'userRole',
+          'userContact', 'vendorName', 'vendorData',
+        ]);
+
+      const sessionData = {
+        userID: userID[1],
+        vendorId: vendorId[1],
+        userToken: userToken[1],
+        userRole: userRole[1],
+        userContact: userContact[1],
+        vendorName: vendorName[1],
+        vendorData: vendorData[1],
+      };
+
+      console.log('=== Session Data ===');
+      console.log('userID:', sessionData.userID);
+      console.log('vendorId:', sessionData.vendorId);
+      console.log('userToken:', sessionData.userToken);
+      console.log('userRole:', sessionData.userRole);
+      console.log('userContact:', sessionData.userContact);
+      console.log('vendorName:', sessionData.vendorName);
+      console.log('vendorData:', sessionData.vendorData);
+      console.log('===================');
+
+      return sessionData;
+    } catch (error) {
+      console.error('Error getting session data:', error);
+      return null;
+    }
+  }, []);
+
+  // Debug function to check stored data
+  const debugCurrentStorage = useCallback(async () => {
+    try {
+      console.log('🔍 === DEBUGGING CURRENT STORAGE ===');
+
+      const vendorName = await AsyncStorage.getItem('vendorName');
+      const vendorData = await AsyncStorage.getItem('vendorData');
+      const userID = await AsyncStorage.getItem('userID');
+      const vendorId = await AsyncStorage.getItem('vendorId');
+
+      console.log('Stored vendorName:', vendorName);
+      console.log('Stored userID:', userID);
+      console.log('Stored vendorId:', vendorId);
+      console.log('Raw vendorData:', vendorData);
+
+      if (vendorData) {
+        try {
+          const parsed = JSON.parse(vendorData);
+          console.log('Parsed vendorData:', parsed);
+          console.log('Parsed vendorData.name:', parsed.name);
+          console.log('Parsed vendorData.company_name:', parsed.company_name);
+        } catch (parseError) {
+          console.error('Error parsing vendorData:', parseError);
+        }
+      }
+
+      console.log('=== END STORAGE DEBUG ===');
+    } catch (error) {
+      console.error('Debug storage error:', error);
+    }
+  }, []);
+
+  // 🔥 FIXED FETCH VENDOR DATA FUNCTION
+  const fetchVendorData = useCallback(async (isRefresh: boolean = false) => {
+    console.log('🏁 Starting fetchVendorData...');
+
+    // Debug current storage
+    await debugCurrentStorage();
+
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    setError(null);
+
+    try {
+      // Get session data
+      const sessionData = await getVendorSession();
+
+      if (!sessionData?.userToken) {
+        Alert.alert('Session Expired', 'Please login again.', [
+          { text: 'OK', onPress: handleLogout },
+        ]);
+        return;
+      }
+
+      // Get vendor ID (this will be the phone number)
+      const vendorId = sessionData.userID || sessionData.vendorId;
+      if (!vendorId) {
+        Alert.alert('Session Error', 'No vendor ID found. Please login again.', [
+          { text: 'OK', onPress: handleLogout },
+        ]);
+        return;
+      }
+
+      console.log('✅ Vendor ID (phone):', vendorId);
+
+      // 🔥 PROPER VENDOR NAME RESOLUTION
+      let actualVendorName = 'My Dairy Business'; // Default fallback
+
+      // Method 1: Try to get name from direct vendorName storage
+      if (sessionData.vendorName && sessionData.vendorName !== vendorId) {
+        actualVendorName = sessionData.vendorName;
+        console.log('✅ Found vendor name from vendorName field:', actualVendorName);
+      }
+      // Method 2: Try to parse vendorData and extract name
+      else if (sessionData.vendorData) {
+        try {
+          const parsedVendorData = JSON.parse(sessionData.vendorData);
+          console.log('📋 Parsed vendor data:', parsedVendorData);
+
+          const extractedName =
+            parsedVendorData.name ||
+            parsedVendorData.vendor_name ||
+            parsedVendorData.company_name ||
+            parsedVendorData.business_name ||
+            parsedVendorData.businessName;
+
+          // Make sure the extracted name is not the phone number
+          if (extractedName && extractedName !== vendorId && extractedName !== `+91${vendorId}`) {
+            actualVendorName = extractedName;
+            console.log('✅ Found vendor name from parsed data:', actualVendorName);
+          }
+        } catch (parseError) {
+          console.error('Error parsing vendor data:', parseError);
+        }
+      }
+
+      console.log('🎯 FINAL VENDOR NAME TO USE:', actualVendorName);
+
+      // Create vendor info object with proper name
+      let vendorInfo = {
+        id: vendorId,
+        name: actualVendorName,  // 🔥 USE ACTUAL NAME, NOT PHONE NUMBER
+        contact: sessionData.userContact ? `+91${sessionData.userContact}` : `+91${vendorId}`,
+        phone: sessionData.userContact ? `+91${sessionData.userContact}` : `+91${vendorId}`,
+        email: '',
+        address: 'Business Address, Pune',
+        city: 'Pune',
+        company_name: actualVendorName,  // 🔥 USE ACTUAL NAME
+        business_name: actualVendorName, // 🔥 USE ACTUAL NAME
+        rating: 4.5,
+      };
+
+      // If we have stored vendor data, merge it but keep our resolved name
+      if (sessionData.vendorData) {
+        try {
+          const storedVendorData = JSON.parse(sessionData.vendorData);
+          vendorInfo = {
+            ...vendorInfo,
+            ...storedVendorData,
+            // 🔥 OVERRIDE WITH RESOLVED NAME (NOT PHONE NUMBER)
+            name: actualVendorName,
+            company_name: actualVendorName,
+            business_name: actualVendorName,
+            id: vendorId, // Keep phone as ID
+          };
+        } catch (parseError) {
+          console.error('Error merging stored vendor data:', parseError);
+        }
+      }
+
+      console.log('✅ Final vendor info object:', vendorInfo);
+
+      // Fetch milkman data (optional)
+      let milkmanCount = 0;
+
+      // Fetch customer data (optional)
+      let transformedCustomers: Customer[] = [];
+      try {
+        const customersResponse = await allCustomers({});
+        console.log('✅ Customers API Response:', customersResponse.data);
+
+        let customersData = [];
+        if (customersResponse.data?.customers) {
+          customersData = customersResponse.data.customers;
+        } else if (Array.isArray(customersResponse.data)) {
+          customersData = customersResponse.data;
+        } else if (customersResponse.data?.data && Array.isArray(customersResponse.data.data)) {
+          customersData = customersResponse.data.data;
+        }
+
+        // 🔥 ENHANCED CUSTOMER NAME EXTRACTION
+        transformedCustomers = customersData.map((customer: any) => {
+          const customerName =
+            customer.name ||
+            customer.customer_name ||
+            customer.user_name ||
+            customer.full_name ||
+            customer.first_name ||
+            `Customer ${customer.id || 'Unknown'}`;
+
+          console.log('🔍 Customer data:', customer);
+          console.log('🔍 Extracted customer name:', customerName);
+
+          return {
+            id: String(customer.id || customer.customer_id || customer._id || Math.random()),
+            name: String(customerName),
+            address: String(customer.address || customer.location || customer.city || 'No address provided'),
+            status: (customer.payment_status === 'paid' || customer.status === 'paid') ? 'Paid' : 'Pending',
+            phone: String(customer.phone || customer.mobile || customer.contact || 'No phone'),
+          };
+        });
+
+        console.log('✅ Transformed customers:', transformedCustomers);
+      } catch (customerError: any) {
+        const errorMessage = customerError?.message || customerError?.toString() || 'Unknown error';
+        console.warn('⚠️ Customer API failed:', errorMessage);
+        transformedCustomers = [];
+      }
+
+      setCustomers(transformedCustomers);
+
+      // Calculate stats
+      const totalCustomers = transformedCustomers.length;
+      const paidCustomers = transformedCustomers.filter(c => c.status === 'Paid').length;
+      const defaulters = transformedCustomers.filter(c => c.status === 'Pending').length;
+
+      // 🔥 CREATE FINAL VENDOR DATA WITH PROPER NAME
+      const finalVendorData: VendorData = {
+        id: String(vendorId), // Phone number as ID
+        name: String(actualVendorName), // 🔥 ACTUAL NAME, NOT PHONE
+        location: String(vendorInfo.address || vendorInfo.city || 'Pune, Maharashtra'),
+        rating: Number(vendorInfo.rating) || 4.5,
+        phone: String(vendorInfo.phone),
+        email: String(vendorInfo.email || ''),
+        address: String(vendorInfo.address || 'Business Address'),
+        businessName: String(actualVendorName), // 🔥 ACTUAL NAME, NOT PHONE
+        totalCustomers,
+        defaulters,
+        paidCustomers,
+        totalMilkmans: milkmanCount,
+      };
+
+      console.log('🎉 FINAL VENDOR DATA FOR DISPLAY:', finalVendorData);
+      console.log('🎯 NAME BEING DISPLAYED:', finalVendorData.name);
+      console.log('🎯 BUSINESS NAME BEING DISPLAYED:', finalVendorData.businessName);
+
+      setVendorData(finalVendorData);
+
+    } catch (err: any) {
+      console.error('❌ Error in fetchVendorData:', err);
+
+      let errorMessage = 'Failed to load dashboard. Please try again.';
+
+      if (err.response?.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+        setTimeout(() => handleLogout(), 1000);
+        return;
+      }
+
+      setError(errorMessage);
+
+      if (!isRefresh) {
+        Alert.alert('Error', errorMessage, [
+          { text: 'Retry', onPress: () => fetchVendorData() },
+          { text: 'Logout', onPress: handleLogout },
+        ]);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [getVendorSession, handleLogout, debugCurrentStorage]);
+
+  // Pull to refresh
+  const onRefresh = useCallback(() => {
+    fetchVendorData(true);
+  }, [fetchVendorData]);
+
+  // Render customer item
+  const renderCustomerItem = useCallback(({ item }: { item: Customer }) => (
+    <TouchableOpacity
+      style={styles.customerRow}
+      onPress={() => {
+        navigation.navigate('CustomerDetail', {
+          customerId: item.id,
+          customerName: item.name,
+        });
+      }}
+    >
+      <View style={styles.customerInfo}>
+        <Text style={styles.customerName}>{item.name}</Text>
+        <Text style={styles.customerAddress}>{item.address}</Text>
+        <Text style={styles.customerPhone}>{item.phone}</Text>
+      </View>
+      <Text
+        style={[
+          styles.customerStatus,
+          item.status === 'Paid' ? styles.statusPaid : styles.statusPending,
+        ]}
+      >
+        {item.status}
+      </Text>
+      <Ionicons name="chevron-forward" size={24} color="#C0C0C0" />
+    </TouchableOpacity>
+  ), [navigation]);
+
+  // Render header
+  const renderHeader = useCallback(() => {
+    if (!vendorData) {return null;}
+
+    return (
+      <>
+        {/* Header */}
         <View style={styles.headerRow}>
-          <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
-            style={styles.avatarSmall}
-          />
           <Text style={styles.headerTitle}>Home</Text>
-          <Ionicons name="notifications-outline" size={26} color="#007AFF" />
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
+              <Ionicons name="refresh" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => console.log('Notifications pressed')}>
+              <Ionicons name="notifications-outline" size={26} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* Profile Card - Shows Vendor's Actual Name */}
         <View style={styles.profileCard}>
           <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
+            source={
+              vendorData.profileImage
+                ? { uri: vendorData.profileImage }
+                : { uri: 'https://randomuser.me/api/portraits/men/32.jpg' }
+            }
             style={styles.avatarLarge}
           />
           <View style={styles.profileInfoWrapper}>
-            <Text style={styles.profileName}>Vendor</Text>
-            <Text style={styles.profileLocation}>Pune</Text>
+            <Text style={styles.profileName}>
+              {vendorData.businessName || vendorData.name}
+            </Text>
+            <Text style={styles.profileLocation}>{vendorData.location}</Text>
             <View style={styles.profileRatingRow}>
               <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.profileRating}> 4.8</Text>
+              <Text style={styles.profileRating}>{vendorData.rating.toFixed(1)}</Text>
             </View>
+            <Text style={styles.profilePhone}>{vendorData.phone}</Text>
           </View>
-          <TouchableOpacity style={styles.editBtn}>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <Ionicons name="create-outline" size={18} color="#007AFF" />
           </TouchableOpacity>
         </View>
 
+        {/* Stats Cards */}
         <View style={styles.statsRow}>
           <View style={[styles.statsBox, styles.statsBoxShadow]}>
             <Ionicons name="people" size={24} color="#007AFF" style={styles.iconMarginBottom} />
             <Text style={styles.statsLabel}>Total Customers</Text>
-            <Text style={styles.statsValue}>120</Text>
+            <Text style={styles.statsValue}>{vendorData.totalCustomers}</Text>
           </View>
           <View style={[styles.statsBox, styles.statsBoxShadow]}>
             <Ionicons name="alert-circle" size={24} color="#FF6B6B" style={styles.iconMarginBottom} />
             <Text style={styles.statsLabel}>Payment Defaulters</Text>
-            <Text style={styles.statsValue}>5</Text>
+            <Text style={styles.statsValue}>{vendorData.defaulters}</Text>
           </View>
         </View>
-
         <View style={[styles.statsBoxWide, styles.statsBoxShadow]}>
           <Ionicons name="checkmark-done-circle" size={24} color="#4CD964" style={styles.iconMarginBottom} />
           <Text style={styles.statsLabel}>Customers Paid Bills</Text>
-          <Text style={styles.statsValue}>115</Text>
+          <Text style={styles.statsValue}>{vendorData.paidCustomers}</Text>
         </View>
+        <TouchableOpacity
+          style={[styles.statsBoxWide, styles.statsBoxShadow]}
+          onPress={() => navigation.navigate('MilkmanList')}
+        >
+          <Ionicons name="bus-outline" size={24} color="#FFA500" style={styles.iconMarginBottom} />
+          <Text style={styles.statsLabel}>Enrolled Milkmans</Text>
+          <Text style={styles.statsValue}>{vendorData.totalMilkmans}</Text>
+        </TouchableOpacity>
 
-        <View style={styles.quoteCard}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80' }}
-            style={styles.milkImage}
-          />
-          <View style={styles.profileInfoWrapper}>
-            <Text style={styles.dailyQuoteTitle}>Daily Quote</Text>
-            <Text style={styles.dailyQuoteText}>
-              Start your day with the goodness of fresh milk.
-            </Text>
-            <Text style={styles.dailyQuoteOffer}>
-              <Ionicons name="pricetag" size={14} color="#007AFF" />
-              {'  '}10% off on all orders above $50
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Customer List</Text>
+        {/* Customer List Section */}
+        <Text style={styles.sectionTitle}>Customer List ({customers.length})</Text>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color="#888" style={styles.iconMarginRight} />
           <TextInput
@@ -102,58 +480,82 @@ export default function VendorHomeScreen() {
             onChangeText={setSearch}
           />
         </View>
+      </>
+    );
+  }, [vendorData, customers.length, search, onRefresh, navigation]);
 
-        <View style={styles.customerListCard}>
-          {filteredCustomers.length === 0 ? (
-            <Text style={styles.noCustomerText}>
-              No customers found.
-            </Text>
-          ) : (
-            filteredCustomers.map(c => (
-              <View key={c.id} style={styles.customerRow}>
-                <View>
-                  <Text style={styles.customerName}>{c.name}</Text>
-                  <Text style={styles.customerAddress}>{c.address}</Text>
-                </View>
-                <Text
-                  style={[
-                    styles.customerStatus,
-                    c.status === 'Paid' ? styles.statusPaid : styles.statusPending,
-                  ]}
-                >
-                  {c.status}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
+  // List empty component
+  const listEmptyComponent = useCallback(() => (
+    <View style={styles.customerListCard}>
+      <Text style={styles.noCustomerText}>
+        {search ? 'No customers found matching your search.' : 'No customers found.'}
+      </Text>
+    </View>
+  ), [search]);
 
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsRow}>
-          {["Today's Orders", 'Inventory Status', 'Customer Reviews'].map((title, index) => (
-            <View key={index} style={[styles.quickActionBox, styles.quickActionShadow]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80' }}
-                style={styles.quickActionImage}
-              />
-              <Text style={styles.quickActionTitle}>{title}</Text>
-              <Text style={styles.quickActionSubtitle}>
-                {index === 0 ? '12 new orders' : index === 1 ? 'Sufficient stock' : 'feedback'}
-              </Text>
-              <TouchableOpacity style={styles.quickActionButton}>
-                <Text style={styles.quickActionButtonText}>View</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+  // Focus effect hook
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 Screen focused, fetching vendor data...');
+      fetchVendorData();
+    }, [fetchVendorData])
+  );
 
-        <View style={styles.bottomNav}>
-          <Ionicons name="home" size={26} color="#007AFF" />
-          <Ionicons name="menu" size={26} color="#bbb" />
-          <Ionicons name="cube" size={26} color="#bbb" />
-          <Ionicons name="person" size={26} color="#bbb" />
-        </View>
-      </ScrollView>
+  // Filter customers
+  const filteredCustomers = customers.filter(
+    c =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.address.toLowerCase().includes(search.toLowerCase()) ||
+      c.phone.includes(search)
+  );
+
+  // Early returns after all hooks
+  if (isLoading && !vendorData) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading your dashboard...</Text>
+      </View>
+    );
+  }
+
+  if (error && !vendorData) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => fetchVendorData()}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Main render
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={filteredCustomers}
+        renderItem={renderCustomerItem}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={listEmptyComponent}
+        contentContainerStyle={styles.flatListContentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={['#007AFF']}
+            tintColor="#007AFF"
+          />
+        }
+      />
     </View>
   );
-}
+};
+
+export default VendorHomeScreen;

@@ -386,4 +386,3 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     </ScrollView>
   );
 }
-

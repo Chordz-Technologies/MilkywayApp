@@ -30,6 +30,36 @@ export const addCustomerRegistration = (payload: any) =>
 export const addDistributorRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/milkman/addmilkman/`, payload);
 
+//AllMilkmansList
+// export const allMilkmanList = (payload: any) =>
+//   axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
+
+
+export const vendorDetails = (payload: any) =>
+  axios.get(`${BASE_URL}/vendor/vendordetails/{id}/`, payload);
+
+
+export const allCustomers = (payload: any) =>
+  axios.get(`${BASE_URL}/customer/allcustomers/`, payload);
+
+export const allMikmans = (payload: any) =>
+  axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
+
+//newly added
+
+export const fetchVendorProfile = (vendorId: string, token: string) =>
+  axios.get(`${BASE_URL}/vendor/vendordetails/${vendorId}/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  
+
+
+// export const vendorCalendor = (payload: any) =>
+//   axios.post(`${BASE_URL}/milkman/allmilkmans/`, payload);
+
+
+
 // // GET: Get all vendors
 // export const getAllVendors = () =>
 //   axios.get(`${BASE_URL}/registration/allvendorbusinessregistration/`);
@@ -41,4 +71,5 @@ export const addDistributorRegistration = (payload: any) =>
 // // DELETE: Delete a vendor by ID
 // export const deleteVendor = (id: string) =>
 //   axios.delete(`${BASE_URL}/registration/deletevendorbusinessregistration/${id}/`);
+
 

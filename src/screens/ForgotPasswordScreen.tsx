@@ -24,7 +24,7 @@ const ForgotPasswordScreen = () => {
       const fullPhoneNumber = `+91${cleaned}`;
       console.log('no:', fullPhoneNumber);
 
-      const res = await requestOtp(fullPhoneNumber); // sends +91XXXXXXXXXX
+      const res = await requestOtp(fullPhoneNumber);
       if (res?.data?.message === 'OTP sent successfully') {
         Alert.alert('OTP Sent', 'An OTP has been sent to your number.');
         navigation.navigate('VerifyOtp', { mobile: fullPhoneNumber });
