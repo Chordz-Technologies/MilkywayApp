@@ -22,6 +22,13 @@ export const changePassword = (payload: { mobile: string; password: string }) =>
 export const addVendorRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/registration/addvendorbusinessregistration/`, payload);
 
+export const getVendorDetailsById = (id: any) =>
+  axios.get(`${BASE_URL}/registration/vendorbusinessregistrationdetails/${id}/`);
+
+// export const getVendorDetailsById(id: string): Observable<any> {
+//     return this.http.get<any>(`${this.apiUrl}${id}/`);
+//   }
+
 // Consumer API
 export const addCustomerRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/customer/addcustomer/`, payload);

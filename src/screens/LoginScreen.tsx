@@ -312,7 +312,7 @@ const LoginScreen = () => {
         style={styles.forgotWrapper}
         onPress={() => navigation.navigate('ConsumerHome')}
       >
-        <Text style={styles.forgotText}>Go to Consumer screen</Text>
+        {/* <Text style={styles.forgotText}>Go to Consumer screen</Text> */}
       </TouchableOpacity>
 
       <Text style={styles.registerText}>Register as:</Text>
