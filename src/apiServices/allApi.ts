@@ -31,8 +31,8 @@ export const addDistributorRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/milkman/addmilkman/`, payload);
 
 //AllMilkmansList
-// export const allMilkmanList = (payload: any) =>
-//   axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
+export const allMilkmanList = (payload: any) =>
+  axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
 
 
 export const vendorDetails = (payload: any) =>
