@@ -31,12 +31,8 @@ export const addDistributorRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/milkman/addmilkman/`, payload);
 
 //AllMilkmansList
-export const allMilkmanList = (payload: any) =>
-  axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
-
-
-export const vendorDetails = (payload: any) =>
-  axios.get(`${BASE_URL}/vendor/vendordetails/{id}/`, payload);
+export const allCustomerList = (payload: any) =>
+  axios.get(`${BASE_URL}/customer/allcustomers/`, payload);
 
 
 export const allCustomers = (payload: any) =>
@@ -51,8 +47,6 @@ export const fetchVendorProfile = (vendorId: string, token: string) =>
   axios.get(`${BASE_URL}/vendor/vendordetails/${vendorId}/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  
 
 
 // export const vendorCalendor = (payload: any) =>

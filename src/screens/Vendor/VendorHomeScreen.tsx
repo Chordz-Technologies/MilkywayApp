@@ -17,7 +17,7 @@ import { RootStackParamList } from '../../navigation/types';
 
 
 // Import the specific API function you need
-import { allMilkmanList } from '../../apiServices/allApi'; // Adjust the path to your apiService.js file
+import { allCustomerList } from '../../apiServices/allApi'; // Adjust the path to your apiService.js file
 
 
 // =====================================================================
@@ -100,21 +100,21 @@ const VendorHomeScreen = () => {
       setIsLoading(true);
       try {
         const payload = {};
-        const response = await allMilkmanList(payload);
+        const response = await allCustomerList(payload);
 
 
         // Add a log here to see the full response
-        console.log('API Response for allMilkmanList:', response.data);
+        console.log('API Response for allCustomerList:', response.data);
 
 
-        const milkmanCount = response.data?.total_milkmans || 0;
+        const customerCount = response.data?.total_milkmans || 0;
 
 
         // Add a log to see the extracted count
-        console.log('Extracted Milkman Count:', milkmanCount);
+        console.log('Extracted Customer Count:', customerCount);
         setVendorData(prevData => ({
           ...prevData,
-          totalMilkmans: milkmanCount,
+          totalMilkmans: customerCount,
         }));
 
 
@@ -484,5 +484,5 @@ const styles = StyleSheet.create({
   },
 });
 
-
 export default VendorHomeScreen;
+
