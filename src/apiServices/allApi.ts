@@ -25,10 +25,6 @@ export const addVendorRegistration = (payload: any) =>
 export const getVendorDetailsById = (id: any) =>
   axios.get(`${BASE_URL}/registration/vendorbusinessregistrationdetails/${id}/`);
 
-// export const getVendorDetailsById(id: string): Observable<any> {
-//     return this.http.get<any>(`${this.apiUrl}${id}/`);
-//   }
-
 // Consumer API
 export const addCustomerRegistration = (payload: any) =>
   axios.post(`${BASE_URL}/customer/addcustomer/`, payload);
@@ -40,7 +36,6 @@ export const addDistributorRegistration = (payload: any) =>
 //AllMilkmansList
 export const allCustomerList = (payload: any) =>
   axios.get(`${BASE_URL}/customer/allcustomers/`, payload);
-
 
 export const allCustomers = (payload: any) =>
   axios.get(`${BASE_URL}/customer/allcustomers/`, payload);
@@ -56,21 +51,55 @@ export const fetchVendorProfile = (vendorId: string, token: string) =>
   });
 
 
-// export const vendorCalendor = (payload: any) =>
-//   axios.post(`${BASE_URL}/milkman/allmilkmans/`, payload);
+// GET: Get all vendors
+export const getAllVendors = () =>
+  axios.get(`${BASE_URL}/vendor/allvendors/`);
 
 
+/* ---------- Join-request workflow ---------- */
 
-// // GET: Get all vendors
-// export const getAllVendors = () =>
-//   axios.get(`${BASE_URL}/registration/allvendorbusinessregistration/`);
+// Customer / distributor → vendor  (POST)
+export const createRequest = (payload: {
+  vendorId: string;
+  userId:   string;
+  userRole: 'customer' | 'milkman';
+}) =>
+  axios.post(`${BASE_URL}/vendor/join-requests/`, {
+    vendor_id: payload.vendorId,
+    user_id:   payload.userId,
+    user_role: payload.userRole,
+  });
 
-// // PUT: Update a vendor by ID
-// export const updateVendor = (id: string, payload: any) =>
-//   axios.put(`${BASE_URL}/registration/updatevendorbusinessregistration/${id}/`, payload);
+// Requests sent by a **customer**
+export const getCustomerRequests = (userId: string) =>
+  axios.get(`${BASE_URL}/vendor/join-requests/`, {
+    params: {
+      user_id:  userId,
+      user_role:'customer',
+    },
+  });
 
-// // DELETE: Delete a vendor by ID
-// export const deleteVendor = (id: string) =>
-//   axios.delete(`${BASE_URL}/registration/deletevendorbusinessregistration/${id}/`);
+// Requests sent by a **distributor**
+export const getDistributorRequests = (userId: string) =>
+  axios.get(`${BASE_URL}/vendor/join-requests/`, {
+    params: {
+      user_id:  userId,
+      user_role:'milkman',
+    },
+  });
 
+// Requests a **vendor** must review (default filter = pending)
+export const getVendorPendingRequests = (vendorId: string, status = 'pending') =>
+  axios.get(`${BASE_URL}/vendor/join-requests/`, {
+    params: {
+      vendor_id: vendorId,
+      status,
+    },
+  });
 
+// Vendor approves / rejects
+export const updateRequestStatus = (
+  requestId: string,
+  payload: { status: 'accepted' | 'rejected' },
+) =>
+  axios.patch(`${BASE_URL}/vendor/join-requests/${requestId}/`, payload);

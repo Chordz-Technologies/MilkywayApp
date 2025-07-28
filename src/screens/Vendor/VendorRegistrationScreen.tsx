@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } f
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { addVendorRegistration } from '../../apiServices/allApi';
 import { styles } from '../../styles/RegisterStyles';
-import { scrollContentStyles } from '../../styles/RegisterStyles';
+
 interface CowMilkDetail {
   name: string;
   capacity: string;

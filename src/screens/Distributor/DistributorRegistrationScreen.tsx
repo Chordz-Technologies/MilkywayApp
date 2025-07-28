@@ -8,7 +8,7 @@ interface DistributorPayload {
     phone_number?: string;
     address: string;
     society_name: string;
-    flat_number: string;
+    // flat_number: string;
     password: string;
     confirm_password: string;
 }
@@ -20,7 +20,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         phone: '',
         address: '',
         society: '',
-        flatNo: '',
+        // flatNo: '',
         password: '',
         confirmPassword: '',
     });
@@ -40,7 +40,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         if (!/^\d+$/.test(form.phone.trim())) { return 'Phone number should contain only digits'; }
         if (!form.address.trim()) { return 'Address is required'; }
         if (!form.society.trim()) { return 'Society name is required'; }
-        if (!form.flatNo.trim()) { return 'Flat number is required'; }
+        // if (!form.flatNo.trim()) { return 'Flat number is required'; }
         if (!form.password) { return 'Password is required'; }
         if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
         if (form.password !== form.confirmPassword) { return 'Passwords do not match'; }
@@ -77,7 +77,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
             address: form.address,
             society_name: form.society,
-            flat_number: form.flatNo,
+            // flat_number: form.flatNo,
             password: form.password,
             confirm_password: form.confirmPassword,
         };
@@ -181,7 +181,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                 />
             </View>
 
-            <View style={styles.formGroup}>
+            {/* <View style={styles.formGroup}>
                 <Text style={styles.label}>Flat Number<Text style={styles.required}> *</Text></Text>
                 <TextInput
                     style={styles.input}
@@ -190,7 +190,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                     placeholder="Enter flat number"
                     placeholderTextColor="#888"
                 />
-            </View>
+            </View> */}
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
