@@ -526,7 +526,7 @@ const CustomerHomeScreen = () => {
     return (
       <View style={styles.vendorCard}>
         <Image
-          source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
+          source={{ uri: 'https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000' }}
           style={styles.avatar}
         />
         <View style={styles.vendorInfo}>

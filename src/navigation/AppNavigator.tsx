@@ -4,7 +4,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import your screens
-// import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SlideScreen from '../screens/Slides';
 import ConsumerRegistrationScreen from '../screens/Consumer/ConsumerRegistrationScreen';
@@ -19,6 +18,8 @@ import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen'
 import VendorListScreen from '../screens/Vendor/VendorListScreen';
 import BillDetailsScreen from '../screens/Consumer/BillDetailScreen';
 
+import useExitAppConfirmation from '../components/ExitApp';
+
 // You will also need to define your RootStackParamList in a types file.
 // For example: navigation/types.ts
 import { RootStackParamList } from './types';
@@ -26,12 +27,13 @@ import { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
+  useExitAppConfirmation();
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="DistributorHome">
+      <Stack.Navigator initialRouteName="Splash">
         <Stack.Screen
-          name="DistributorHome"
-          component={DistributorHomeScreen}
+          name="Splash"
+          component={SlideScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -78,11 +80,11 @@ const AppNavigator = () => {
           // component={ConsumerHomeScreen}
           options={{ headerShown: false }}
         />
-        {/* <Stack.Screen
+        <Stack.Screen
           name="DistributorHome"
           component={DistributorHomeScreen}
           options={{ headerShown: false }}
-        /> */}
+        />
 
         {/* Other Screens */}
         <Stack.Screen

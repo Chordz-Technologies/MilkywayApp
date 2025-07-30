@@ -17,18 +17,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
 import { getAllVendors, createRequest, getDistributorRequests } from '../../apiServices/allApi';
 
+// Note: The MilkProductsList import has been removed.
+
 type DistributorHomeNavProp = NativeStackNavigationProp<RootStackParamList, 'DistributorHome'>;
 
 type Vendor = {
   id: string;
   name: string;
   location: string;
-  rating: number;
+  rating?: number;
 };
 
 type Request = {
   id: string;
-  vendor_id: string;
+  vendor: string; // CORRECTED: from vendor_id to vendor
   user_id: string;
   user_role: 'customer' | 'milkman';
   status: 'pending' | 'accepted' | 'rejected';
@@ -46,50 +48,27 @@ const DistributorHomeScreen = () => {
 
   const fetchData = useCallback(async () => {
     setError(null);
+    setLoading(true);
     try {
       const distributorId = await AsyncStorage.getItem('userID');
-      console.log('🔍 Distributor ID:', distributorId);
-      
       if (!distributorId || distributorId === 'null' || distributorId === 'undefined') {
         throw new Error('Please log in again. Distributor ID not found.');
       }
 
-      let vendorsData: Vendor[] = [];
-      let requestsData: Request[] = [];
+      // Fetch vendors and requests in parallel
+      const [vendorRes, reqRes] = await Promise.all([
+        getAllVendors(),
+        getDistributorRequests(distributorId),
+      ]);
 
-      // Fetch vendors
-      try {
-        console.log('📡 Calling getAllVendors...');
-        const vendorRes = await getAllVendors();
-        console.log('✅ Vendors response:', vendorRes);
-        vendorsData = vendorRes.data || vendorRes || [];
-      } catch (vendorError) {
-        console.warn('⚠️ Could not fetch vendors:', vendorError);
-        throw new Error('Failed to load vendors. Please try again.');
-      }
-
-      // Fetch requests
-      try {
-        console.log('📡 Calling getDistributorRequests...');
-        const reqRes = await getDistributorRequests(distributorId);
-        console.log('✅ Requests response:', reqRes);
-        requestsData = reqRes.data || reqRes || [];
-      } catch (requestError) {
-        console.warn('⚠️ Could not fetch requests:', requestError);
-        // Continue without requests data
-      }
+      const vendorsData: Vendor[] = Array.isArray(vendorRes?.data) ? vendorRes.data : [];
+      const requestsData: Request[] = Array.isArray(reqRes?.data) ? reqRes.data : [];
 
       setVendors(vendorsData);
       setRequests(requestsData);
     } catch (err: any) {
-      console.error('❌ Fetch error', err);
-      setError(
-        err.message.includes('Distributor ID not found')
-          ? 'Please log in again. Session expired.'
-          : err.response
-          ? 'Could not load vendors. Try again.'
-          : 'Network error. Check your connection.'
-      );
+      console.error('Fetch error:', err);
+      setError('Failed to load data. Please pull down to refresh.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -108,10 +87,10 @@ const DistributorHomeScreen = () => {
   const handleRequest = async (vendorId: string) => {
     try {
       const distributorId = await AsyncStorage.getItem('userID');
-      if (!distributorId) throw new Error('Distributor ID not found');
+      if (!distributorId) {throw new Error('Distributor ID not found');}
+
       setSubmitId(vendorId);
 
-      console.log('📡 Sending distributor request:', { vendorId, distributorId, userRole: 'milkman' });
       await createRequest({
         vendorId,
         userId: distributorId,
@@ -120,34 +99,52 @@ const DistributorHomeScreen = () => {
 
       await fetchData();
       Alert.alert('Success', 'Request sent to vendor!');
-    } catch (err) {
-      console.error('❌ Request error', err);
-      Alert.alert('Error', 'Could not send request. Try again.');
+    } catch (err: any) {
+      console.error('Request error:', err);
+      if (err.response) {
+        console.error('API Error Response:', err.response.data);
+        Alert.alert('Error', `Server rejected the request: ${JSON.stringify(err.response.data)}`);
+      } else {
+        Alert.alert('Error', 'Could not send request. Check your network and try again.');
+      }
     } finally {
       setSubmitId(null);
     }
   };
 
+  // Create a set of vendor IDs that have accepted the request
+  const acceptedVendorIds = new Set(
+    requests.filter(r => r.status === 'accepted').map(r => r.vendor)
+  );
+
+  // If a vendor has accepted, do not show any other vendors.
+  const showVendorList = acceptedVendorIds.size === 0;
+
+  // Filter out vendors if the list should be shown
+  const availableVendors = showVendorList ? vendors : [];
+
   const statusForVendor = (vendorId: string) =>
-    requests.find(r => r.vendor_id === vendorId)?.status ?? null;
+    requests.find(r => r.vendor === vendorId)?.status ?? null;
+
   const isSubmitting = (vendorId: string) => submitId === vendorId;
 
   const renderVendor = ({ item }: { item: Vendor }) => {
     const status = statusForVendor(item.id);
-    const disabled = status && status !== 'rejected';
+    const disabled = !!status && status !== 'rejected';
 
     return (
       <View style={styles.card}>
         <Image
           source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
           style={styles.avatar}
+          resizeMode="cover"
         />
         <View style={styles.infoBlock}>
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.location}>{item.location}</Text>
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingTxt}>{item.rating}</Text>
+            <Text style={styles.ratingTxt}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : 'N/A'}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -162,18 +159,10 @@ const DistributorHomeScreen = () => {
           {isSubmitting(item.id) ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text
-              style={[
-                styles.reqTxt,
-                status === 'accepted' && styles.reqTxtAccepted,
-              ]}
-            >
-              {status === 'pending'
-                ? 'Pending'
-                : status === 'accepted'
-                ? 'Joined'
-                : status === 'rejected'
-                ? 'Try Again'
+            <Text style={[ styles.reqTxt, status === 'accepted' && styles.reqTxtAccepted ]}>
+              {status === 'pending' ? 'Pending'
+                : status === 'accepted' ? 'Joined'
+                : status === 'rejected' ? 'Try Again'
                 : 'Request'}
             </Text>
           )}
@@ -202,17 +191,20 @@ const DistributorHomeScreen = () => {
       )}
 
       <FlatList
-        data={vendors}
+        data={availableVendors}
         renderItem={renderVendor}
         keyExtractor={v => v.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        // ListHeaderComponent has been removed
         ListEmptyComponent={() => (
           <View style={styles.empty}>
             {loading ? (
               <ActivityIndicator size="large" color="#007AFF" />
-            ) : (
+            ) : showVendorList ? (
               <Text style={styles.emptyTxt}>No vendors available.</Text>
+            ) : (
+               <Text style={styles.emptyTxt}>You have already joined a vendor.</Text>
             )}
           </View>
         )}
@@ -295,7 +287,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  emptyTxt: { color: '#666', fontSize: 18, textAlign: 'center' },
+  emptyTxt: { color: '#666', fontSize: 16, textAlign: 'center' },
 });
 
 export default DistributorHomeScreen;

@@ -40,7 +40,7 @@ export const allCustomerList = (payload: any) =>
 export const allCustomers = (payload: any) =>
   axios.get(`${BASE_URL}/customer/allcustomers/`, payload);
 
-export const allMikmans = (payload: any) =>
+export const allMilkmans = (payload: any) =>
   axios.get(`${BASE_URL}/milkman/allmilkmans/`, payload);
 
 //newly added
@@ -63,6 +63,7 @@ export const createRequest = (payload: {
   vendorId: string;
   userId:   string;
   userRole: 'customer' | 'milkman';
+
 }) =>
   axios.post(`${BASE_URL}/vendor/join-requests/`, {
     vendor_id: payload.vendorId,
@@ -92,7 +93,7 @@ export const getDistributorRequests = (userId: string) =>
 export const getVendorPendingRequests = (vendorId: string, status = 'pending') =>
   axios.get(`${BASE_URL}/vendor/join-requests/`, {
     params: {
-      vendor_id: vendorId,
+      vendor_Id: vendorId,
       status,
     },
   });
