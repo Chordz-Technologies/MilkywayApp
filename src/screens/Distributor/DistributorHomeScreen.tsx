@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   RefreshControl,
@@ -15,81 +14,36 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
-import { getAllVendors, createRequest, getDistributorRequests } from '../../apiServices/allApi';
+import { getAllVendors, createRequest } from '../../apiServices/allApi';
 
-type DistributorHomeNavProp = NativeStackNavigationProp<RootStackParamList, 'DistributorHome'>;
+type DistributorHomeNavProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'DistributorHome'
+>;
 
 type Vendor = {
-  id: string;
+  id: number;
   name: string;
-  location: string;
-  rating: number;
-};
-
-type Request = {
-  id: string;
-  vendor_id: string;
-  user_id: string;
-  user_role: 'customer' | 'milkman';
-  status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
+  contact: string;
+  address?: string;
 };
 
 const DistributorHomeScreen = () => {
   const navigation = useNavigation<DistributorHomeNavProp>();
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [requests, setRequests] = useState<Request[]>([]);
+  const [requestedVendors, setRequestedVendors] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [submitId, setSubmitId] = useState<string | null>(null);
+  const [submittingId, setSubmittingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setError(null);
     try {
-      const distributorId = await AsyncStorage.getItem('userID');
-      console.log('🔍 Distributor ID:', distributorId);
-      
-      if (!distributorId || distributorId === 'null' || distributorId === 'undefined') {
-        throw new Error('Please log in again. Distributor ID not found.');
-      }
-
-      let vendorsData: Vendor[] = [];
-      let requestsData: Request[] = [];
-
-      // Fetch vendors
-      try {
-        console.log('📡 Calling getAllVendors...');
-        const vendorRes = await getAllVendors();
-        console.log('✅ Vendors response:', vendorRes);
-        vendorsData = vendorRes.data || vendorRes || [];
-      } catch (vendorError) {
-        console.warn('⚠️ Could not fetch vendors:', vendorError);
-        throw new Error('Failed to load vendors. Please try again.');
-      }
-
-      // Fetch requests
-      try {
-        console.log('📡 Calling getDistributorRequests...');
-        const reqRes = await getDistributorRequests(distributorId);
-        console.log('✅ Requests response:', reqRes);
-        requestsData = reqRes.data || reqRes || [];
-      } catch (requestError) {
-        console.warn('⚠️ Could not fetch requests:', requestError);
-        // Continue without requests data
-      }
-
-      setVendors(vendorsData);
-      setRequests(requestsData);
+      const vendorsResponse = await getAllVendors();
+      setVendors(vendorsResponse?.data?.data || []);
     } catch (err: any) {
-      console.error('❌ Fetch error', err);
-      setError(
-        err.message.includes('Distributor ID not found')
-          ? 'Please log in again. Session expired.'
-          : err.response
-          ? 'Could not load vendors. Try again.'
-          : 'Network error. Check your connection.'
-      );
+      setError('Failed to load vendors. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -105,76 +59,49 @@ const DistributorHomeScreen = () => {
     fetchData();
   };
 
-  const handleRequest = async (vendorId: string) => {
+  const handleRequest = async (vendorId: number) => {
     try {
       const distributorId = await AsyncStorage.getItem('userID');
-      if (!distributorId) throw new Error('Distributor ID not found');
-      setSubmitId(vendorId);
+      if (!distributorId) throw new Error('Distributor ID not found.');
 
-      console.log('📡 Sending distributor request:', { vendorId, distributorId, userRole: 'milkman' });
-      await createRequest({
-        vendorId,
-        userId: distributorId,
-        userRole: 'milkman',
-      });
+      const payload = {
+        user_id: parseInt(distributorId, 10),
+        user_type: 'milkman',
+        vendor: vendorId,
+      };
 
-      await fetchData();
+      setSubmittingId(vendorId);
+      await createRequest(payload);
       Alert.alert('Success', 'Request sent to vendor!');
+      setRequestedVendors(prev => [...prev, vendorId]);
     } catch (err) {
-      console.error('❌ Request error', err);
       Alert.alert('Error', 'Could not send request. Try again.');
     } finally {
-      setSubmitId(null);
+      setSubmittingId(null);
     }
   };
 
-  const statusForVendor = (vendorId: string) =>
-    requests.find(r => r.vendor_id === vendorId)?.status ?? null;
-  const isSubmitting = (vendorId: string) => submitId === vendorId;
-
   const renderVendor = ({ item }: { item: Vendor }) => {
-    const status = statusForVendor(item.id);
-    const disabled = status && status !== 'rejected';
+    const hasRequested = requestedVendors.includes(item.id);
+    const isSubmitting = submittingId === item.id;
 
     return (
       <View style={styles.card}>
-        <Image
-          source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-          style={styles.avatar}
-        />
         <View style={styles.infoBlock}>
           <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.location}>{item.location}</Text>
-          <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingTxt}>{item.rating}</Text>
-          </View>
+          <Text style={styles.location}>📞 {item.contact}</Text>
+          <Text style={styles.location}>📍 {item.address || 'Not Provided'}</Text>
         </View>
         <TouchableOpacity
-          style={[
-            styles.reqBtn,
-            (disabled || isSubmitting(item.id)) && styles.reqBtnDisabled,
-            status === 'accepted' && styles.reqBtnAccepted,
-          ]}
-          onPress={() => !disabled && !isSubmitting(item.id) && handleRequest(item.id)}
-          disabled={disabled || isSubmitting(item.id)}
+          style={[styles.reqBtn, hasRequested && styles.reqBtnDisabled]}
+          onPress={() => !hasRequested && !isSubmitting && handleRequest(item.id)}
+          disabled={hasRequested || isSubmitting}
         >
-          {isSubmitting(item.id) ? (
+          {isSubmitting ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text
-              style={[
-                styles.reqTxt,
-                status === 'accepted' && styles.reqTxtAccepted,
-              ]}
-            >
-              {status === 'pending'
-                ? 'Pending'
-                : status === 'accepted'
-                ? 'Joined'
-                : status === 'rejected'
-                ? 'Try Again'
-                : 'Request'}
+            <Text style={styles.reqTxt}>
+              {hasRequested ? 'Requested' : 'Request to Join'}
             </Text>
           )}
         </TouchableOpacity>
@@ -204,7 +131,7 @@ const DistributorHomeScreen = () => {
       <FlatList
         data={vendors}
         renderItem={renderVendor}
-        keyExtractor={v => v.id}
+        keyExtractor={v => v.id.toString()}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={() => (
@@ -271,24 +198,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 16 },
   infoBlock: { flex: 1 },
   name: { fontSize: 18, fontWeight: 'bold', color: '#333' },
   location: { fontSize: 14, color: '#666', marginTop: 4 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  ratingTxt: { marginLeft: 4, color: '#666', fontSize: 14 },
   reqBtn: {
-    backgroundColor: '#FF6B35',
-    paddingVertical: 8,
+    backgroundColor: '#007AFF',
     paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
-    minWidth: 110,
+    minWidth: 120,
     alignItems: 'center',
   },
   reqBtnDisabled: { backgroundColor: '#C0C0C0' },
-  reqBtnAccepted: { backgroundColor: '#4CD964' },
   reqTxt: { color: '#fff', fontWeight: '600' },
-  reqTxtAccepted: { color: '#fff' },
   empty: {
     flex: 1,
     alignItems: 'center',

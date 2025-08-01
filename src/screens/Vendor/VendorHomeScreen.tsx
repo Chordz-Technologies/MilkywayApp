@@ -515,10 +515,19 @@ type VendorHomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'V
 
 type Customer = {
   id: string;
+  status: 'accepted' | 'pending' | 'rejected'; // Based on your backend values
   name: string;
-  address: string;
-  status: 'Paid' | 'Pending';
-  phone: string;
+  user_type: string;
+  vendor: number;
+  created_at: string;
+  milkman: any;
+  customer: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    contact: string;
+    address?: string; // optional, since it wasn't in the API response
+  };
 };
 
 type VendorData = {
@@ -531,11 +540,12 @@ type VendorData = {
 };
 
 type Request = {
+  user_type: any;
+  name: string;
   id: string;
   vendor_id: string;
   user_id: string;
-  user_name?: string;
-  user_role: 'customer' | 'milkman';
+
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
 };
@@ -550,6 +560,7 @@ const VendorHomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRequests, setShowRequests] = useState(true);
+  const [showConsumerRequests, setShowConsumerRequests] = useState(true);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -574,7 +585,7 @@ const VendorHomeScreen = () => {
         console.log('📡 Calling getVendorDetailsById...');
         const vendorRes = await getVendorDetailsById(vendorId);
         console.log('✅ Vendor response:', vendorRes);
-        vendor = vendorRes.data;
+        vendor = vendorRes?.data?.data;
       } catch (vendorError: any) {
         console.error('❌ Vendor fetch error:', vendorError);
         if (vendorError.response?.status === 404) {
@@ -588,8 +599,8 @@ const VendorHomeScreen = () => {
         console.log('📡 Calling allCustomerList...');
         const customerRes = await allCustomerList({ vendorId });
         console.log('✅ Customer response:', customerRes);
-        customerList = customerRes.data?.customers || [];
-        totalMilkmans = customerRes.data?.total_milkmans || 0;
+        customerList = customerRes?.data?.data;
+        totalMilkmans = customerRes?.data?.data;
       } catch (customerError) {
         console.warn('⚠️ Could not fetch customers:', customerError);
         // Continue without customers data
@@ -600,7 +611,7 @@ const VendorHomeScreen = () => {
         console.log('📡 Calling getVendorPendingRequests...');
         const requestsRes = await getVendorPendingRequests(vendorId);
         console.log('✅ Requests response:', requestsRes);
-        requests = requestsRes.data || [];
+        requests = requestsRes?.data?.data || [];
       } catch (requestError: any) {
         console.warn('⚠️ Could not fetch pending requests:', requestError);
         if (requestError.response?.data?.vendor) {
@@ -611,18 +622,18 @@ const VendorHomeScreen = () => {
       }
 
       // Calculate stats
-      const totalCustomers = customerList.length;
-      const defaulters = customerList.filter((c) => c.status === 'Pending').length;
-      const paidCustomers = customerList.filter((c) => c.status === 'Paid').length;
+      // const totalCustomers = customerList.length;
+      // const defaulters = customerList.filter((c) => c.status === 'Pending').length;
+      // const paidCustomers = customerList.filter((c) => c.status === 'Paid').length;
 
       // Update state
       setVendorData({
         name: vendor?.name || 'Unnamed Vendor',
-        location: vendor?.address || 'Unknown Location',
-        totalCustomers,
-        defaulters,
-        paidCustomers,
-        totalMilkmans,
+        location: vendor?.location || 'Unknown Location',
+        totalCustomers: vendor?.totalCustomers || 0,
+        defaulters: vendor?.defaulters || 0,
+        paidCustomers: vendor?.paidCustomers || 0,
+        totalMilkmans: vendor?.totalMilkmans || 0,
       });
       setCustomers(customerList);
       setPendingRequests(requests);
@@ -661,14 +672,14 @@ const VendorHomeScreen = () => {
   }, [fetchData]);
 
   // Handle request approval/rejection
-  const handleRequestAction = async (requestId: string, action: 'accepted' | 'rejected', userRole: 'customer' | 'milkman') => {
+  const handleRequestAction = async (requestId: string, action: 'accepted' | 'rejected', user_type: 'customer' | 'milkman') => {
     try {
       setProcessingRequestId(requestId);
 
-      await updateRequestStatus(requestId, { status: action });
+      await updateRequestStatus(requestId);
 
       // Show success message
-      const roleText = userRole === 'customer' ? 'Customer' : 'Distributor';
+      const roleText = user_type === 'customer' ? 'Customer' : 'Distributor';
       Alert.alert(
         'Success',
         `${roleText} request ${action === 'accepted' ? 'approved' : 'rejected'} successfully!`
@@ -686,7 +697,7 @@ const VendorHomeScreen = () => {
 
   // Render pending requests section
   const renderPendingRequests = () => {
-    if (pendingRequests.length === 0) {return null;}
+    if (pendingRequests.length === 0) { return null; }
 
     return (
       <View style={styles.requestsSection}>
@@ -710,10 +721,10 @@ const VendorHomeScreen = () => {
               <View key={request.id} style={styles.requestItem}>
                 <View style={styles.requestInfo}>
                   <Text style={styles.requestUserName}>
-                    {request.user_name || `${request.user_role} ${request.user_id}`}
+                    {request.name || `${request.user_type} ${request.user_id}`}
                   </Text>
                   <Text style={styles.requestRole}>
-                    Role: {request.user_role === 'customer' ? 'Customer' : 'Distributor'}
+                    Role: {request.user_type === 'customer' ? 'Consumer' : 'Distributor'}
                   </Text>
                   <Text style={styles.requestDate}>
                     {new Date(request.created_at).toLocaleDateString()}
@@ -722,7 +733,7 @@ const VendorHomeScreen = () => {
                 <View style={styles.requestActions}>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.acceptButton]}
-                    onPress={() => handleRequestAction(request.id, 'accepted', request.user_role)}
+                    onPress={() => handleRequestAction(request.id, 'accepted', request.user_type)}
                     disabled={processingRequestId === request.id}
                   >
                     {processingRequestId === request.id ? (
@@ -733,7 +744,7 @@ const VendorHomeScreen = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.rejectButton]}
-                    onPress={() => handleRequestAction(request.id, 'rejected', request.user_role)}
+                    onPress={() => handleRequestAction(request.id, 'rejected', request.user_type)}
                     disabled={processingRequestId === request.id}
                   >
                     <Text style={styles.rejectButtonText}>Reject</Text>
@@ -749,8 +760,7 @@ const VendorHomeScreen = () => {
 
   const filteredCustomers = customers.filter(
     (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.address.toLowerCase().includes(search.toLowerCase())
+      c.name || ''.toLowerCase().includes(search.toLowerCase())
   );
 
   const renderCustomerItem = useCallback(
@@ -759,24 +769,19 @@ const VendorHomeScreen = () => {
         style={styles.customerRow}
         onPress={() =>
           navigation.navigate('CustomerDetail', {
-            customerId: item.id,
-            customerName: item.name,
+            customerId: item.customer?.id,
+            customerName: item.customer?.first_name,
           })
         }
       >
         <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.name}</Text>
-          <Text style={styles.customerAddress}>{item.address}</Text>
-          <Text style={styles.customerPhone}>{item.phone}</Text>
+          <Text style={styles.customerName}>
+            {item.customer?.first_name} {item.customer?.last_name}
+          </Text>
+          <Text style={styles.customerPhone}>
+            {item.customer?.contact || 'No contact available'}
+          </Text>
         </View>
-        <Text
-          style={[
-            styles.customerStatus,
-            item.status === 'Paid' ? styles.statusPaid : styles.statusPending,
-          ]}
-        >
-          {item.status}
-        </Text>
         <Ionicons name="chevron-forward" size={24} color="#C0C0C0" />
       </TouchableOpacity>
     ),
@@ -784,7 +789,7 @@ const VendorHomeScreen = () => {
   );
 
   const renderHeader = () => {
-    if (!vendorData) {return null;}
+    if (!vendorData) { return null; }
     return (
       <>
         <View style={styles.headerRow}>
@@ -832,17 +837,32 @@ const VendorHomeScreen = () => {
         {/* Pending Requests Section */}
         {renderPendingRequests()}
 
-        <Text style={styles.sectionTitle}>Customer List</Text>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#888" style={styles.iconMarginRight} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search customers"
-            placeholderTextColor="#bbb"
-            value={search}
-            onChangeText={setSearch}
+        {/* <TouchableOpacity
+          style={styles.requestsHeader}
+          onPress={() => setShowConsumerRequests(!showConsumerRequests)}
+        >
+          <Text style={styles.requestsTitle}>
+            Consumer List ({customers.length})
+          </Text>
+          <Ionicons
+            name={showConsumerRequests ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color="#666"
           />
-        </View>
+        </TouchableOpacity>
+
+        {showConsumerRequests && customers.length > 0 && (
+          <View style={styles.card}> 
+            <FlatList
+              data={customers}
+              keyExtractor={(item, index) =>
+                item.customer?.id?.toString() ?? index.toString()
+              }
+              renderItem={renderCustomerItem}
+              scrollEnabled={false}
+            />
+          </View>
+        )} */}
       </>
     );
   };
@@ -858,20 +878,10 @@ const VendorHomeScreen = () => {
         </View>
       )}
       <FlatList
-        data={filteredCustomers}
-        renderItem={renderCustomerItem}
-        keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={() => (
-          <View style={styles.customerListCard}>
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#007AFF" />
-            ) : (
-              <Text style={styles.noCustomerText}>No customers found.</Text>
-            )}
-          </View>
-        )}
-        contentContainerStyle={styles.flatListContentContainer}
+        data={[]} // Prevent extra render
+        renderItem={null}
+        keyExtractor={() => 'dummy'}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       />
@@ -889,9 +899,28 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 50,
   },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    elevation: 3, // for Android shadow
+    shadowColor: '#000', // for iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+  },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#333' },
   profileCard: {
-    marginBottom: 2,
+    marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',

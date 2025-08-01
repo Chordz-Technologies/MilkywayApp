@@ -54,8 +54,8 @@ const LoginScreen = () => {
 
     try {
       const payload = {
-        contact: trimmedContact,
-        password: trimmedPassword,
+        contact: `+91${String(contact).trim()}`,
+        password: String(password).trim()
       };
 
       const response = await loginVendor(payload);

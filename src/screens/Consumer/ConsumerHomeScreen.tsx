@@ -381,7 +381,6 @@
 
 // export default ConsumerHomeScreen;
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -390,90 +389,48 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Image,
   Alert,
   RefreshControl,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAllVendors, createRequest, getCustomerRequests } from '../../apiServices/allApi';
+import { RootStackParamList } from '../../navigation/types';
+import {
+  getAllVendors,
+  createRequest,
+} from '../../apiServices/allApi';
 
 type CustomerHomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ConsumerHome'>;
 
 type Vendor = {
   id: string;
   name: string;
-  location: string;
-  rating: number;
-};
-
-type Request = {
-  id: string;
-  vendor_id: string;
-  user_id: string;
-  user_role: 'customer' | 'milkman';
-  status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
+  contact: string;
+  address?: string;
 };
 
 const CustomerHomeScreen = () => {
   const navigation = useNavigation<CustomerHomeNavigationProp>();
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [sentRequests, setSentRequests] = useState<Request[]>([]);
+  const [requestedVendors, setRequestedVendors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [submittingRequest, setSubmittingRequest] = useState<string | null>(null);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setError(null);
     try {
-      const customerId = await AsyncStorage.getItem('userID');
-      console.log('🔍 Customer ID:', customerId);
+      const userId = await AsyncStorage.getItem('userID');
+      if (!userId) throw new Error('Customer ID not found.');
 
-      if (!customerId || customerId === 'null' || customerId === 'undefined') {
-        throw new Error('Please log in again. Customer ID not found.');
-      }
-
-      // Fetch vendors with error handling
-      let vendorsData: Vendor[] = [];
-      try {
-        console.log('📡 Calling getAllVendors...');
-        const vendorsResponse = await getAllVendors();
-        console.log('✅ Vendors response:', vendorsResponse);
-        vendorsData = vendorsResponse.data || vendorsResponse || [];
-      } catch (vendorError) {
-        console.warn('⚠️ Could not fetch vendors:', vendorError);
-        throw new Error('Failed to load vendors. Please try again.');
-      }
-
-      // Fetch requests with error handling
-      let requestsData: Request[] = [];
-      try {
-        console.log('📡 Calling getCustomerRequests...');
-        const requestsResponse = await getCustomerRequests(customerId);
-        console.log('✅ Requests response:', requestsResponse);
-        requestsData = requestsResponse.data || requestsResponse || [];
-      } catch (requestError) {
-        console.warn('⚠️ Could not fetch requests:', requestError);
-        // Continue without requests data
-      }
-
-      setVendors(vendorsData);
-      setSentRequests(requestsData);
+      const vendorRes = await getAllVendors();
+      const vendorList = vendorRes?.data?.data || [];
+      setVendors(vendorList);
     } catch (err: any) {
-      console.error('❌ Fetch error:', err);
-      console.error('❌ Error response:', err.response?.data);
-      setError(
-        err.message.includes('Customer ID not found')
-          ? 'Please log in again. Session expired.'
-          : err.response
-          ? 'Failed to load vendors. Please try again.'
-          : 'Network error. Please check your connection.'
-      );
+      setError(err.message || 'Failed to load vendors.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -489,79 +446,49 @@ const CustomerHomeScreen = () => {
     fetchData();
   }, [fetchData]);
 
-  const sendJoinRequest = async (vendorId: string) => {
+  const sendRequest = async (vendorId: string) => {
     try {
-      const customerId = await AsyncStorage.getItem('userID');
-      if (!customerId) {throw new Error('Customer ID not found.');}
+      setSubmittingId(vendorId);
+      const userId = await AsyncStorage.getItem('userID');
+      if (!userId) throw new Error('User ID not found.');
 
-      setSubmittingRequest(vendorId);
+      const payload = {
+        user_id: parseInt(userId, 10),
+        user_type: 'customer',
+        vendor: parseInt(vendorId, 10),
+      };
 
-      console.log('📡 Sending request:', { vendorId, customerId, userRole: 'customer' });
-      await createRequest({
-        vendorId,
-        userId: customerId,
-        userRole: 'customer',
-      });
-
-      await fetchData();
+      await createRequest(payload);
       Alert.alert('Success', 'Request sent to vendor!');
+      setRequestedVendors(prev => [...prev, vendorId]);
     } catch (err: any) {
-      console.error('❌ Request error:', err);
-      Alert.alert('Error', 'Failed to send request. Please try again.');
+      Alert.alert('Error', err.response?.data?.detail || 'Failed to send request.');
     } finally {
-      setSubmittingRequest(null);
+      setSubmittingId(null);
     }
   };
 
-  const getRequestStatus = (vendorId: string) => {
-    const request = sentRequests.find((r) => r.vendor_id === vendorId);
-    return request ? request.status : null;
-  };
-
-  const renderVendorItem = ({ item }: { item: Vendor }) => {
-    const requestStatus = getRequestStatus(item.id);
-    const isSubmitting = submittingRequest === item.id;
-    const buttonDisabled = !!requestStatus && requestStatus !== 'rejected';
+  const renderVendor = ({ item }: { item: Vendor }) => {
+    const isRequested = requestedVendors.includes(item.id);
+    const isSubmitting = submittingId === item.id;
 
     return (
-      <View style={styles.vendorCard}>
-        <Image
-          source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
-          style={styles.avatar}
-        />
-        <View style={styles.vendorInfo}>
-          <Text style={styles.vendorName}>{item.name}</Text>
-          <Text style={styles.vendorLocation}>{item.location}</Text>
-          <View style={styles.ratingRow}>
-            <Ionicons name="star" size={16} color="#FFD700" />
-            <Text style={styles.ratingText}>{item.rating}</Text>
-          </View>
+      <View style={styles.card}>
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.contact}>📞 {item.contact}</Text>
+          <Text style={styles.address}>📍 {item.address || 'Not Provided'}</Text>
         </View>
         <TouchableOpacity
-          style={[
-            styles.requestButton,
-            (buttonDisabled || isSubmitting) && styles.requestButtonDisabled,
-            requestStatus === 'accepted' && styles.requestButtonAccepted,
-          ]}
-          onPress={() => !buttonDisabled && !isSubmitting && sendJoinRequest(item.id)}
-          disabled={buttonDisabled || isSubmitting}
+          style={[styles.button, (isRequested || isSubmitting) && styles.buttonDisabled]}
+          onPress={() => !isRequested && !isSubmitting && sendRequest(item.id)}
+          disabled={isRequested || isSubmitting}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text
-              style={[
-                styles.requestButtonText,
-                requestStatus === 'accepted' && styles.requestButtonTextAccepted,
-              ]}
-            >
-              {requestStatus === 'pending'
-                ? 'Pending'
-                : requestStatus === 'accepted'
-                ? 'Joined'
-                : requestStatus === 'rejected'
-                ? 'Try Again'
-                : 'Request to Join'}
+            <Text style={styles.buttonText}>
+              {isRequested ? 'Requested' : 'Request to Join'}
             </Text>
           )}
         </TouchableOpacity>
@@ -572,17 +499,17 @@ const CustomerHomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Available Vendors</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.title}>Available Vendors</Text>
+        <View style={{ width: 32 }} />
       </View>
 
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
+          <TouchableOpacity onPress={fetchData} style={styles.retry}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -590,9 +517,10 @@ const CustomerHomeScreen = () => {
 
       <FlatList
         data={vendors}
-        renderItem={renderVendorItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.flatListContainer}
+        renderItem={renderVendor}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             {isLoading ? (
@@ -602,7 +530,6 @@ const CustomerHomeScreen = () => {
             )}
           </View>
         )}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -620,32 +547,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  backButton: { padding: 4 },
-  headerTitle: {
+  back: { padding: 4 },
+  title: {
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
   },
-  placeholder: { width: 32 },
   errorBanner: {
-    backgroundColor: '#fff0f0',
-    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff0f0',
+    padding: 12,
     justifyContent: 'space-between',
   },
-  errorText: { flex: 1, color: '#c00', fontSize: 14 },
-  retryButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  errorText: { color: '#c00', fontSize: 14, flex: 1 },
+  retry: {
     backgroundColor: '#007AFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 4,
   },
-  retryText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  flatListContainer: { paddingBottom: 16 },
-  vendorCard: {
+  retryText: { color: '#fff', fontSize: 12 },
+  listContent: { paddingBottom: 16 },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -659,13 +585,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 16 },
-  vendorInfo: { flex: 1 },
-  vendorName: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  vendorLocation: { fontSize: 14, color: '#666', marginTop: 4 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  ratingText: { fontSize: 14, color: '#666', marginLeft: 4 },
-  requestButton: {
+  info: { flex: 1 },
+  name: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  contact: { fontSize: 14, color: '#666', marginTop: 4 },
+  address: { fontSize: 14, color: '#666', marginTop: 4 },
+  button: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -673,17 +597,15 @@ const styles = StyleSheet.create({
     minWidth: 120,
     alignItems: 'center',
   },
-  requestButtonDisabled: { backgroundColor: '#C0C0C0' },
-  requestButtonAccepted: { backgroundColor: '#4CD964' },
-  requestButtonText: { color: '#fff', fontWeight: '600' },
-  requestButtonTextAccepted: { color: '#fff' },
+  buttonDisabled: { backgroundColor: '#C0C0C0' },
+  buttonText: { color: '#fff', fontWeight: '600' },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 40,
   },
-  emptyText: { fontSize: 18, color: '#666', textAlign: 'center' },
+  emptyText: { color: '#666', fontSize: 18, textAlign: 'center' },
 });
 
 export default CustomerHomeScreen;
