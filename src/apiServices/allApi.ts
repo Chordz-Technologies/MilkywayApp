@@ -95,7 +95,7 @@ export const createRequest = (payload: {
 export const getVendorPendingRequests = (vendorId: string, status = 'pending') =>
   axios.get(`${BASE_URL}/vendor/join-requests/`, {
     params: {
-      vendor_id: vendorId,
+      vendor_Id: vendorId,
       status,
     },
   });

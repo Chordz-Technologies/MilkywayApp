@@ -483,10 +483,7 @@
 
 // export default VendorHomeScreen;
 
-
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -563,24 +560,26 @@ const VendorHomeScreen = () => {
   const [showConsumerRequests, setShowConsumerRequests] = useState(true);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
+  // Ref for FlatList
+  const flatListRef = useRef<FlatList>(null);
+  // State for storing Y offset for Pending Requests section
+  const [pendingRequestsOffsetY, setPendingRequestsOffsetY] = useState<number>(0);
+
   const fetchData = useCallback(async () => {
     setError(null);
     try {
       const vendorId = await AsyncStorage.getItem('userID');
       console.log('🔍 Vendor ID from AsyncStorage:', vendorId);
 
-      // Validate vendor ID
       if (!vendorId || vendorId === 'null' || vendorId === 'undefined') {
         throw new Error('Please log in again. Vendor ID not found.');
       }
 
-      // Initialize data
       let vendor = null;
       let customerList: Customer[] = [];
       let totalMilkmans = 0;
       let requests: Request[] = [];
 
-      // Fetch vendor profile with error handling
       try {
         console.log('📡 Calling getVendorDetailsById...');
         const vendorRes = await getVendorDetailsById(vendorId);
@@ -594,7 +593,6 @@ const VendorHomeScreen = () => {
         throw new Error('Failed to load vendor profile.');
       }
 
-      // Fetch customers with error handling
       try {
         console.log('📡 Calling allCustomerList...');
         const customerRes = await allCustomerList({ vendorId });
@@ -603,10 +601,8 @@ const VendorHomeScreen = () => {
         totalMilkmans = customerRes?.data?.data;
       } catch (customerError) {
         console.warn('⚠️ Could not fetch customers:', customerError);
-        // Continue without customers data
       }
 
-      // Fetch pending requests with error handling
       try {
         console.log('📡 Calling getVendorPendingRequests...');
         const requestsRes = await getVendorPendingRequests(vendorId);
@@ -617,7 +613,6 @@ const VendorHomeScreen = () => {
         if (requestError.response?.data?.vendor) {
           console.warn('Vendor not found in requests system');
         }
-        // Continue with empty requests array
         requests = [];
       }
 
@@ -626,7 +621,6 @@ const VendorHomeScreen = () => {
       // const defaulters = customerList.filter((c) => c.status === 'Pending').length;
       // const paidCustomers = customerList.filter((c) => c.status === 'Paid').length;
 
-      // Update state
       setVendorData({
         name: vendor?.name || 'Unnamed Vendor',
         location: vendor?.location || 'Unknown Location',
@@ -637,12 +631,10 @@ const VendorHomeScreen = () => {
       });
       setCustomers(customerList);
       setPendingRequests(requests);
-
     } catch (err: any) {
       console.error('❌ VendorHome fetch error:', err);
       console.error('❌ Error response:', err.response?.data);
 
-      // Set specific error messages
       if (err.message.includes('Vendor ID not found')) {
         setError('Please log in again. Session expired.');
       } else if (err.message.includes('Vendor account not found')) {
@@ -685,7 +677,6 @@ const VendorHomeScreen = () => {
         `${roleText} request ${action === 'accepted' ? 'approved' : 'rejected'} successfully!`
       );
 
-      // Refresh data to update UI
       await fetchData();
     } catch (err: any) {
       console.error('❌ Request action error:', err);
@@ -695,24 +686,60 @@ const VendorHomeScreen = () => {
     }
   };
 
-  // Render pending requests section
+  // Logout Handler
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('userID');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (e) {
+              console.error('Failed to log out.', e);
+              Alert.alert('Error', 'An error occurred while logging out.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Scroll to Pending Requests Section after expanding it
+  const scrollToPendingRequests = () => {
+    setShowRequests(true);
+    // Delay for UI update after expanding section
+    setTimeout(() => {
+      if (flatListRef.current && pendingRequestsOffsetY !== 0) { 
+        flatListRef.current.scrollToOffset({ offset: pendingRequestsOffsetY, animated: true });
+      }
+    }, 300);
+  };
+
+  // Render pending requests section (with onLayout to measure position)
   const renderPendingRequests = () => {
     if (pendingRequests.length === 0) { return null; }
 
     return (
-      <View style={styles.requestsSection}>
-        <TouchableOpacity
-          style={styles.requestsHeader}
-          onPress={() => setShowRequests(!showRequests)}
-        >
-          <Text style={styles.requestsTitle}>
-            Pending Requests ({pendingRequests.length})
-          </Text>
-          <Ionicons
-            name={showRequests ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color="#666"
-          />
+      <View
+        style={styles.requestsSection}
+        onLayout={(event) => {
+          const { y } = event.nativeEvent.layout;
+          setPendingRequestsOffsetY(y);
+        }}
+      >
+        <TouchableOpacity style={styles.requestsHeader} onPress={() => setShowRequests(!showRequests)}>
+          <Text style={styles.requestsTitle}>Pending Requests ({pendingRequests.length})</Text>
+          <Ionicons name={showRequests ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
         </TouchableOpacity>
 
         {showRequests && (
@@ -726,9 +753,7 @@ const VendorHomeScreen = () => {
                   <Text style={styles.requestRole}>
                     Role: {request.user_type === 'customer' ? 'Consumer' : 'Distributor'}
                   </Text>
-                  <Text style={styles.requestDate}>
-                    {new Date(request.created_at).toLocaleDateString()}
-                  </Text>
+                  <Text style={styles.requestDate}>{new Date(request.created_at).toLocaleDateString()}</Text>
                 </View>
                 <View style={styles.requestActions}>
                   <TouchableOpacity
@@ -794,20 +819,33 @@ const VendorHomeScreen = () => {
       <>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Home</Text>
-          <TouchableOpacity onPress={() => console.log('Notifications pressed')}>
-            <Ionicons name="notifications-outline" size={26} color="#007AFF" />
-          </TouchableOpacity>
+          <View style={styles.headerIcons}>
+            {/* Notification Icon with count badge and scroll */}
+            <TouchableOpacity onPress={scrollToPendingRequests}>
+              <View>
+                <Ionicons name="notifications-outline" size={26} color="#007AFF" />
+                {pendingRequests.length > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>{pendingRequests.length}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+            {/* Logout Icon */}
+            <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 16 }}>
+              <Ionicons name="log-out-outline" size={28} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
         </View>
+
         <View style={styles.profileCard}>
-          <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
-            style={styles.avatarLarge}
-          />
+          <Image source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }} style={styles.avatarLarge} />
           <View style={styles.profileInfoWrapper}>
             <Text style={styles.profileName}>{vendorData.name}</Text>
             <Text style={styles.profileLocation}>{vendorData.location}</Text>
           </View>
         </View>
+
         <View style={styles.statsRow}>
           <View style={[styles.statsBox, styles.statsBoxShadow]}>
             <Ionicons name="people" size={24} color="#007AFF" style={styles.iconMarginBottom} />
@@ -820,15 +858,14 @@ const VendorHomeScreen = () => {
             <Text style={styles.statsValue}>{vendorData.defaulters}</Text>
           </View>
         </View>
+
         <View style={[styles.statsBoxWide, styles.statsBoxShadow]}>
           <Ionicons name="checkmark-done-circle" size={24} color="#4CD964" style={styles.iconMarginBottom} />
           <Text style={styles.statsLabel}>Customers Paid Bills</Text>
           <Text style={styles.statsValue}>{vendorData.paidCustomers}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.statsBoxWide, styles.statsBoxShadow]}
-          onPress={() => navigation.navigate('MilkmanList')}
-        >
+
+        <TouchableOpacity style={[styles.statsBoxWide, styles.statsBoxShadow]} onPress={() => navigation.navigate('MilkmanList')}>
           <Ionicons name="bus-outline" size={24} color="#FFA500" style={styles.iconMarginBottom} />
           <Text style={styles.statsLabel}>Enrolled Milkmans</Text>
           <Text style={styles.statsValue}>{vendorData.totalMilkmans}</Text>
@@ -996,6 +1033,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+
+  // Notification Badge Styles
+  notificationBadge: {
+    position: 'absolute',
+    right: -4,
+    top: -4,
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    paddingHorizontal: 2,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 
   // Pending Requests Styles

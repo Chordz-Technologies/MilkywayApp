@@ -39,6 +39,7 @@ const DistributorHomeScreen = () => {
 
   const fetchData = useCallback(async () => {
     setError(null);
+    setLoading(true);
     try {
       const vendorsResponse = await getAllVendors();
       setVendors(vendorsResponse?.data?.data || []);
@@ -129,17 +130,20 @@ const DistributorHomeScreen = () => {
       )}
 
       <FlatList
-        data={vendors}
+        data={availableVendors}
         renderItem={renderVendor}
         keyExtractor={v => v.id.toString()}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        // ListHeaderComponent has been removed
         ListEmptyComponent={() => (
           <View style={styles.empty}>
             {loading ? (
               <ActivityIndicator size="large" color="#007AFF" />
-            ) : (
+            ) : showVendorList ? (
               <Text style={styles.emptyTxt}>No vendors available.</Text>
+            ) : (
+               <Text style={styles.emptyTxt}>You have already joined a vendor.</Text>
             )}
           </View>
         )}
@@ -217,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  emptyTxt: { color: '#666', fontSize: 18, textAlign: 'center' },
+  emptyTxt: { color: '#666', fontSize: 16, textAlign: 'center' },
 });
 
 export default DistributorHomeScreen;
