@@ -255,7 +255,7 @@ const LoginScreen = () => {
               routes: [{ name: 'VendorHome' }],
             });
             break;
-          case 'consumer':
+          case 'customer':
             navigation.reset({
               index: 0,
               routes: [{ name: 'ConsumerHome' }],

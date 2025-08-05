@@ -719,7 +719,7 @@ const VendorHomeScreen = () => {
     setShowRequests(true);
     // Delay for UI update after expanding section
     setTimeout(() => {
-      if (flatListRef.current && pendingRequestsOffsetY !== 0) { 
+      if (flatListRef.current && pendingRequestsOffsetY !== 0) {
         flatListRef.current.scrollToOffset({ offset: pendingRequestsOffsetY, animated: true });
       }
     }, 300);
@@ -935,6 +935,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: 50,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   card: {
     backgroundColor: '#fff',

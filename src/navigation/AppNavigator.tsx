@@ -23,6 +23,7 @@ import useExitAppConfirmation from '../components/ExitApp';
 // You will also need to define your RootStackParamList in a types file.
 // For example: navigation/types.ts
 import { RootStackParamList } from './types';
+import SplashScreen from '../screens/SplashScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -33,7 +34,7 @@ const AppNavigator = () => {
       <Stack.Navigator initialRouteName="Splash">
         <Stack.Screen
           name="Splash"
-          component={SlideScreen}
+          component={SplashScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

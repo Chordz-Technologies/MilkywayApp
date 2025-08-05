@@ -130,7 +130,7 @@ const DistributorHomeScreen = () => {
       )}
 
       <FlatList
-        data={availableVendors}
+        data={vendors}
         renderItem={renderVendor}
         keyExtractor={v => v.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -140,10 +140,8 @@ const DistributorHomeScreen = () => {
           <View style={styles.empty}>
             {loading ? (
               <ActivityIndicator size="large" color="#007AFF" />
-            ) : showVendorList ? (
-              <Text style={styles.emptyTxt}>No vendors available.</Text>
             ) : (
-               <Text style={styles.emptyTxt}>You have already joined a vendor.</Text>
+              <Text style={styles.emptyTxt}>No vendors available.</Text>
             )}
           </View>
         )}
