@@ -9,6 +9,11 @@ export const styles = StyleSheet.create({
         paddingTop: 40,
         paddingHorizontal: 24,
     },
+    contentContainer: {
+        paddingHorizontal: 24,
+        paddingTop: 5,
+        paddingBottom: 40,
+},
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -125,6 +130,9 @@ export const styles = StyleSheet.create({
     inputWithIcon: {
         paddingRight: 40,
     },
+    inputWithLeftPadding: {
+        paddingLeft: 45,
+    },
     cowTypeCapacityInput: {
         borderWidth: 1,
         borderColor: '#bbb',
@@ -211,62 +219,5 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 8,
-    },
-    cowTypeCapacityInput: {
-        borderWidth: 1,
-        borderColor: '#bbb',
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        fontSize: 15,
-        backgroundColor: '#fff',
-        minWidth: 80,
-        marginRight: 6,
-    },
-    flexGrowInput: {
-        flex: 1,
-    },
-    cowTypeLabel: {
-        fontSize: 15,
-        color: '#333',
-        marginLeft: 2,
-    },
-    terms: {
-        fontSize: 13,
-        color: '#444',
-        marginVertical: 12,
-        textAlign: 'center',
-    },
-    link: {
-        color: '#4169e1',
-        fontSize: 15,
-        fontWeight: 'bold',
-        textDecorationLine: 'underline',
-    },
-    button: {
-        backgroundColor: '#007AFF',
-        paddingVertical: 14,
-        borderRadius: 22,
-        marginBottom: 18,
-        width: '100%',
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 15,
-        marginBottom: 16,
-        paddingLeft: 0,
-    },
-    backArrow: {
-        marginRight: 20,
-        marginLeft: -28,
-        paddingBottom: 10,
     },
 });

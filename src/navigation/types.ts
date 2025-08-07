@@ -48,6 +48,7 @@ export type RootStackParamList = {
   MilkmanList: undefined;
   VendorList: { onSelectVendor: (vendor: Vendor) => void };
   BillDetails: { billId: string };
+  PendingRequests: { pendingRequests?: Request[] }; // Optional param for pre-fetched requests
 };
 
 

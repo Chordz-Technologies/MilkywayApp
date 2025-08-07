@@ -98,11 +98,8 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         <ScrollView
             ref={scrollRef}
             style={styles.container}
-            contentContainerStyle={{
-                paddingHorizontal: 24,
-                paddingTop: 5,
-                paddingBottom: 40,
-            }} keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
         >
             <View style={styles.titleRow}>
                 <TouchableOpacity
@@ -134,18 +131,12 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{
-                        position: 'absolute',
-                        left: 10,
-                        zIndex: 1,
-                        fontSize: 16,
-                        color: '#333',
-                    }}>
+                <View style={styles.phoneInputContainer}>
+                    <Text style={styles.countryCode}>
                         +91
                     </Text>
                     <TextInput
-                        style={[styles.input, { paddingLeft: 45 }]} // Add padding to push text after +91
+                        style={[styles.input, styles.inputWithLeftPadding]} // Add padding to push text after +91
                         value={form.phone}
                         onChangeText={(text) => {
                             const cleaned = text.replace(/\D/g, '').slice(0, 10);
@@ -180,17 +171,6 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                     placeholderTextColor="#888"
                 />
             </View>
-
-            {/* <View style={styles.formGroup}>
-                <Text style={styles.label}>Flat Number<Text style={styles.required}> *</Text></Text>
-                <TextInput
-                    style={styles.input}
-                    value={form.flatNo}
-                    onChangeText={text => handleInputChange('flatNo', text)}
-                    placeholder="Enter flat number"
-                    placeholderTextColor="#888"
-                />
-            </View> */}
 
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>

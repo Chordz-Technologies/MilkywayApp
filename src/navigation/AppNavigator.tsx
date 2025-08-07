@@ -18,6 +18,8 @@ import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen'
 import VendorListScreen from '../screens/Vendor/VendorListScreen';
 import BillDetailsScreen from '../screens/Consumer/BillDetailScreen';
 
+import PendingRequestsScreen from '../screens/PendingRequests';
+
 import useExitAppConfirmation from '../components/ExitApp';
 
 // You will also need to define your RootStackParamList in a types file.
@@ -98,7 +100,12 @@ const AppNavigator = () => {
           component={BillDetailsScreen}
           options={{ headerShown: false }}
         />
-      </Stack.Navigator>
+      <Stack.Screen
+        name="PendingRequests"
+        component={PendingRequestsScreen}
+        options={{ headerShown: false }}
+        />
+    </Stack.Navigator>
     </NavigationContainer>
   );
 };

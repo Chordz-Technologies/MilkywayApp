@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } f
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { addCustomerRegistration } from '../../apiServices/allApi';
+
 interface CowMilkDetail {
     name: string;
     capacity: string;
@@ -12,7 +13,7 @@ interface UserPayload {
     first_name: string;
     last_name: string;
     email?: string;
-    address: string; // Now required
+    address: string;
     flat_no: string;
     society_name: string;
     contact?: string;
@@ -39,7 +40,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         email: '',
         password: '',
         confirmPassword: '',
-        address: '', // Will be required
+        address: '',
         flatNumber: '',
         societyName: '',
         phone: '',
@@ -50,15 +51,9 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
 
-    const handleCowMilkChange = (
-        idx: number,
-        field: 'name' | 'capacity',
-        value: string
-    ) => {
+    const handleCowMilkChange = (idx: number, field: 'name' | 'capacity', value: string) => {
         setCowMilk(prev =>
-            prev.map((item, i) =>
-                i === idx ? { ...item, [field]: value } : item
-            )
+            prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
         );
     };
 
@@ -68,22 +63,43 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
     const validate = () => {
         setError('');
-        if (!form.firstName.trim()) { return 'First Name is required'; }
-        if (!form.lastName.trim()) { return 'Last Name is required'; }
-        if (!form.password) { return 'Password is required'; }
-        if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
-        if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
+        if (!form.firstName.trim()) {
+            return 'First Name is required';
+        }
+        if (!form.lastName.trim()) {
+            return 'Last Name is required';
+        }
+        if (!form.password) {
+            return 'Password is required';
+        }
+        if (form.password.length < 6) {
+            return 'Password should be at least 6 characters';
+        }
+        if (form.password !== form.confirmPassword) {
+            return 'Password and Confirm Password do not match';
+        }
         if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
             return 'Please enter a valid email address';
         }
-        if (!form.phone.trim()) { return 'Phone number is required'; }
-        if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {
-            return 'Phone number should contain only digits';
+        const phone = form.phone.trim();
+        if (!phone) {
+            return 'Phone number is required';
         }
-        if (!form.flatNumber.trim()) { return 'Flat Number is required'; }
-        if (!form.societyName.trim()) { return 'Society Name is required'; }
-        if (!form.address.trim()) { return 'Address is required'; } // Added validation for address
-        if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
+        if (!/^\d{10}$/.test(phone)) {
+            return 'Phone number must be exactly 10 digits';
+        }
+        if (!form.flatNumber.trim()) {
+            return 'Flat Number is required';
+        }
+        if (!form.societyName.trim()) {
+            return 'Society Name is required';
+        }
+        if (!form.address.trim()) {
+            return 'Address is required';
+        }
+        if (!hasCow && !hasBuffalo) {
+            return 'Select at least one milk type (Cow or Buffalo)';
+        }
         if (hasCow) {
             const anyValidCow = cowMilk.some(c => {
                 const capacity = Number(c.capacity);
@@ -103,7 +119,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     };
 
     const handleSubmit = async () => {
-        if (isLoading) { return; }
+        if (isLoading) {return;}
 
         const validationError = validate();
         if (validationError) {
@@ -119,7 +135,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 first_name: form.firstName,
                 last_name: form.lastName,
                 email: form.email.trim() || undefined,
-                address: form.address.trim(), // Now sending trimmed address, and it's required
+                address: form.address.trim(),
                 flat_no: form.flatNumber.trim(),
                 society_name: form.societyName.trim(),
                 contact: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
@@ -139,9 +155,8 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             await addCustomerRegistration(userPayload);
             showSuccessAlert('Consumer registration successful!');
         } catch (err: any) {
-            const errorMessage = err?.response?.data?.error ||
-                err?.message ||
-                'Consumer registration failed';
+            const errorMessage =
+                err?.response?.data?.error || err?.message || 'Consumer registration failed';
             setError(errorMessage);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         } finally {
@@ -150,25 +165,19 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     };
 
     const showSuccessAlert = (message: string) => {
-        Alert.alert(
-            'Registration Successful',
-            `${message}\nYou will be redirected to Login.`,
-            [{
+        Alert.alert('Registration Successful', `${message}\nYou will be redirected to Login.`, [
+            {
                 text: 'OK',
                 onPress: () => navigation.replace('Login'),
-            }]
-        );
+            },
+        ]);
     };
 
     return (
         <ScrollView
             ref={scrollRef}
             style={styles.container}
-            contentContainerStyle={{
-                paddingHorizontal: 24,
-                paddingTop: 5,
-                paddingBottom: 40,
-            }}
+            contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
         >
             <View style={styles.titleRow}>
@@ -190,7 +199,9 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {/* First Name */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>First Name<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    First Name<Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                     style={styles.input}
                     value={form.firstName}
@@ -202,7 +213,9 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {/* Last Name */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Last Name<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Last Name<Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                     style={styles.input}
                     value={form.lastName}
@@ -212,6 +225,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 />
             </View>
 
+            {/* Email */}
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
@@ -225,22 +239,19 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 />
             </View>
 
+            {/* Phone Number */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{
-                        position: 'absolute',
-                        left: 10,
-                        zIndex: 1,
-                        fontSize: 16,
-                        color: '#333',
-                    }}>
+                <Text style={styles.label}>
+                    Phone Number<Text style={styles.required}> *</Text>
+                </Text>
+                <View style={styles.phoneInputContainer}>
+                    <Text style={styles.countryCode}>
                         +91
                     </Text>
                     <TextInput
-                        style={[styles.input, { paddingLeft: 45 }]} // Add padding to push text after +91
+                        style={[styles.input, styles.inputWithLeftPadding]}
                         value={form.phone}
-                        onChangeText={(text) => {
+                        onChangeText={text => {
                             const cleaned = text.replace(/\D/g, '').slice(0, 10);
                             handleInputChange('phone', cleaned);
                         }}
@@ -252,8 +263,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 </View>
             </View>
 
+            {/* Password */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Password<Text style={styles.required}> *</Text>
+                </Text>
                 <View style={styles.inputBoxRelative}>
                     <TextInput
                         style={[styles.input, styles.inputWithIcon, styles.inputText]}
@@ -280,8 +294,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 </View>
             </View>
 
+            {/* Confirm Password */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Confirm Password<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Confirm Password<Text style={styles.required}> *</Text>
+                </Text>
                 <View style={styles.inputBoxRelative}>
                     <TextInput
                         style={[styles.input, styles.inputWithIcon, styles.inputText]}
@@ -308,9 +325,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 </View>
             </View>
 
-            {/* Flat Number - Required */}
+            {/* Flat Number */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Flat Number<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Flat Number<Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                     style={styles.input}
                     value={form.flatNumber}
@@ -320,9 +339,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 />
             </View>
 
-            {/* Society Name - Required */}
+            {/* Society Name */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Society Name<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Society Name<Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                     style={styles.input}
                     value={form.societyName}
@@ -332,9 +353,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 />
             </View>
 
-            {/* Address - Now Required */}
+            {/* Address */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Address<Text style={styles.required}> *</Text></Text>
+                <Text style={styles.label}>
+                    Address<Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                     style={styles.input}
                     value={form.address}
@@ -344,39 +367,23 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 />
             </View>
 
-            {/* Milk Type Section - Keep only if relevant for user registration */}
+            {/* Milk Types */}
             <View style={styles.formGroup}>
                 <Text style={styles.label}>Milk Types You Supply</Text>
                 <View style={styles.milkTypeRow}>
                     <TouchableOpacity
-                        style={[
-                            styles.milkTypeButton,
-                            hasCow && styles.milkTypeSelected,
-                        ]}
-                        onPress={() => setHasCow(!hasCow)}
+                        style={[styles.milkTypeButton, hasCow && styles.milkTypeSelected]}
+                        onPress={() => setHasCow(v => !v)}
                     >
-                        <Text
-                            style={[
-                                styles.milkTypeText,
-                                hasCow && styles.milkTypeTextSelected,
-                            ]}
-                        >
+                        <Text style={[styles.milkTypeText, hasCow && styles.milkTypeTextSelected]}>
                             Cow
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[
-                            styles.milkTypeButton,
-                            hasBuffalo && styles.milkTypeSelected,
-                        ]}
-                        onPress={() => setHasBuffalo(!hasBuffalo)}
+                        style={[styles.milkTypeButton, hasBuffalo && styles.milkTypeSelected]}
+                        onPress={() => setHasBuffalo(v => !v)}
                     >
-                        <Text
-                            style={[
-                                styles.milkTypeText,
-                                hasBuffalo && styles.milkTypeTextSelected,
-                            ]}
-                        >
+                        <Text style={[styles.milkTypeText, hasBuffalo && styles.milkTypeTextSelected]}>
                             Buffalo
                         </Text>
                     </TouchableOpacity>
@@ -393,7 +400,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                                 value={item.name}
                                 onChangeText={val => handleCowMilkChange(idx, 'name', val)}
                                 placeholder="Cow Type Name"
-                                editable={idx > 2 ? true : false}
+                                editable={idx > 2}
                             />
                             <TextInput
                                 style={styles.cowTypeCapacityInput}
@@ -401,7 +408,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                                 keyboardType="numeric"
                                 onChangeText={val => handleCowMilkChange(idx, 'capacity', val)}
                                 placeholder="Capacity"
-                                editable={true}
+                                editable
                             />
                             <Text style={styles.cowTypeLabel}>ltrs</Text>
                         </View>
@@ -437,14 +444,11 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     onPress={() => Linking.openURL('https://example.com/terms/user')}
                 >
                     Consumer Terms
-                </Text>
-                .
+                </Text>.
             </Text>
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-                <Text style={styles.buttonText}>
-                    {isLoading ? 'Registering...' : 'Register'}
-                </Text>
+                <Text style={styles.buttonText}>{isLoading ? 'Registering...' : 'Register'}</Text>
             </TouchableOpacity>
         </ScrollView>
     );
