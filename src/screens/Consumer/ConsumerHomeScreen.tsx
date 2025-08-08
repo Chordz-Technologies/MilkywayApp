@@ -496,6 +496,30 @@ const CustomerHomeScreen = () => {
     );
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('userID');
+              await AsyncStorage.removeItem('authToken');
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } catch (err) {
+              console.error('Logout error:', err);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -504,6 +528,9 @@ const CustomerHomeScreen = () => {
         </TouchableOpacity>
         <Text style={styles.title}>Available Vendors</Text>
         <View style={{ width: 32 }} />
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={28} color="#FF3B30" />
+        </TouchableOpacity>
       </View>
 
       {error && (
@@ -554,6 +581,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+  },
+  logoutButton: {
+    padding: 4,
   },
   errorBanner: {
     flexDirection: 'row',

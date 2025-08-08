@@ -157,7 +157,7 @@ export const createRequest = (payload: {
 
 // Get all pending join requests for a vendor
 export const getVendorPendingRequests = (vendorId: string | number) =>
-  axios.get(`${BASE_URL}/vendor/join-requests/pending/`, {
+  axios.get(`${BASE_URL}/vendor/join-requests/requests-for-vendor/`, {
     params: { vendor_id: vendorId },
   });
 
@@ -203,7 +203,7 @@ export const getAcceptedMilkmen = (vendorId: string | number) =>
     params: { vendor_id: vendorId },
   });
 
-  export const listJoinRequestsForVendor = (vendorId: string | number) =>
+export const listJoinRequestsForVendor = (vendorId: string | number) =>
   axios.get(`${BASE_URL}/vendor/join-requests/requests-for-vendor/`, {
     params: { vendor_id: vendorId },
   });

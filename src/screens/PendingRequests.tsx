@@ -13,7 +13,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
-  getAllVendorRequests,
+  getVendorPendingRequests,
   acceptRequest,
   rejectRequest,
 } from '../apiServices/allApi';
@@ -63,7 +63,7 @@ const PendingRequestsScreen = ({ navigation }: Props) => {
 
       console.log('Fetching requests for vendor ID:', vendorId);
 
-      const response = await getAllVendorRequests(vendorId);
+      const response = await getVendorPendingRequests(vendorId);
       console.log('All requests API response:', JSON.stringify(response.data, null, 2));
 
       const data = response.data?.data || response.data || [];

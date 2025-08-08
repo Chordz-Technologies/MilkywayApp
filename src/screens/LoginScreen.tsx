@@ -36,7 +36,7 @@ const LoginScreen = () => {
           case 'vendor':
             navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
             break;
-          case 'consumer':
+          case 'customer':
             navigation.reset({ index: 0, routes: [{ name: 'ConsumerHome' }] });
             break;
           case 'milkman':
@@ -101,7 +101,7 @@ const LoginScreen = () => {
               routes: [{ name: 'VendorHome' }],
             });
             break;
-          case 'consumer':
+          case 'customer':
             navigation.reset({
               index: 0,
               routes: [{ name: 'ConsumerHome' }],

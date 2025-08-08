@@ -88,6 +88,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.message || 'Registration failed';
             setError(errorMessage);
+            console.error('Registration error:', errorMessage);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         } finally {
             setIsLoading(false);

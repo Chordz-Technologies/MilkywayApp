@@ -63,7 +63,7 @@ const VendorHomeScreen = () => {
     setIsLoading(true);
     try {
       const vendorId = await AsyncStorage.getItem('userID');
-      if (!vendorId) {throw new Error('Vendor ID not found. Please log in again.');}
+      if (!vendorId) { throw new Error('Vendor ID not found. Please log in again.'); }
 
       console.log('Fetching data for vendor ID:', vendorId);
 
@@ -77,40 +77,40 @@ const VendorHomeScreen = () => {
       }
 
       // Fetch Accepted Consumers
-     try {
-  const acceptedConsumersRes = await getAcceptedCustomers(vendorId);
-  let consumersData = acceptedConsumersRes?.data?.data || [];
-  if (!Array.isArray(consumersData)) {
-    consumersData = [];
-  }
-  // Fix: Use .toLowerCase() for status
-  const filteredConsumers = consumersData.filter((item: AcceptedItem) => {
-    const isCustomer = item.user_type === 'customer';
-    const isAccepted = item.status?.toLowerCase() === 'accepted';
-    return isCustomer && isAccepted;
-  });
-  setAcceptedConsumers(filteredConsumers);
-} catch (consumerError) {
-  setAcceptedConsumers([]);
-}
+      try {
+        const acceptedConsumersRes = await getAcceptedCustomers(vendorId);
+        let consumersData = acceptedConsumersRes?.data?.data || [];
+        if (!Array.isArray(consumersData)) {
+          consumersData = [];
+        }
+        // Fix: Use .toLowerCase() for status
+        const filteredConsumers = consumersData.filter((item: AcceptedItem) => {
+          const isCustomer = item.user_type === 'customer';
+          const isAccepted = item.status?.toLowerCase() === 'accepted';
+          return isCustomer && isAccepted;
+        });
+        setAcceptedConsumers(filteredConsumers);
+      } catch (consumerError) {
+        setAcceptedConsumers([]);
+      }
 
       // Fetch Accepted Distributors
-     try {
-  const acceptedDistributorsRes = await getAcceptedMilkmen(vendorId);
-  let distributorsData = acceptedDistributorsRes?.data?.data || [];
-  if (!Array.isArray(distributorsData)) {
-    distributorsData = [];
-  }
-  // Fix: Use .toLowerCase() for status
-  const filteredDistributors = distributorsData.filter((item: AcceptedItem) => {
-    const isMilkman = item.user_type === 'milkman';
-    const isAccepted = item.status?.toLowerCase() === 'accepted';
-    return isMilkman && isAccepted;
-  });
-  setAcceptedDistributors(filteredDistributors);
-} catch (distributorError) {
-  setAcceptedDistributors([]);
-}
+      try {
+        const acceptedDistributorsRes = await getAcceptedMilkmen(vendorId);
+        let distributorsData = acceptedDistributorsRes?.data?.data || [];
+        if (!Array.isArray(distributorsData)) {
+          distributorsData = [];
+        }
+        // Fix: Use .toLowerCase() for status
+        const filteredDistributors = distributorsData.filter((item: AcceptedItem) => {
+          const isMilkman = item.user_type === 'milkman';
+          const isAccepted = item.status?.toLowerCase() === 'accepted';
+          return isMilkman && isAccepted;
+        });
+        setAcceptedDistributors(filteredDistributors);
+      } catch (distributorError) {
+        setAcceptedDistributors([]);
+      }
 
       // Fetch Pending Requests (for count badge)
       try {
