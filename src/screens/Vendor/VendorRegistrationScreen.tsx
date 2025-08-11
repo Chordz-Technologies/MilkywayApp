@@ -71,10 +71,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       return 'Please enter a valid email address';
     }
-    if (!form.phone.trim()) { return 'Phone number is required'; }
-    if (form.phone.trim() && !/^\d+$/.test(form.phone.trim())) {
-      return 'Phone number should contain only digits';
-    }
+     const phone = form.phone.trim();
+        if (!phone) {
+            return 'Phone number is required';
+        }
+        if (!/^\d{10}$/.test(phone)) {
+            return 'Phone number must be exactly 10 digits';
+        }
     if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
     if (hasCow) {
       const anyValidCow = cowMilk.some(c => {
@@ -290,7 +293,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Milk Types You Supply</Text>
+        <Text style={styles.label}>Milk Types:</Text>
         <View style={styles.milkTypeRow}>
           <TouchableOpacity
             style={[
@@ -329,7 +332,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
       {hasCow && (
         <View style={styles.milkDetailsSection}>
-          <Text style={styles.sectionTitle}>Cow Milk Types & Capacity (ltrs)</Text>
+          <Text style={styles.sectionTitle}>Cow Milk Types & Capacity Per Month</Text>
           {cowMilk.map((item, idx) => (
             <View style={styles.milkTypeInputRow} key={idx}>
               <TextInput
@@ -355,7 +358,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
       {hasBuffalo && (
         <View style={styles.milkDetailsSection}>
-          <Text style={styles.sectionTitle}>Buffalo Milk Capacity (ltrs)</Text>
+          <Text style={styles.sectionTitle}>Buffalo Milk Capacity Per Month</Text>
           <View style={styles.milkTypeInputRow}>
             <TextInput
               style={[styles.cowTypeCapacityInput, styles.flexGrowInput]}

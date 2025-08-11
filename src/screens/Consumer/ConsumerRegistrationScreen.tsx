@@ -369,7 +369,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {/* Milk Types */}
             <View style={styles.formGroup}>
-                <Text style={styles.label}>Milk Types You Supply</Text>
+                <Text style={styles.label}>Milk Types:</Text>
                 <View style={styles.milkTypeRow}>
                     <TouchableOpacity
                         style={[styles.milkTypeButton, hasCow && styles.milkTypeSelected]}
@@ -392,7 +392,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {hasCow && (
                 <View style={styles.milkDetailsSection}>
-                    <Text style={styles.sectionTitle}>Cow Milk Types & Capacity (ltrs)</Text>
+                    <Text style={styles.sectionTitle}>Cow Milk Types & Capacity Per Month</Text>
                     {cowMilk.map((item, idx) => (
                         <View style={styles.milkTypeInputRow} key={idx}>
                             <TextInput
@@ -418,7 +418,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {hasBuffalo && (
                 <View style={styles.milkDetailsSection}>
-                    <Text style={styles.sectionTitle}>Buffalo Milk Capacity (ltrs)</Text>
+                    <Text style={styles.sectionTitle}>Buffalo Milk Capacity Per Month</Text>
                     <View style={styles.milkTypeInputRow}>
                         <TextInput
                             style={[styles.cowTypeCapacityInput, styles.flexGrowInput]}

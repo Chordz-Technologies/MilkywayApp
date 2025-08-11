@@ -36,11 +36,14 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
     const validate = () => {
         if (!form.name.trim()) { return 'Full name is required'; }
-        if (!form.phone.trim()) { return 'Phone number is required'; }
-        if (!/^\d+$/.test(form.phone.trim())) { return 'Phone number should contain only digits'; }
-        if (!form.address.trim()) { return 'Address is required'; }
+ const phone = form.phone.trim();
+        if (!phone) {
+            return 'Phone number is required';
+        }
+        if (!/^\d{10}$/.test(phone)) {
+            return 'Phone number must be exactly 10 digits';
+        }        if (!form.address.trim()) { return 'Address is required'; }
         if (!form.society.trim()) { return 'Society name is required'; }
-        // if (!form.flatNo.trim()) { return 'Flat number is required'; }
         if (!form.password) { return 'Password is required'; }
         if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
         if (form.password !== form.confirmPassword) { return 'Passwords do not match'; }
