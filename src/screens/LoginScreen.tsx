@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // <-- add useEffect
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,52 +14,79 @@ import { styles } from '../styles/LoginStyle';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { loginVendor } from '../apiServices/allApi';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser, checkStoredAuth, clearError } from '../store/authSlice';
+import { RootState, AppDispatch } from '../store';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Redux state
+  const { isLoading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+  // Local state
   const [showPassword, setShowPassword] = useState(false);
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
 
-  // Auto-login effect
-  useEffect(() => {
-    const checkLogin = async () => {
-      const userID = await AsyncStorage.getItem('userID');
-      const role = await AsyncStorage.getItem('role');
-      if (userID && role) {
-        switch (role.toLowerCase()) {
-          case 'vendor':
-            navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
-            break;
-          case 'customer':
-            navigation.reset({ index: 0, routes: [{ name: 'ConsumerHome' }] });
-            break;
-          case 'milkman':
-            navigation.reset({ index: 0, routes: [{ name: 'DistributorHome' }] });
-            break;
-          default:
-            // Unknown role, stay on login
-            break;
-        }
-      }
-    };
-    checkLogin();
+  // Wrap navigateToHome with useCallback to fix exhaustive-deps warning
+  const navigateToHome = useCallback((role: string) => {
+    switch (role.toLowerCase()) {
+      case 'vendor':
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'VendorHome' }],
+        });
+        break;
+      case 'customer':
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'ConsumerHome' }],
+        });
+        break;
+      case 'milkman':
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'DistributorHome' }],
+        });
+        break;
+      default:
+        Alert.alert('Error', 'Unknown user role.');
+    }
   }, [navigation]);
 
-  const handleContactChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, '');
+  // Auto-login effect - check for stored tokens
+  useEffect(() => {
+    dispatch(checkStoredAuth());
+  }, [dispatch]);
 
+  // Navigate based on authentication state
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      navigateToHome(user.role);
+    }
+  }, [isAuthenticated, user, navigateToHome]);
+
+  // Show error alerts
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Login Error', error, [
+        { text: 'OK', onPress: () => dispatch(clearError()) },
+      ]);
+    }
+  }, [error, dispatch]);
+
+  const handleContactChange = useCallback((text: string) => {
+    const cleanedText = text.replace(/[^0-9]/g, '');
     if (cleanedText.length <= 10) {
       setContact(cleanedText);
     }
-  };
+  }, []);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     const trimmedContact = contact.trim();
     const trimmedPassword = password.trim();
 
@@ -73,62 +100,18 @@ const LoginScreen = () => {
       return;
     }
 
-    setIsLoading(true);
+    const payload = {
+      contact: `+91${trimmedContact}`,
+      password: trimmedPassword,
+    };
 
-    try {
-      const payload = {
-        contact: `+91${String(contact).trim()}`,
-        password: String(password).trim(),
-      };
+    // Dispatch Redux action
+    dispatch(loginUser(payload));
+  }, [contact, password, dispatch]);
 
-      const response = await loginVendor(payload);
-
-      if (response?.data?.message === 'Login successful') {
-        const role = response?.data?.role?.toLowerCase();
-        const userID = response?.data?.userID || response?.data?.id;
-
-        if (userID) {
-          await AsyncStorage.setItem('userID', userID.toString());
-          await AsyncStorage.setItem('role', role); // <-- store role for auto-login
-          console.log('UserID saved to AsyncStorage:', userID);
-        }
-
-        // Use navigation.reset here to prevent going back to login screen
-        switch (role) {
-          case 'vendor':
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'VendorHome' }],
-            });
-            break;
-          case 'customer':
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'ConsumerHome' }],
-            });
-            break;
-          case 'milkman':
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'DistributorHome' }],
-            });
-            break;
-          default:
-            Alert.alert('Error', 'Unknown user role.');
-        }
-      }
-    } catch (error: any) {
-      console.error('Login API Error:', error?.response?.data);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
-        Object.values(error.response?.data || {}).flat()[0] ||
-        'Login failed. Please try again';
-      Alert.alert('Login Error', errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(!showPassword);
+  }, [showPassword]);
 
   return (
     <KeyboardAvoidingView
@@ -169,7 +152,7 @@ const LoginScreen = () => {
           value={password}
           onChangeText={setPassword}
         />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+        <TouchableOpacity onPress={togglePasswordVisibility}>
           <Icon
             name={showPassword ? 'eye-slash' : 'eye'}
             size={18}
@@ -215,4 +198,3 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
-

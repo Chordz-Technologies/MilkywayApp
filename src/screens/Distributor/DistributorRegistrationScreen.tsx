@@ -1,48 +1,72 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
-import { addDistributorRegistration } from '../../apiServices/allApi';
+import { useDispatch, useSelector } from 'react-redux';
+import { registerDistributor, clearError } from '../../store/authSlice';
+import { RootState, AppDispatch } from '../../store';
+
 interface DistributorPayload {
     full_name: string;
     phone_number?: string;
     address: string;
     society_name: string;
-    // flat_number: string;
     password: string;
     confirm_password: string;
 }
 
 export default function DistributorRegistrationScreen({ navigation }: { navigation: any }) {
+    const dispatch = useDispatch<AppDispatch>();
+
+    // Redux state - replaces local isLoading and error handling
+    const { isLoading, error } = useSelector((state: RootState) => state.auth);
+
     const scrollRef = useRef<ScrollView>(null);
     const [form, setForm] = useState({
         name: '',
         phone: '',
         address: '',
         society: '',
-        // flatNo: '',
         password: '',
         confirmPassword: '',
     });
 
-    const [error, setError] = useState('');
+    const [localError, setLocalError] = useState(''); // For validation errors
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Handle Redux errors
+    useEffect(() => {
+        if (error) {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+        }
+    }, [error]);
+
+    // Clear errors when component unmounts or user starts typing
+    useEffect(() => {
+        return () => {
+            dispatch(clearError());
+        };
+    }, [dispatch]);
 
     const handleInputChange = (field: string, value: string) => {
         setForm(prev => ({ ...prev, [field]: value }));
+        // Clear errors when user starts typing
+        if (localError) {setLocalError('');}
+        if (error) {dispatch(clearError());}
     };
 
     const validate = () => {
+        setLocalError('');
         if (!form.name.trim()) { return 'Full name is required'; }
- const phone = form.phone.trim();
+        const phone = form.phone.trim();
         if (!phone) {
             return 'Phone number is required';
         }
         if (!/^\d{10}$/.test(phone)) {
             return 'Phone number must be exactly 10 digits';
-        }        if (!form.address.trim()) { return 'Address is required'; }
+        }
+        if (!form.address.trim()) { return 'Address is required'; }
         if (!form.society.trim()) { return 'Society name is required'; }
         if (!form.password) { return 'Password is required'; }
         if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
@@ -68,35 +92,36 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
         const validationError = validate();
         if (validationError) {
-            setError(validationError);
+            setLocalError(validationError);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-
-        setIsLoading(true);
 
         const payload: DistributorPayload = {
             full_name: form.name,
             phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
             address: form.address,
             society_name: form.society,
-            // flat_number: form.flatNo,
             password: form.password,
             confirm_password: form.confirmPassword,
         };
 
         try {
-            await addDistributorRegistration(payload);
-            showSuccessAlert('Distributor registration successful!');
+            // Dispatch Redux action instead of direct API call
+            const result = await dispatch(registerDistributor(payload));
+
+            // Check if registration was successful
+            if (registerDistributor.fulfilled.match(result)) {
+                showSuccessAlert('Distributor registration successful!');
+            }
         } catch (err: any) {
-            const errorMessage = err?.response?.data?.error || err?.message || 'Registration failed';
-            setError(errorMessage);
-            console.error('Registration error:', errorMessage);
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-        } finally {
-            setIsLoading(false);
+            // Redux will handle the error, but we can add additional local handling if needed
+            console.error('Registration error:', err);
         }
     };
+
+    // Display error from Redux or local validation
+    const displayError = error || localError;
 
     return (
         <ScrollView
@@ -116,9 +141,9 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                 <Text style={styles.title}>Distributor Registration</Text>
             </View>
 
-            {error ? (
+            {displayError ? (
                 <View style={styles.errorBox}>
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={styles.errorText}>{displayError}</Text>
                 </View>
             ) : null}
 
@@ -140,7 +165,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                         +91
                     </Text>
                     <TextInput
-                        style={[styles.input, styles.inputWithLeftPadding]} // Add padding to push text after +91
+                        style={[styles.input, styles.inputWithLeftPadding]}
                         value={form.phone}
                         onChangeText={(text) => {
                             const cleaned = text.replace(/\D/g, '').slice(0, 10);

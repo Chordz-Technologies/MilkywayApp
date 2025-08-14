@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { addVendorRegistration } from '../../apiServices/allApi';
 import { styles } from '../../styles/RegisterStyles';
+import { useDispatch, useSelector } from 'react-redux';
+import { registerVendor, clearError } from '../../store/authSlice';
+import { RootState, AppDispatch } from '../../store';
 
 interface CowMilkDetail {
   name: string;
@@ -23,6 +25,11 @@ interface VendorPayload {
 }
 
 export default function VendorRegisterScreen({ navigation }: { navigation: any }) {
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Redux state - replaces local isLoading and error handling
+  const { isLoading, error } = useSelector((state: RootState) => state.auth);
+
   const [cowMilk, setCowMilk] = useState<CowMilkDetail[]>([
     { name: 'Gir Cow', capacity: '' },
     { name: 'Deshi', capacity: '' },
@@ -39,11 +46,24 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     address: '',
     phone: '',
   });
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState(''); // For validation errors
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [error]);
+
+  // Clear errors when component unmounts or user starts typing
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   const handleCowMilkChange = (
     idx: number,
@@ -59,10 +79,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
   const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
+    // Clear errors when user starts typing
+    if (localError) {setLocalError('');}
+    if (error) {dispatch(clearError());}
   };
 
   const validate = () => {
-    setError('');
+    setLocalError('');
     if (!form.name.trim()) { return 'Name is required'; }
     if (!form.password) { return 'Password is required'; }
     if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
@@ -71,13 +94,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       return 'Please enter a valid email address';
     }
-     const phone = form.phone.trim();
-        if (!phone) {
-            return 'Phone number is required';
-        }
-        if (!/^\d{10}$/.test(phone)) {
-            return 'Phone number must be exactly 10 digits';
-        }
+    const phone = form.phone.trim();
+    if (!phone) {
+      return 'Phone number is required';
+    }
+    if (!/^\d{10}$/.test(phone)) {
+      return 'Phone number must be exactly 10 digits';
+    }
     if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
     if (hasCow) {
       const anyValidCow = cowMilk.some(c => {
@@ -102,12 +125,10 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
     const validationError = validate();
     if (validationError) {
-      setError(validationError);
+      setLocalError(validationError);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
       return;
     }
-
-    setIsLoading(true);
 
     try {
       const vendorPayload: VendorPayload = {
@@ -128,16 +149,16 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
         vendorPayload.buffalo_milk_litre = Number(buffaloCapacity);
       }
 
-      await addVendorRegistration(vendorPayload);
-      showSuccessAlert('Vendor registration successful!');
+      // Dispatch Redux action instead of direct API call
+      const result = await dispatch(registerVendor(vendorPayload));
+
+      // Check if registration was successful
+      if (registerVendor.fulfilled.match(result)) {
+        showSuccessAlert('Vendor registration successful!');
+      }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.error ||
-        err?.message ||
-        'Vendor registration failed';
-      setError(errorMessage);
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    } finally {
-      setIsLoading(false);
+      // Redux will handle the error, but we can add additional local handling if needed
+      console.error('Registration error:', err);
     }
   };
 
@@ -152,16 +173,14 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     );
   };
 
+  // Display error from Redux or local validation
+  const displayError = error || localError;
+
   return (
     <ScrollView
       ref={scrollRef}
       style={styles.container}
-      // eslint-disable-next-line react-native/no-inline-styles
-      contentContainerStyle={{
-        paddingHorizontal: 24,
-        paddingTop: 5,
-        paddingBottom: 40,
-      }}
+      contentContainerStyle={styles.contentContainer}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.titleRow}>
@@ -175,9 +194,9 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
         <Text style={styles.title}>Vendor Registration</Text>
       </View>
 
-      {error ? (
+      {displayError ? (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{displayError}</Text>
         </View>
       ) : null}
 
@@ -225,6 +244,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
           />
         </View>
       </View>
+
       <View style={styles.formGroup}>
         <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
         <View style={styles.inputBoxRelative}>

@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
-import { addCustomerRegistration } from '../../apiServices/allApi';
+import { useDispatch, useSelector } from 'react-redux';
+import { registerCustomer, clearError } from '../../store/authSlice';
+import { RootState, AppDispatch } from '../../store';
 
 interface CowMilkDetail {
     name: string;
@@ -26,6 +28,11 @@ interface UserPayload {
 }
 
 export default function ConsumerRegistrationScreen({ navigation }: { navigation: any }) {
+    const dispatch = useDispatch<AppDispatch>();
+
+    // Redux state - replaces local isLoading and error handling
+    const { isLoading, error } = useSelector((state: RootState) => state.auth);
+
     const [cowMilk, setCowMilk] = useState<CowMilkDetail[]>([
         { name: 'Gir Cow', capacity: '' },
         { name: 'Deshi', capacity: '' },
@@ -45,11 +52,24 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         societyName: '',
         phone: '',
     });
-    const [error, setError] = useState('');
+    const [localError, setLocalError] = useState(''); // For validation errors
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
+
+    // Handle Redux errors
+    useEffect(() => {
+        if (error) {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+        }
+    }, [error]);
+
+    // Clear errors when component unmounts or user starts typing
+    useEffect(() => {
+        return () => {
+            dispatch(clearError());
+        };
+    }, [dispatch]);
 
     const handleCowMilkChange = (idx: number, field: 'name' | 'capacity', value: string) => {
         setCowMilk(prev =>
@@ -59,10 +79,13 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
     const handleInputChange = (field: string, value: string) => {
         setForm(prev => ({ ...prev, [field]: value }));
+        // Clear errors when user starts typing
+        if (localError) {setLocalError('');}
+        if (error) {dispatch(clearError());}
     };
 
     const validate = () => {
-        setError('');
+        setLocalError('');
         if (!form.firstName.trim()) {
             return 'First Name is required';
         }
@@ -119,16 +142,14 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     };
 
     const handleSubmit = async () => {
-        if (isLoading) {return;}
+        if (isLoading) { return; }
 
         const validationError = validate();
         if (validationError) {
-            setError(validationError);
+            setLocalError(validationError);
             scrollRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-
-        setIsLoading(true);
 
         try {
             const userPayload: UserPayload = {
@@ -152,15 +173,16 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 userPayload.buffalo_milk_litre = Number(buffaloCapacity);
             }
 
-            await addCustomerRegistration(userPayload);
-            showSuccessAlert('Consumer registration successful!');
+            // Dispatch Redux action instead of direct API call
+            const result = await dispatch(registerCustomer(userPayload));
+
+            // Check if registration was successful
+            if (registerCustomer.fulfilled.match(result)) {
+                showSuccessAlert('Consumer registration successful!');
+            }
         } catch (err: any) {
-            const errorMessage =
-                err?.response?.data?.error || err?.message || 'Consumer registration failed';
-            setError(errorMessage);
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-        } finally {
-            setIsLoading(false);
+            // Redux will handle the error, but we can add additional local handling if needed
+            console.error('Registration error:', err);
         }
     };
 
@@ -172,6 +194,9 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             },
         ]);
     };
+
+    // Display error from Redux or local validation
+    const displayError = error || localError;
 
     return (
         <ScrollView
@@ -191,9 +216,9 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 <Text style={styles.title}>Consumer Registration</Text>
             </View>
 
-            {error ? (
+            {displayError ? (
                 <View style={styles.errorBox}>
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={styles.errorText}>{displayError}</Text>
                 </View>
             ) : null}
 

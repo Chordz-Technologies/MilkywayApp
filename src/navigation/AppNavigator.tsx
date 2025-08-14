@@ -1,111 +1,141 @@
+// import React, { useEffect } from 'react';
+// import { NavigationContainer } from '@react-navigation/native';
+// import { createNativeStackNavigator } from '@react-navigation/native-stack';
+// import { useDispatch, useSelector } from 'react-redux';
+// import { checkStoredAuth } from '../store/authSlice';
+// import { RootState, AppDispatch } from '../store';
 
-import React from 'react';
+// // Import your screens
+// import LoginScreen from '../screens/LoginScreen';
+// import SlideScreen from '../screens/Slides';
+// import ConsumerRegistrationScreen from '../screens/Consumer/ConsumerRegistrationScreen';
+// import VendorRegistrationScreen from '../screens/Vendor/VendorRegistrationScreen';
+// import DistributorRegistrationScreen from '../screens/Distributor/DistributorRegistrationScreen';
+// import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+
+// import ConsumerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
+// import VendorHomeScreen from '../screens/Vendor/VendorHomeScreen';
+// import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen';
+
+// import VendorListScreen from '../screens/Vendor/VendorListScreen';
+// import BillDetailsScreen from '../screens/Consumer/BillDetailScreen';
+// import PendingRequestsScreen from '../screens/PendingRequests';
+
+// import useExitAppConfirmation from '../components/ExitApp';
+// import SplashScreen from '../screens/SplashScreen';
+
+// // Types
+// import { RootStackParamList } from './types';
+
+// const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// const AppNavigator = () => {
+//   const dispatch = useDispatch<AppDispatch>();
+//   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+//   useExitAppConfirmation();
+
+//   // Check stored authentication tokens on app launch
+//   useEffect(() => {
+//     dispatch(checkStoredAuth());
+//   }, [dispatch]);
+
+//   return (
+//     <NavigationContainer>
+//       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
+//         {!isAuthenticated ? (
+//           // Unauthenticated flow
+//           <>
+//             <Stack.Screen name="Splash" component={SplashScreen} />
+//             <Stack.Screen name="Slide" component={SlideScreen} />
+//             <Stack.Screen name="Login" component={LoginScreen} />
+//             <Stack.Screen name="ConsumerRegistration" component={ConsumerRegistrationScreen} />
+//             <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
+//             <Stack.Screen name="DistributorRegistration" component={DistributorRegistrationScreen} />
+//             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+//           </>
+//         ) : (
+//           // Authenticated flow with role-based home screens
+//           <>
+//             <Stack.Screen name="VendorList" component={VendorListScreen} />
+//             <Stack.Screen name="BillDetails" component={BillDetailsScreen} />
+//             <Stack.Screen name="PendingRequests" component={PendingRequestsScreen} />
+
+//             {user?.role === 'vendor' && (
+//               <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
+//             )}
+//             {user?.role === 'customer' && (
+//               <Stack.Screen name="ConsumerHome" component={ConsumerHomeScreen} />
+//             )}
+//             {user?.role === 'milkman' && (
+//               <Stack.Screen name="DistributorHome" component={DistributorHomeScreen} />
+//             )}
+
+//             {/* Allow logout by navigating to Login */}
+//             <Stack.Screen name="Login" component={LoginScreen} />
+//           </>
+//         )}
+//       </Stack.Navigator>
+//     </NavigationContainer>
+//   );
+// };
+
+// export default AppNavigator;
+
+
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useDispatch } from 'react-redux';
+import { checkStoredAuth } from '../store/authSlice';
+import { AppDispatch } from '../store';
 
-// Import your screens
-import LoginScreen from '../screens/LoginScreen';
+// Screens
+import SplashScreen from '../screens/SplashScreen';
 import SlideScreen from '../screens/Slides';
+import LoginScreen from '../screens/LoginScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ConsumerRegistrationScreen from '../screens/Consumer/ConsumerRegistrationScreen';
 import VendorRegistrationScreen from '../screens/Vendor/VendorRegistrationScreen';
 import DistributorRegistrationScreen from '../screens/Distributor/DistributorRegistrationScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-
-import ConsumerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
 import VendorHomeScreen from '../screens/Vendor/VendorHomeScreen';
+import ConsumerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
 import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen';
-
 import VendorListScreen from '../screens/Vendor/VendorListScreen';
 import BillDetailsScreen from '../screens/Consumer/BillDetailScreen';
-
 import PendingRequestsScreen from '../screens/PendingRequests';
 
-import useExitAppConfirmation from '../components/ExitApp';
-
-// You will also need to define your RootStackParamList in a types file.
-// For example: navigation/types.ts
-import { RootStackParamList } from './types';
-import SplashScreen from '../screens/SplashScreen';
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-  useExitAppConfirmation();
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(checkStoredAuth());
+  }, [dispatch]);
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Splash">
-        <Stack.Screen
-          name="Splash"
-          component={SplashScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Slide"
-          component={SlideScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ConsumerRegistration"
-          component={ConsumerRegistrationScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="VendorRegistration"
-          component={VendorRegistrationScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DistributorRegistration"
-          component={DistributorRegistrationScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ForgotPassword"
-          component={ForgotPasswordScreen}
-          options={{ headerShown: false }}
-        />
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
+        {/* Splash & Slides */}
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Slide" component={SlideScreen} />
 
-        {/* Home Screens for different roles */}
-        <Stack.Screen
-          name="ConsumerHome"
-          component={ConsumerHomeScreen}
-          options={{ headerShown: false }}
-        />
+        {/* Auth screens */}
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ConsumerRegistration" component={ConsumerRegistrationScreen} />
+        <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
+        <Stack.Screen name="DistributorRegistration" component={DistributorRegistrationScreen} />
 
-        <Stack.Screen
-          name="VendorHome"
-          component={VendorHomeScreen}
-          // component={ConsumerHomeScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DistributorHome"
-          component={DistributorHomeScreen}
-          options={{ headerShown: false }}
-        />
-
-        {/* Other Screens */}
-        <Stack.Screen
-          name="VendorList"
-          component={VendorListScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="BillDetails"
-          component={BillDetailsScreen}
-          options={{ headerShown: false }}
-        />
-      <Stack.Screen
-        name="PendingRequests"
-        component={PendingRequestsScreen}
-        options={{ headerShown: false }}
-        />
-    </Stack.Navigator>
+        {/* Protected screens */}
+        <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
+        <Stack.Screen name="ConsumerHome" component={ConsumerHomeScreen} />
+        <Stack.Screen name="DistributorHome" component={DistributorHomeScreen} />
+        <Stack.Screen name="VendorList" component={VendorListScreen} />
+        <Stack.Screen name="BillDetails" component={BillDetailsScreen} />
+        <Stack.Screen name="PendingRequests" component={PendingRequestsScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };

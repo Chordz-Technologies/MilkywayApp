@@ -394,8 +394,11 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootState, AppDispatch } from '../../store';
+import { logout } from '../../store/authSlice';
 import { RootStackParamList } from '../../navigation/types';
 import {
   getAllVendors,
@@ -409,10 +412,17 @@ type Vendor = {
   name: string;
   contact: string;
   address?: string;
+  business_name?: string;
+  location?: string;
 };
 
 const CustomerHomeScreen = () => {
+  // ✅ ALL HOOKS AT THE TOP LEVEL
   const navigation = useNavigation<CustomerHomeNavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [requestedVendors, setRequestedVendors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -422,63 +432,128 @@ const CustomerHomeScreen = () => {
 
   const fetchData = useCallback(async () => {
     setError(null);
+    setIsLoading(true);
     try {
-      const userId = await AsyncStorage.getItem('userID');
-      if (!userId) throw new Error('Customer ID not found.');
+      const customerId = user?.userID;
+
+      if (!customerId) {
+        throw new Error('Customer ID not found. Please log in again.');
+      }
+
+      console.log('Fetching vendors for customer ID:', customerId);
 
       const vendorRes = await getAllVendors();
-      const vendorList = vendorRes?.data?.data || [];
-      setVendors(vendorList);
+      console.log('Vendors response:', vendorRes.data);
+
+      const vendorList = vendorRes?.data?.data || vendorRes?.data || [];
+
+      if (!Array.isArray(vendorList)) {
+        console.warn('Vendor list is not an array:', vendorList);
+        setVendors([]);
+      } else {
+        setVendors(vendorList);
+      }
     } catch (err: any) {
+      console.error('Fetch vendors error:', err);
       setError(err.message || 'Failed to load vendors.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  }, [user?.userID]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
   }, [fetchData]);
 
-  const sendRequest = async (vendorId: string) => {
+  const sendRequest = useCallback(async (vendorId: string) => {
     try {
       setSubmittingId(vendorId);
-      const userId = await AsyncStorage.getItem('userID');
-      if (!userId) throw new Error('User ID not found.');
+
+      const customerId = user?.userID;
+
+      if (!customerId) {
+        throw new Error('Customer ID not found. Please log in again.');
+      }
 
       const payload = {
-        user_id: parseInt(userId, 10),
+        user_id: parseInt(customerId.toString(), 10),
         user_type: 'customer',
         vendor: parseInt(vendorId, 10),
       };
+
+      console.log('Sending request payload:', payload);
 
       await createRequest(payload);
       Alert.alert('Success', 'Request sent to vendor!');
       setRequestedVendors(prev => [...prev, vendorId]);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to send request.');
+      console.error('Send request error:', err);
+      const errorMessage = err.response?.data?.detail ||
+                          err.response?.data?.message ||
+                          err.message ||
+                          'Failed to send request.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setSubmittingId(null);
     }
-  };
+  }, [user?.userID]);
 
-  const renderVendor = ({ item }: { item: Vendor }) => {
+  const handleLogout = useCallback(() => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([
+                'access_token',
+                'refresh_token',
+                'userInfo',
+              ]);
+
+              dispatch(logout());
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } catch (err) {
+              console.error('Logout error:', err);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }, [dispatch, navigation]);
+
+  const renderVendor = useCallback(({ item }: { item: Vendor }) => {
     const isRequested = requestedVendors.includes(item.id);
     const isSubmitting = submittingId === item.id;
+
+    const vendorName = item.name || item.business_name || 'Unnamed Vendor';
+    const vendorAddress = item.address || item.location || 'Not Provided';
 
     return (
       <View style={styles.card}>
         <View style={styles.info}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.contact}>📞 {item.contact}</Text>
-          <Text style={styles.address}>📍 {item.address || 'Not Provided'}</Text>
+          <Text style={styles.name}>{vendorName}</Text>
+
+          {/* ✅ Contact with phone icon instead of emoji */}
+          <View style={styles.contactRow}>
+            <Ionicons name="call-outline" size={16} color="#666" />
+            <Text style={styles.contact}>{item.contact}</Text>
+          </View>
+
+          {/* ✅ Address with location icon instead of emoji */}
+          <View style={styles.addressRow}>
+            <Ionicons name="location-outline" size={16} color="#666" />
+            <Text style={styles.address}>{vendorAddress}</Text>
+          </View>
         </View>
+
         <TouchableOpacity
           style={[styles.button, (isRequested || isSubmitting) && styles.buttonDisabled]}
           onPress={() => !isRequested && !isSubmitting && sendRequest(item.id)}
@@ -494,45 +569,34 @@ const CustomerHomeScreen = () => {
         </TouchableOpacity>
       </View>
     );
-  };
+  }, [requestedVendors, submittingId, sendRequest]);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('userID');
-              await AsyncStorage.removeItem('authToken');
-              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            } catch (err) {
-              console.error('Logout error:', err);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (!isAuthenticated || !user?.userID) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={{ marginTop: 10, color: '#666' }}>
+          Loading user information...
+        </Text>
+      </View>
     );
-  };
+  }
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
         <Text style={styles.title}>Available Vendors</Text>
-        <View style={{ width: 32 }} />
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Ionicons name="log-out-outline" size={28} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
+      {/* Error Banner */}
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -542,6 +606,7 @@ const CustomerHomeScreen = () => {
         </View>
       )}
 
+      {/* Vendors List */}
       <FlatList
         data={vendors}
         renderItem={renderVendor}
@@ -551,9 +616,15 @@ const CustomerHomeScreen = () => {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             {isLoading ? (
-              <ActivityIndicator size="large" color="#007AFF" />
+              <>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={{ marginTop: 10, color: '#666' }}>Loading vendors...</Text>
+              </>
             ) : (
-              <Text style={styles.emptyText}>No vendors available.</Text>
+              <>
+                <Ionicons name="storefront-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyText}>No vendors available.</Text>
+              </>
             )}
           </View>
         )}
@@ -564,23 +635,29 @@ const CustomerHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
     paddingTop: 50,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  back: { padding: 4 },
   title: {
-    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    textAlign: 'center',
+    flex: 1,
   },
   logoutButton: {
     padding: 4,
@@ -592,15 +669,24 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'space-between',
   },
-  errorText: { color: '#c00', fontSize: 14, flex: 1 },
+  errorText: {
+    color: '#c00',
+    fontSize: 14,
+    flex: 1,
+  },
   retry: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 4,
   },
-  retryText: { color: '#fff', fontSize: 12 },
-  listContent: { paddingBottom: 16 },
+  retryText: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -615,10 +701,38 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  info: { flex: 1 },
-  name: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  contact: { fontSize: 14, color: '#666', marginTop: 4 },
-  address: { fontSize: 14, color: '#666', marginTop: 4 },
+  info: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+
+  // ✅ New styles for icon rows
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  contact: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  address: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
+
   button: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
@@ -627,15 +741,25 @@ const styles = StyleSheet.create({
     minWidth: 120,
     alignItems: 'center',
   },
-  buttonDisabled: { backgroundColor: '#C0C0C0' },
-  buttonText: { color: '#fff', fontWeight: '600' },
+  buttonDisabled: {
+    backgroundColor: '#C0C0C0',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
   },
-  emptyText: { color: '#666', fontSize: 18, textAlign: 'center' },
+  emptyText: {
+    color: '#666',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });
 
 export default CustomerHomeScreen;
