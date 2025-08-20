@@ -1,625 +1,4 @@
-// import React, { useState, useCallback } from 'react';
-// import {
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   FlatList,
-//   StyleSheet,
-//   RefreshControl,
-//   Image,
-//   Alert,
-//   ActivityIndicator,
-//   Platform,
-//   ScrollView,
-// } from 'react-native';
-// import Ionicons from 'react-native-vector-icons/Ionicons';
-// import { useNavigation, useFocusEffect } from '@react-navigation/native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// import {
-//   getVendorDetailsById,
-//   getAcceptedCustomers,
-//   getAcceptedMilkmen,
-//   getVendorPendingRequests,
-// } from '../../apiServices/allApi';
-
-// type AcceptedItem = {
-//   id: number;
-//   user_id: number;
-//   contact?: string;
-//   status: string;
-//   customer?: {
-//     id: number;
-//     first_name: string;
-//     last_name: string;
-//     contact: string;
-//   };
-//   milkman?: {
-//     id: number;
-//     full_name: string;
-//     phone_number: string;
-//   };
-//   name?: string | null;
-//   user_type: 'customer' | 'milkman';
-//   created_at: string;
-//   vendor: number;
-// };
-
-// type NavigationProp = any;
-
-// const VendorHomeScreen = () => {
-//   const navigation = useNavigation<NavigationProp>();
-
-//   const [vendorData, setVendorData] = useState<any>(null);
-//   const [acceptedConsumers, setAcceptedConsumers] = useState<AcceptedItem[]>([]);
-//   const [acceptedDistributors, setAcceptedDistributors] = useState<AcceptedItem[]>([]);
-//   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [refreshing, setRefreshing] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-
-//   const fetchData = useCallback(async () => {
-//     setError(null);
-//     setIsLoading(true);
-//     try {
-//       const vendorId = await AsyncStorage.getItem('userID');
-//       if (!vendorId) { throw new Error('Vendor ID not found. Please log in again.'); }
-
-//       console.log('Fetching data for vendor ID:', vendorId);
-
-//       // Fetch Vendor Profile
-//       try {
-//         const vendorRes = await getVendorDetailsById(vendorId);
-//         console.log('Vendor profile response:', vendorRes.data);
-//         setVendorData(vendorRes.data?.data || vendorRes.data);
-//       } catch (vendorError) {
-//         console.error('Vendor profile fetch error:', vendorError);
-//       }
-
-//       // Fetch Accepted Consumers
-//       try {
-//         const acceptedConsumersRes = await getAcceptedCustomers(vendorId);
-//         let consumersData = acceptedConsumersRes?.data?.data || [];
-//         if (!Array.isArray(consumersData)) {
-//           consumersData = [];
-//         }
-//         // Fix: Use .toLowerCase() for status
-//         const filteredConsumers = consumersData.filter((item: AcceptedItem) => {
-//           const isCustomer = item.user_type === 'customer';
-//           const isAccepted = item.status?.toLowerCase() === 'accepted';
-//           return isCustomer && isAccepted;
-//         });
-//         setAcceptedConsumers(filteredConsumers);
-//       } catch (consumerError) {
-//         setAcceptedConsumers([]);
-//       }
-
-//       // Fetch Accepted Distributors
-//       try {
-//         const acceptedDistributorsRes = await getAcceptedMilkmen(vendorId);
-//         let distributorsData = acceptedDistributorsRes?.data?.data || [];
-//         if (!Array.isArray(distributorsData)) {
-//           distributorsData = [];
-//         }
-//         // Fix: Use .toLowerCase() for status
-//         const filteredDistributors = distributorsData.filter((item: AcceptedItem) => {
-//           const isMilkman = item.user_type === 'milkman';
-//           const isAccepted = item.status?.toLowerCase() === 'accepted';
-//           return isMilkman && isAccepted;
-//         });
-//         setAcceptedDistributors(filteredDistributors);
-//       } catch (distributorError) {
-//         setAcceptedDistributors([]);
-//       }
-
-//       // Fetch Pending Requests (for count badge)
-//       try {
-//         const pendingReqRes = await getVendorPendingRequests(vendorId);
-//         const pendingData = pendingReqRes?.data?.data || [];
-//         setPendingRequests(Array.isArray(pendingData) ? pendingData : []);
-//       } catch (pendingError) {
-//         console.error('Pending requests fetch error:', pendingError);
-//         setPendingRequests([]);
-//         // Optionally show an alert:
-//         // Alert.alert('Error', 'Could not load pending requests.');
-//       }
-
-//     } catch (e: any) {
-//       console.error('General fetch data error:', e);
-//       setError(e.message || 'Failed to load data');
-//     } finally {
-//       setIsLoading(false);
-//       setRefreshing(false);
-//     }
-//   }, []);
-
-//   // Debug function to test APIs
-//   const testAPIs = async () => {
-//     try {
-//       const vendorId = await AsyncStorage.getItem('userID');
-//       if (!vendorId) {
-//         console.log('❌ No vendor ID found');
-//         return;
-//       }
-
-//       console.log('Testing APIs for vendor:', vendorId);
-
-//       // Test consumers API
-//       try {
-//         const consumersRes = await getAcceptedCustomers(vendorId);
-//         console.log('✅ Accepted Customers API Success:', consumersRes.data);
-//       } catch (err: any) {
-//         console.log('❌ Accepted Customers API Error:', err.response?.data || err.message);
-//       }
-
-//       // Test distributors API
-//       try {
-//         const distributorsRes = await getAcceptedMilkmen(vendorId);
-//         console.log('✅ Accepted Distributors API Success:', distributorsRes.data);
-//       } catch (err: any) {
-//         console.log('❌ Accepted Distributors API Error:', err.response?.data || err.message);
-//       }
-//     } catch (err) {
-//       console.log('❌ Test APIs Error:', err);
-//     }
-//   };
-
-//   // Auto-refresh when screen comes into focus
-//   useFocusEffect(
-//     React.useCallback(() => {
-//       testAPIs(); // For debugging
-//       fetchData();
-//     }, [fetchData])
-//   );
-
-//   const onRefresh = () => {
-//     setRefreshing(true);
-//     fetchData();
-//   };
-
-//   const handleLogout = () => {
-//     Alert.alert(
-//       'Logout',
-//       'Are you sure you want to log out?',
-//       [
-//         { text: 'Cancel', style: 'cancel' },
-//         {
-//           text: 'Logout',
-//           style: 'destructive',
-//           onPress: async () => {
-//             try {
-//               await AsyncStorage.removeItem('userID');
-//               await AsyncStorage.removeItem('authToken');
-//               navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-//             } catch (err) {
-//               console.error('Logout error:', err);
-//             }
-//           },
-//         },
-//       ],
-//       { cancelable: true }
-//     );
-//   };
-
-//   const renderConsumerItem = ({ item }: { item: AcceptedItem }) => {
-//     console.log('Rendering consumer item:', item);
-
-//     let displayName = 'Unknown Consumer';
-
-//     // Based on your API response structure
-//     if (item.customer) {
-//       // Use customer nested object
-//       const firstName = item.customer.first_name || '';
-//       const lastName = item.customer.last_name || '';
-//       displayName = `${firstName} ${lastName}`.trim();
-//     } else if (item.name) {
-//       // Fallback to name field
-//       displayName = item.name;
-//     } else {
-//       // Last resort fallback
-//       displayName = `Consumer ${item.user_id || item.id}`;
-//     }
-
-//     return (
-//       <View style={styles.listItem}>
-//         <View style={styles.listItemContent}>
-//           <Text style={styles.listItemText}>{displayName}</Text>
-//           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-//             {item.status?.toUpperCase() || 'ACCEPTED'}
-//           </Text>
-//         </View>
-//       </View>
-//     );
-//   };
-
-//   const renderDistributorItem = ({ item }: { item: AcceptedItem }) => {
-//     console.log('Rendering distributor item:', item);
-
-//     let displayName = 'Unknown Distributor';
-
-//     // Based on your API response structure
-//     if (item.milkman) {
-//       // Use milkman nested object
-//       displayName = item.milkman.full_name || 'Unnamed Distributor';
-//     } else if (item.name) {
-//       // Fallback to name field
-//       displayName = item.name;
-//     } else {
-//       // Last resort fallback
-//       displayName = `Distributor ${item.user_id || item.id}`;
-//     }
-
-//     return (
-//       <View style={styles.listItem}>
-//         <View style={styles.listItemContent}>
-//           <Text style={styles.listItemText}>{displayName}</Text>
-//           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-//             {item.status?.toUpperCase() || 'ACCEPTED'}
-//           </Text>
-//         </View>
-//       </View>
-//     );
-//   };
-
-//   const getStatusColor = (status: string) => {
-//     switch (status?.toLowerCase()) {
-//       case 'accepted':
-//         return '#4CD964';
-//       case 'pending':
-//         return '#FFA500';
-//       case 'rejected':
-//         return '#FF6B6B';
-//       default:
-//         return '#666';
-//     }
-//   };
-
-//   if (isLoading) {
-//     return (
-//       <View style={[styles.container, styles.center]}>
-//         <ActivityIndicator size="large" color="#007AFF" />
-//         <Text style={{ marginTop: 10, color: '#666' }}>Loading vendor data...</Text>
-//       </View>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <View style={[styles.container, styles.center]}>
-//         <Text style={styles.errorText}>{error}</Text>
-//         <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
-//           <Text style={styles.retryButtonText}>Retry</Text>
-//         </TouchableOpacity>
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <ScrollView
-//       style={{ flex: 1 }}
-//       contentContainerStyle={{ flexGrow: 1 }}
-//       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-//     >
-//       <View style={styles.container}>
-//         {/* Header and Logout */}
-//         <View style={styles.headerRow}>
-//           <Text style={styles.headerTitle}>Vendor Home</Text>
-//           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-//             <Ionicons name="log-out-outline" size={28} color="#FF3B30" />
-//           </TouchableOpacity>
-//         </View>
-
-//         {/* Profile Card */}
-//         <View style={styles.profileCard}>
-//           <Image
-//             style={styles.avatar}
-//             source={{
-//               uri: vendorData?.profile_image || 'https://randomuser.me/api/portraits/men/32.jpg',
-//             }}
-//             defaultSource={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-//           />
-//           <View style={{ flex: 1, marginLeft: 12 }}>
-//             <Text style={styles.profileName}>
-//               {vendorData?.name || vendorData?.business_name || 'Vendor Name'}
-//             </Text>
-//             <Text style={styles.profileLocation}>
-//               {vendorData?.location || vendorData?.address || 'Location unknown'}
-//             </Text>
-//           </View>
-//         </View>
-
-//         {/* Stats Row */}
-//         <View style={styles.statsRow}>
-//           <View style={[styles.statsBox, styles.shadowBox]}>
-//             <Ionicons name="people-outline" size={24} color="#007AFF" />
-//             <Text style={styles.statsLabel}>Accepted Consumers</Text>
-//             <Text style={styles.statsValue}>{acceptedConsumers.length}</Text>
-//           </View>
-//           <View style={[styles.statsBox, styles.shadowBox]}>
-//             <Ionicons name="business-outline" size={24} color="#FF9500" />
-//             <Text style={styles.statsLabel}>Accepted Distributors</Text>
-//             <Text style={styles.statsValue}>{acceptedDistributors.length}</Text>
-//           </View>
-//         </View>
-
-//         {/* Pending Requests Card */}
-//         <TouchableOpacity
-//           style={[styles.pendingCard, styles.shadowBox]}
-//           onPress={() => {
-//             try {
-//               navigation.navigate('PendingRequests');
-//             } catch (navError) {
-//               console.error('Navigation error:', navError);
-//               Alert.alert('Error', 'Cannot navigate to Pending Requests screen');
-//             }
-//           }}
-//         >
-//           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-//             <Ionicons name="notifications-outline" size={24} color="#007AFF" />
-//             <Text style={[styles.statsLabel, { marginLeft: 12, marginTop: 0 }]}>
-//               Pending Requests
-//             </Text>
-//           </View>
-//           <View style={styles.pendingCountContainer}>
-//             <Text style={styles.pendingCountText}>{pendingRequests.length}</Text>
-//           </View>
-//         </TouchableOpacity>
-
-//         {/* Accepted Consumers List */}
-//         <View style={styles.listSection}>
-//           <Text style={styles.sectionTitle}>Accepted Consumers ({acceptedConsumers.length})</Text>
-//           {acceptedConsumers.length === 0 ? (
-//             <Text style={styles.emptyText}>No accepted consumers found.</Text>
-//           ) : (
-//             <FlatList
-//               data={acceptedConsumers}
-//               keyExtractor={(item, index) => `consumer_${item.id || index}`}
-//               renderItem={renderConsumerItem}
-//               scrollEnabled={false}
-//               showsVerticalScrollIndicator={false}
-//             />
-//           )}
-//         </View>
-
-//         {/* Accepted Distributors List */}
-//         <View style={styles.listSection}>
-//           <Text style={styles.sectionTitle}>Accepted Distributors ({acceptedDistributors.length})</Text>
-//           {acceptedDistributors.length === 0 ? (
-//             <Text style={styles.emptyText}>No accepted distributors found.</Text>
-//           ) : (
-//             <FlatList
-//               data={acceptedDistributors}
-//               keyExtractor={(item, index) => `distributor_${item.id || index}`}
-//               renderItem={renderDistributorItem}
-//               scrollEnabled={false}
-//               showsVerticalScrollIndicator={false}
-//             />
-//           )}
-//         </View>
-//       </View>
-//     </ScrollView>
-//   );
-// };
-
-// export default VendorHomeScreen;
-
-// const styles = StyleSheet.create({
-//   container: {
-//     backgroundColor: '#fefefe',
-//     paddingTop: 40,
-//     paddingBottom: 40,
-//     minHeight: '100%',
-//   },
-//   center: {
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     flex: 1,
-//     paddingHorizontal: 20,
-//   },
-
-//   headerRow: {
-//     paddingHorizontal: 16,
-//     paddingBottom: 16,
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   headerTitle: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     color: '#333',
-//   },
-//   logoutButton: {
-//     padding: 4,
-//   },
-
-//   profileCard: {
-//     backgroundColor: '#fff',
-//     padding: 16,
-//     marginHorizontal: 16,
-//     borderRadius: 12,
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 24,
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: '#000',
-//         shadowOpacity: 0.1,
-//         shadowRadius: 5,
-//         shadowOffset: { width: 0, height: 2 },
-//       },
-//       android: {
-//         elevation: 3,
-//       },
-//     }),
-//   },
-//   avatar: {
-//     width: 72,
-//     height: 72,
-//     borderRadius: 36,
-//     backgroundColor: '#ccc',
-//   },
-//   profileName: {
-//     fontSize: 20,
-//     fontWeight: 'bold',
-//     color: '#222',
-//   },
-//   profileLocation: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginTop: 4,
-//   },
-
-//   statsRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     marginHorizontal: 16,
-//     marginBottom: 24,
-//   },
-//   statsBox: {
-//     backgroundColor: '#fff',
-//     alignItems: 'center',
-//     paddingVertical: 16,
-//     paddingHorizontal: 16,
-//     borderRadius: 12,
-//     width: '45%',
-//     minHeight: 100,
-//   },
-//   statsLabel: {
-//     fontSize: 14,
-//     color: '#444',
-//     marginTop: 8,
-//     textAlign: 'center',
-//   },
-//   statsValue: {
-//     fontSize: 26,
-//     fontWeight: 'bold',
-//     color: '#007AFF',
-//     marginTop: 4,
-//   },
-//   shadowBox: {
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: '#000',
-//         shadowOpacity: 0.1,
-//         shadowRadius: 5,
-//         shadowOffset: { width: 0, height: 2 },
-//       },
-//       android: {
-//         elevation: 3,
-//       },
-//     }),
-//   },
-
-//   pendingCard: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     paddingHorizontal: 20,
-//     paddingVertical: 18,
-//     backgroundColor: '#fff',
-//     marginHorizontal: 16,
-//     borderRadius: 12,
-//     marginBottom: 24,
-//     alignItems: 'center',
-//     minHeight: 60,
-//   },
-
-//   pendingCountContainer: {
-//     backgroundColor: '#FF3B30',
-//     borderRadius: 14,
-//     minWidth: 28,
-//     height: 28,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   pendingCountText: {
-//     color: '#fff',
-//     fontWeight: 'bold',
-//     fontSize: 14,
-//     paddingHorizontal: 6,
-//   },
-
-//   listSection: {
-//     marginHorizontal: 16,
-//     marginBottom: 24,
-//     backgroundColor: '#fff',
-//     borderRadius: 12,
-//     paddingVertical: 16,
-//     paddingHorizontal: 12,
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: '#000',
-//         shadowOpacity: 0.05,
-//         shadowRadius: 6,
-//         shadowOffset: { width: 0, height: 3 },
-//       },
-//       android: {
-//         elevation: 3,
-//       },
-//     }),
-//   },
-
-//   sectionTitle: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     marginBottom: 12,
-//     color: '#222',
-//   },
-
-//   listItem: {
-//     paddingVertical: 12,
-//     borderBottomWidth: 1,
-//     borderColor: '#eee',
-//   },
-
-//   listItemContent: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-
-//   listItemText: {
-//     fontSize: 16,
-//     color: '#444',
-//     flex: 1,
-//   },
-
-//   statusText: {
-//     fontSize: 12,
-//     fontWeight: 'bold',
-//     paddingHorizontal: 8,
-//     paddingVertical: 2,
-//     borderRadius: 4,
-//     backgroundColor: '#f0f0f0',
-//   },
-
-//   emptyText: {
-//     fontSize: 14,
-//     color: '#888',
-//     textAlign: 'center',
-//     paddingVertical: 20,
-//     fontStyle: 'italic',
-//   },
-
-//   errorText: {
-//     color: 'red',
-//     fontSize: 16,
-//     marginBottom: 12,
-//     textAlign: 'center',
-//   },
-
-//   retryButton: {
-//     backgroundColor: '#007AFF',
-//     borderRadius: 6,
-//     paddingHorizontal: 16,
-//     paddingVertical: 8,
-//   },
-//   retryButtonText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//     fontSize: 16,
-//   },
-// });
 
 import React, { useState, useCallback } from 'react';
 import {
@@ -634,6 +13,7 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
+  Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -641,7 +21,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState, AppDispatch } from '../../store';
 import { logout } from '../../store/authSlice';
-
 import {
   getVendorDetailsById,
   getAcceptedCustomers,
@@ -652,7 +31,6 @@ import {
 type AcceptedItem = {
   id: number;
   user_id: number;
-  contact?: string;
   status: string;
   customer?: {
     id: number;
@@ -673,11 +51,107 @@ type AcceptedItem = {
 
 type NavigationProp = any;
 
+// **SKELETON LOADER COMPONENT**
+const SkeletonLoader = () => {
+  return (
+    <View style={styles.loadingContainer}>
+      <View style={styles.skeletonContainer}>
+        {/* Header Skeleton */}
+        <View style={styles.skeletonHeader}>
+          <View style={styles.skeletonTitle} />
+          <View style={styles.skeletonSubtitle} />
+        </View>
+
+        {/* Profile Card Skeleton */}
+        <View style={styles.skeletonProfileCard}>
+          <View style={styles.skeletonAvatar} />
+          <View style={styles.skeletonProfileInfo}>
+            <View style={styles.skeletonProfileName} />
+            <View style={styles.skeletonProfileLocation} />
+          </View>
+        </View>
+
+        {/* Stats Cards Skeleton */}
+        <View style={styles.skeletonStatsGrid}>
+          {[1, 2, 3, 4].map((item) => (
+            <View key={item} style={styles.skeletonStatCard}>
+              <View style={styles.skeletonStatIcon} />
+              <View style={styles.skeletonStatValue} />
+              <View style={styles.skeletonStatLabel} />
+            </View>
+          ))}
+        </View>
+
+        {/* Loading Indicator */}
+        <View style={styles.loadingIndicatorContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading ...</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// **ANIMATED STAT CARD COMPONENT - 2 PER ROW**
+const AnimatedStatCard = ({ stat, onPress }: { stat: any; onPress?: () => void }) => {
+  const scaleValue = useState(new Animated.Value(1))[0];
+
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+      style={styles.statCardContainer}
+    >
+      <Animated.View
+        style={[
+          styles.statCard,
+          {
+            backgroundColor: stat.backgroundColor,
+            transform: [{ scale: scaleValue }],
+          },
+        ]}
+      >
+        <View style={[styles.iconCircle, { backgroundColor: stat.iconBg }]}>
+          <Ionicons name={stat.icon} size={24} color={stat.iconColor} />
+        </View>
+
+        <View style={styles.statContent}>
+          <Text style={styles.statValue}>{stat.value}</Text>
+          <Text style={styles.statLabel}>{stat.label}</Text>
+          <Text style={styles.statSubtext}>{stat.subtext}</Text>
+        </View>
+
+        <View style={styles.statTrend}>
+          <Ionicons
+            name={stat.trending === 'up' ? 'trending-up' : 'trending-down'}
+            size={16}
+            color={stat.trending === 'up' ? '#34C759' : '#FF3B30'}
+          />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
 const VendorHomeScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-
-  // ✅ ALL HOOKS AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const [vendorData, setVendorData] = useState<any>(null);
@@ -687,6 +161,7 @@ const VendorHomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'consumer' | 'distributor'>('consumer');
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -694,9 +169,7 @@ const VendorHomeScreen = () => {
     try {
       const vendorId = user?.userID;
 
-      if (!vendorId) {
-        throw new Error('Vendor ID not found. Please log in again.');
-      }
+      if (!vendorId) {throw new Error('Vendor ID not found. Please log in again.');}
 
       console.log('Fetching data for vendor ID:', vendorId);
 
@@ -711,42 +184,44 @@ const VendorHomeScreen = () => {
 
       // Fetch Accepted Consumers
       try {
-        const acceptedConsumersRes = await getAcceptedCustomers(vendorId);
-        let consumersData = acceptedConsumersRes?.data?.data || [];
+        const consumerRes = await getAcceptedCustomers(vendorId);
+        let consumersData = consumerRes?.data?.data || [];
         if (!Array.isArray(consumersData)) {
           consumersData = [];
         }
-        const filteredConsumers = consumersData.filter((item: AcceptedItem) => {
+        const consumersFiltered = consumersData.filter((item: AcceptedItem) => {
           const isCustomer = item.user_type === 'customer';
           const isAccepted = item.status?.toLowerCase() === 'accepted';
           return isCustomer && isAccepted;
         });
-        setAcceptedConsumers(filteredConsumers);
+        setAcceptedConsumers(consumersFiltered);
       } catch (consumerError) {
+        console.error('Consumer fetch error:', consumerError);
         setAcceptedConsumers([]);
       }
 
       // Fetch Accepted Distributors
       try {
-        const acceptedDistributorsRes = await getAcceptedMilkmen(vendorId);
-        let distributorsData = acceptedDistributorsRes?.data?.data || [];
+        const distributorRes = await getAcceptedMilkmen(vendorId);
+        let distributorsData = distributorRes?.data?.data || [];
         if (!Array.isArray(distributorsData)) {
           distributorsData = [];
         }
-        const filteredDistributors = distributorsData.filter((item: AcceptedItem) => {
+        const distributorsFiltered = distributorsData.filter((item: AcceptedItem) => {
           const isMilkman = item.user_type === 'milkman';
           const isAccepted = item.status?.toLowerCase() === 'accepted';
           return isMilkman && isAccepted;
         });
-        setAcceptedDistributors(filteredDistributors);
+        setAcceptedDistributors(distributorsFiltered);
       } catch (distributorError) {
+        console.error('Distributor fetch error:', distributorError);
         setAcceptedDistributors([]);
       }
 
       // Fetch Pending Requests
       try {
-        const pendingReqRes = await getVendorPendingRequests(vendorId);
-        const pendingData = pendingReqRes?.data?.data || [];
+        const pendingRes = await getVendorPendingRequests(vendorId);
+        const pendingData = pendingRes?.data?.data || [];
         setPendingRequests(Array.isArray(pendingData) ? pendingData : []);
       } catch (pendingError) {
         console.error('Pending requests fetch error:', pendingError);
@@ -762,155 +237,35 @@ const VendorHomeScreen = () => {
     }
   }, [user?.userID]);
 
-  const testAPIs = useCallback(async () => {
-    try {
-      const vendorId = user?.userID;
-      if (!vendorId) {
-        console.log('❌ No vendor ID found');
-        return;
-      }
-
-      console.log('Testing APIs for vendor:', vendorId);
-
-      try {
-        const consumersRes = await getAcceptedCustomers(vendorId);
-        console.log('✅ Accepted Customers API Success:', consumersRes.data);
-      } catch (err: any) {
-        console.log('❌ Accepted Customers API Error:', err.response?.data || err.message);
-      }
-
-      try {
-        const distributorsRes = await getAcceptedMilkmen(vendorId);
-        console.log('✅ Accepted Distributors API Success:', distributorsRes.data);
-      } catch (err: any) {
-        console.log('❌ Accepted Distributors API Error:', err.response?.data || err.message);
-      }
-    } catch (err) {
-      console.log('❌ Test APIs Error:', err);
-    }
-  }, [user?.userID]);
-
-  const handleLogout = useCallback(() => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove([
-                'access_token',
-                'refresh_token',
-                'userInfo',
-              ]);
-
-              dispatch(logout());
-              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            } catch (err) {
-              console.error('Logout error:', err);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  }, [dispatch, navigation]);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
   }, [fetchData]);
 
-  // ✅ useFocusEffect hook called unconditionally
+  const handleLogout = useCallback(() => {
+    Alert.alert('Logout', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'userInfo']);
+            dispatch(logout());
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          } catch (err) {
+            console.error('Logout error:', err);
+          }
+        },
+      },
+    ]);
+  }, [dispatch, navigation]);
+
   useFocusEffect(
     useCallback(() => {
-      testAPIs();
       fetchData();
-    }, [testAPIs, fetchData])
+    }, [fetchData])
   );
-
-  // ✅ CONDITIONAL RENDERING AFTER ALL HOOKS
-  if (!isAuthenticated || !user?.userID) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 10, color: '#666' }}>
-          Loading user information...
-        </Text>
-      </View>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 10, color: '#666' }}>Loading vendor data...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const renderConsumerItem = ({ item }: { item: AcceptedItem }) => {
-    let displayName = 'Unknown Consumer';
-
-    if (item.customer) {
-      const firstName = item.customer.first_name || '';
-      const lastName = item.customer.last_name || '';
-      displayName = `${firstName} ${lastName}`.trim();
-    } else if (item.name) {
-      displayName = item.name;
-    } else {
-      displayName = `Consumer ${item.user_id || item.id}`;
-    }
-
-    return (
-      <View style={styles.listItem}>
-        <View style={styles.listItemContent}>
-          <Text style={styles.listItemText}>{displayName}</Text>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status?.toUpperCase() || 'ACCEPTED'}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-  const renderDistributorItem = ({ item }: { item: AcceptedItem }) => {
-    let displayName = 'Unknown Distributor';
-
-    if (item.milkman) {
-      displayName = item.milkman.full_name || 'Unnamed Distributor';
-    } else if (item.name) {
-      displayName = item.name;
-    } else {
-      displayName = `Distributor ${item.user_id || item.id}`;
-    }
-
-    return (
-      <View style={styles.listItem}>
-        <View style={styles.listItemContent}>
-          <Text style={styles.listItemText}>{displayName}</Text>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status?.toUpperCase() || 'ACCEPTED'}
-          </Text>
-        </View>
-      </View>
-    );
-  };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -925,22 +280,88 @@ const VendorHomeScreen = () => {
     }
   };
 
+  // **LOADING STATE WITH SKELETON**
+  if (!isAuthenticated || !user?.userID || isLoading) {
+    return <SkeletonLoader />;
+  }
+
+  // **ERROR STATE**
+  if (error) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // **STATS DATA - 2 PER ROW LAYOUT**
+  const statsData = [
+    {
+      icon: 'people-outline',
+      label: 'Total Consumers',
+      value: acceptedConsumers.length,
+      subtext: 'Active Today',
+      backgroundColor: '#E8F4FD',
+      iconBg: '#007AFF',
+      iconColor: '#fff',
+      trending: 'up',
+    },
+    {
+      icon: 'business-outline',
+      label: 'Total Distributors',
+      value: acceptedDistributors.length,
+      subtext: 'Working Now',
+      backgroundColor: '#FFF4E6',
+      iconBg: '#FF9500',
+      iconColor: '#fff',
+      trending: 'up',
+    },
+    {
+      icon: 'cash-outline',
+      label: 'Total Billed Amount',
+      value: 25000, // Replace with API data
+      subtext: 'This Month',
+      backgroundColor: '#E8F8F0',
+      iconBg: '#34C759',
+      iconColor: '#fff',
+      trending: 'up',
+    },
+    {
+      icon: 'alert-circle-outline',
+      label: 'Total Overdue Amount',
+      value: 15000, // Replace with API data
+      subtext: 'Need Action',
+      backgroundColor: '#FFE8E8',
+      iconBg: '#FF3B30',
+      iconColor: '#fff',
+      trending: 'down',
+    },
+  ];
+
   return (
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.container}>
-        {/* Header and Logout */}
+        {/* HEADER */}
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Vendor Home</Text>
+          <View>
+            <Text style={styles.headerTitle}>Vendor Home</Text>
+            <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
+          </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={28} color="#FF3B30" />
+            <Ionicons name="log-out-outline" size={26} color="#FF3B30" />
           </TouchableOpacity>
         </View>
 
-        {/* Profile Card */}
+        {/* PROFILE */}
         <View style={styles.profileCard}>
           <Image
             style={styles.avatar}
@@ -949,33 +370,40 @@ const VendorHomeScreen = () => {
             }}
             defaultSource={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
           />
-          <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={styles.profileInfo}>
             <Text style={styles.profileName}>
               {vendorData?.name || vendorData?.business_name || 'Vendor Name'}
             </Text>
             <Text style={styles.profileLocation}>
-              {vendorData?.location || vendorData?.address || 'Location unknown'}
+              {vendorData?.location || vendorData?.address || 'No location provided'}
             </Text>
+            <View style={styles.profileBadge}>
+              <Text style={styles.profileBadgeText}>Premium ⭐</Text>
+            </View>
           </View>
         </View>
 
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statsBox, styles.shadowBox]}>
-            <Ionicons name="people-outline" size={24} color="#007AFF" />
-            <Text style={styles.statsLabel}>Accepted Consumers</Text>
-            <Text style={styles.statsValue}>{acceptedConsumers.length}</Text>
-          </View>
-          <View style={[styles.statsBox, styles.shadowBox]}>
-            <Ionicons name="business-outline" size={24} color="#FF9500" />
-            <Text style={styles.statsLabel}>Accepted Distributors</Text>
-            <Text style={styles.statsValue}>{acceptedDistributors.length}</Text>
+        {/* STATS GRID - 2 CARDS PER ROW */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Analytics Overview</Text>
+          <View style={styles.statsGrid}>
+            {statsData.map((stat, index) => (
+              <AnimatedStatCard
+                key={index}
+                stat={stat}
+                onPress={() => {
+                  console.log(`Pressed ${stat.label}`);
+                  // Add navigation based on card type
+                  // Example: navigation.navigate('ConsumersList')
+                }}
+              />
+            ))}
           </View>
         </View>
 
-        {/* Pending Requests Card */}
+        {/* PENDING REQUESTS CARD */}
         <TouchableOpacity
-          style={[styles.pendingCard, styles.shadowBox]}
+          style={styles.pendingCard}
           onPress={() => {
             try {
               navigation.navigate('PendingRequests');
@@ -984,47 +412,126 @@ const VendorHomeScreen = () => {
               Alert.alert('Error', 'Cannot navigate to Pending Requests screen');
             }
           }}
+          activeOpacity={0.8}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="notifications-outline" size={24} color="#007AFF" />
-            <Text style={[styles.statsLabel, { marginLeft: 12, marginTop: 0 }]}>
-              Pending Requests
-            </Text>
+          <View style={styles.pendingLeft}>
+            <View style={styles.pendingIconContainer}>
+              <Ionicons name="notifications" size={24} color="#FF9500" />
+            </View>
+            <View>
+              <Text style={styles.pendingTitle}>Pending Requests</Text>
+              <Text style={styles.pendingSubtitle}>Requires your attention</Text>
+            </View>
           </View>
-          <View style={styles.pendingCountContainer}>
-            <Text style={styles.pendingCountText}>{pendingRequests.length}</Text>
+          <View style={styles.pendingRight}>
+            <Text style={styles.pendingCount}>{pendingRequests.length}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
           </View>
         </TouchableOpacity>
 
-        {/* Accepted Consumers List */}
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Accepted Consumers ({acceptedConsumers.length})</Text>
-          {acceptedConsumers.length === 0 ? (
-            <Text style={styles.emptyText}>No accepted consumers found.</Text>
-          ) : (
-            <FlatList
-              data={acceptedConsumers}
-              keyExtractor={(item, index) => `consumer_${item.id || index}`}
-              renderItem={renderConsumerItem}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
+        {/* TABS */}
+        <View style={styles.tabContainer}>
+          {/* <Text style={styles.sectionTitle}>Manage Connections</Text> */}
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[styles.tabButton, selectedTab === 'consumer' && styles.activeTab]}
+              onPress={() => setSelectedTab('consumer')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabText, selectedTab === 'consumer' && styles.activeTabText]}>
+                Consumers ({acceptedConsumers.length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, selectedTab === 'distributor' && styles.activeTab]}
+              onPress={() => setSelectedTab('distributor')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabText, selectedTab === 'distributor' && styles.activeTabText]}>
+                Distributors ({acceptedDistributors.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Accepted Distributors List */}
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Accepted Distributors ({acceptedDistributors.length})</Text>
-          {acceptedDistributors.length === 0 ? (
-            <Text style={styles.emptyText}>No accepted distributors found.</Text>
+        {/* LIST */}
+        <View style={styles.listContainer}>
+          {selectedTab === 'consumer' ? (
+            acceptedConsumers.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="people-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>No accepted consumers found.</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={acceptedConsumers}
+                keyExtractor={(item, index) => `consumer_${item.id || index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                    <View style={styles.listItemLeft}>
+                      <View style={styles.avatarSmall}>
+                        <Text style={styles.avatarText}>
+                          {((item.customer?.first_name?.[0] || '') + (item.customer?.last_name?.[0] || '')).toUpperCase() || 'U'}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.listItemText}>
+                          {item.customer ? `${item.customer.first_name} ${item.customer.last_name}`.trim() : item.name || 'Unknown Consumer'}
+                        </Text>
+                        <Text style={styles.listItemSubtext}>
+                          {item.customer?.contact || 'No contact'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                      <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                        {item.status?.toUpperCase() || 'ACCEPTED'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+              />
+            )
           ) : (
-            <FlatList
-              data={acceptedDistributors}
-              keyExtractor={(item, index) => `distributor_${item.id || index}`}
-              renderItem={renderDistributorItem}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-            />
+            acceptedDistributors.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="business-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>No accepted distributors found.</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={acceptedDistributors}
+                keyExtractor={(item, index) => `distributor_${item.id || index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                    <View style={styles.listItemLeft}>
+                      <View style={styles.avatarSmall}>
+                        <Text style={styles.avatarText}>
+                          {(item.milkman?.full_name?.[0] || item.name?.[0] || 'U').toUpperCase()}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.listItemText}>
+                          {item.milkman?.full_name || item.name || 'Unknown Distributor'}
+                        </Text>
+                        <Text style={styles.listItemSubtext}>
+                          {item.milkman?.phone_number || 'No contact'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                      <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                        {item.status?.toUpperCase() || 'ACCEPTED'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+              />
+            )
           )}
         </View>
       </View>
@@ -1034,15 +541,11 @@ const VendorHomeScreen = () => {
 
 export default VendorHomeScreen;
 
-// ... styles remain the same
-
-
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fefefe',
-    paddingTop: 40,
-    paddingBottom: 40,
-    minHeight: '100%',
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
   center: {
     justifyContent: 'center',
@@ -1051,139 +554,93 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
-  headerRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  // LOADING SCREEN STYLES
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'flex-start',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  logoutButton: {
-    padding: 4,
-  },
-
-  profileCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#ccc',
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  profileLocation: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginHorizontal: 16,
-    marginBottom: 24,
-  },
-  statsBox: {
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    width: '45%',
-    minHeight: 100,
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: '#444',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  statsValue: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginTop: 4,
-  },
-  shadowBox: {
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-
-  pendingCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  skeletonContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 18,
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: 'center',
-    minHeight: 60,
+    width: '100%',
   },
-
-  pendingCountContainer: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 14,
-    minWidth: 28,
+  skeletonHeader: {
+    marginBottom: 20,
+  },
+  skeletonTitle: {
+    width: '60%',
     height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E1E9EE',
+    borderRadius: 6,
+    marginBottom: 8,
   },
-  pendingCountText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-    paddingHorizontal: 6,
+  skeletonSubtitle: {
+    width: '40%',
+    height: 16,
+    backgroundColor: '#E1E9EE',
+    borderRadius: 4,
   },
-
-  listSection: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+  skeletonProfileCard: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  skeletonAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#E1E9EE',
+  },
+  skeletonProfileInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  skeletonProfileName: {
+    width: '70%',
+    height: 20,
+    backgroundColor: '#E1E9EE',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  skeletonProfileLocation: {
+    width: '50%',
+    height: 14,
+    backgroundColor: '#E1E9EE',
+    borderRadius: 4,
+  },
+  skeletonStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  skeletonStatCard: {
+    width: '48%',
+    height: 120,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 3 },
       },
@@ -1192,61 +649,373 @@ const styles = StyleSheet.create({
       },
     }),
   },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#222',
+  skeletonStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E1E9EE',
+  },
+  skeletonStatValue: {
+    width: '60%',
+    height: 24,
+    backgroundColor: '#E1E9EE',
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  skeletonStatLabel: {
+    width: '80%',
+    height: 14,
+    backgroundColor: '#E1E9EE',
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  loadingIndicatorContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    fontWeight: '500',
   },
 
-  listItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-
-  listItemContent: {
+  // HEADER
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 
-  listItemText: {
-    fontSize: 16,
-    color: '#444',
+  // PROFILE
+  profileCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#e0e0e0',
+  },
+  profileInfo: {
+    marginLeft: 16,
     flex: 1,
   },
-
-  statusText: {
-    fontSize: 12,
+  profileName: {
+    fontSize: 20,
     fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    color: '#1a1a1a',
   },
-
-  emptyText: {
+  profileLocation: {
     fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    paddingVertical: 20,
-    fontStyle: 'italic',
+    color: '#666',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  profileBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  profileBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 
-  errorText: {
-    color: 'red',
-    fontSize: 16,
+  // STATS SECTION - 2 PER ROW
+  statsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  statCardContainer: {
+    width: '48%', // 2 cards per row with space between
     marginBottom: 12,
+  },
+  statCard: {
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 195, // Consistent height
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  statContent: {
+    marginTop: 8,
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 4,
+  },
+  statSubtext: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  statTrend: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+  },
+
+  // PENDING REQUESTS
+  pendingCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  pendingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pendingIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFF4E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  pendingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  pendingSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  pendingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pendingCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF9500',
+    marginRight: 8,
+  },
+
+  // TABS
+  tabContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+
+  // LIST
+  listContainer: {
+    paddingHorizontal: 20,
+    flex: 1,
+  },
+  listItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  listItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatarSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  listItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  listItemSubtext: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
+  // EMPTY STATE
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    marginTop: 12,
     textAlign: 'center',
   },
 
+  // ERROR STATE
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+    marginTop: 16,
+  },
   retryButton: {
     backgroundColor: '#007AFF',
-    borderRadius: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 8,
   },
   retryButtonText: {
     color: '#fff',
@@ -1254,4 +1023,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-

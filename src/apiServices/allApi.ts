@@ -50,7 +50,7 @@ apiClient.interceptors.response.use(
 
       try {
         console.log('🔄 Attempting token refresh...');
-        
+
         // Dispatch refreshToken thunk from Redux
         await store.dispatch(refreshToken());
 
@@ -78,7 +78,7 @@ apiClient.interceptors.response.use(
 export const loginVendor = (payload: { contact: string; password: string }) =>
   publicApiClient.post('/vendor-login/vendor_login/', payload);
 
-// ✅ Refresh token API - PUBLIC  
+// ✅ Refresh token API - PUBLIC
 export const refreshTokenAPI = (data: { refresh: string }) =>
   publicApiClient.post('/token/refresh/', data);
 

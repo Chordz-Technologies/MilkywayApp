@@ -220,4 +220,16 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
+compactInputBox: {
+  width: 70,
+  height: 40,
+  fontSize: 13,
+  paddingHorizontal: 8,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 5,
+  backgroundColor: '#fff',
+  color: '#333',
+},
+
 });

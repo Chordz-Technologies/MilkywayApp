@@ -44,8 +44,8 @@ export const loginUser = createAsyncThunk(
       // Correct destructuring — your backend wraps this in .data.data
       const { access, refresh, user_id, role, name, contact } = response.data.data;
 
-      if (access) await AsyncStorage.setItem('access_token', access);
-      if (refresh) await AsyncStorage.setItem('refresh_token', refresh);
+      if (access) {await AsyncStorage.setItem('access_token', access);}
+      if (refresh) {await AsyncStorage.setItem('refresh_token', refresh);}
 
       const userInfo: User = {
         userID: user_id,
@@ -129,12 +129,12 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const refresh_token = await AsyncStorage.getItem('refresh_token');
-      if (!refresh_token) throw new Error('No refresh token available');
+      if (!refresh_token) {throw new Error('No refresh token available');}
 
       const response = await refreshTokenAPI({ refresh: refresh_token });
       const { access, refresh: new_refresh_token } = response.data?.data || response.data;
 
-      if (access) await AsyncStorage.setItem('access_token', access);
+      if (access) {await AsyncStorage.setItem('access_token', access);}
       if (new_refresh_token) {
         await AsyncStorage.setItem('refresh_token', new_refresh_token);
       }
