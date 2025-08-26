@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,10 +32,10 @@ type Vendor = {
   address?: string;
   business_name?: string;
   location?: string;
+  village?: string;
 };
 
 const DistributorHomeScreen = () => {
-  // ✅ ALL HOOKS AT THE TOP LEVEL
   const navigation = useNavigation<DistributorHomeNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -108,9 +109,9 @@ const DistributorHomeScreen = () => {
     } catch (err: any) {
       console.error('Send request error:', err);
       const errorMessage = err.response?.data?.detail ||
-                          err.response?.data?.message ||
-                          err.message ||
-                          'Failed to send request.';
+                           err.response?.data?.message ||
+                           err.message ||
+                           'Failed to send request.';
       Alert.alert('Error', errorMessage);
     } finally {
       setSubmittingId(null);
@@ -128,12 +129,7 @@ const DistributorHomeScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.multiRemove([
-                'access_token',
-                'refresh_token',
-                'userInfo',
-              ]);
-
+              await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'userInfo']);
               dispatch(logout());
               navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
             } catch (err) {
@@ -151,23 +147,23 @@ const DistributorHomeScreen = () => {
     const isSubmitting = submittingId === item.id;
 
     const vendorName = item.name || item.business_name || 'Unnamed Vendor';
-    const vendorAddress = item.address || item.location || 'Not Provided';
+    const village = item.village || 'No village provided';
 
     return (
       <View style={styles.card}>
         <View style={styles.info}>
           <Text style={styles.name}>{vendorName}</Text>
 
-          {/* ✅ Contact with phone icon instead of emoji */}
+          {/* Contact with phone icon */}
           <View style={styles.contactRow}>
             <Ionicons name="call-outline" size={16} color="#666" />
             <Text style={styles.contact}>{item.contact}</Text>
           </View>
 
-          {/* ✅ Address with location icon instead of emoji */}
+          {/* Village with location icon */}
           <View style={styles.addressRow}>
             <Ionicons name="location-outline" size={16} color="#666" />
-            <Text style={styles.address}>{vendorAddress}</Text>
+            <Text style={styles.address}>{village}</Text>
           </View>
         </View>
 
@@ -180,7 +176,7 @@ const DistributorHomeScreen = () => {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.buttonText}>
-              {isRequested ? 'Requested' : 'Request to Join'}
+              {isRequested ? 'Requested' : 'Join Vendor'}
             </Text>
           )}
         </TouchableOpacity>
@@ -327,8 +323,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-
-  // ✅ New styles for icon rows
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -349,7 +343,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 8,
   },
-
   button: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,

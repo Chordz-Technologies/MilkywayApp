@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -51,7 +49,7 @@ type AcceptedItem = {
 
 type NavigationProp = any;
 
-// **SKELETON LOADER COMPONENT**
+// SKELETON LOADER COMPONENT
 const SkeletonLoader = () => {
   return (
     <View style={styles.loadingContainer}>
@@ -92,7 +90,7 @@ const SkeletonLoader = () => {
   );
 };
 
-// **ANIMATED STAT CARD COMPONENT - 2 PER ROW**
+// ANIMATED STAT CARD COMPONENT - 2 PER ROW
 const AnimatedStatCard = ({ stat, onPress }: { stat: any; onPress?: () => void }) => {
   const scaleValue = useState(new Animated.Value(1))[0];
 
@@ -169,7 +167,9 @@ const VendorHomeScreen = () => {
     try {
       const vendorId = user?.userID;
 
-      if (!vendorId) {throw new Error('Vendor ID not found. Please log in again.');}
+      if (!vendorId) {
+        throw new Error('Vendor ID not found. Please log in again.');
+      }
 
       console.log('Fetching data for vendor ID:', vendorId);
 
@@ -177,7 +177,14 @@ const VendorHomeScreen = () => {
       try {
         const vendorRes = await getVendorDetailsById(vendorId);
         console.log('Vendor profile response:', vendorRes.data);
-        setVendorData(vendorRes.data?.data || vendorRes.data);
+
+        const vData = vendorRes.data?.data || vendorRes.data;
+        setVendorData(vData);
+
+        // Debug logs for vendor location and address
+        console.log('Vendor data:', vData);
+        console.log('Vendor location:', vData?.location);
+        console.log('Vendor address:', vData?.address);
       } catch (vendorError) {
         console.error('Vendor profile fetch error:', vendorError);
       }
@@ -227,7 +234,6 @@ const VendorHomeScreen = () => {
         console.error('Pending requests fetch error:', pendingError);
         setPendingRequests([]);
       }
-
     } catch (e: any) {
       console.error('General fetch data error:', e);
       setError(e.message || 'Failed to load data');
@@ -280,12 +286,15 @@ const VendorHomeScreen = () => {
     }
   };
 
-  // **LOADING STATE WITH SKELETON**
+  // Extract village from vendorData.location string (third segment)
+  const village = vendorData?.location?.split(',')[2]?.trim() || 'No village provided';
+
+  // LOADING STATE WITH SKELETON
   if (!isAuthenticated || !user?.userID || isLoading) {
     return <SkeletonLoader />;
   }
 
-  // **ERROR STATE**
+  // ERROR STATE
   if (error) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -298,7 +307,6 @@ const VendorHomeScreen = () => {
     );
   }
 
-  // **STATS DATA - 2 PER ROW LAYOUT**
   const statsData = [
     {
       icon: 'people-outline',
@@ -374,9 +382,7 @@ const VendorHomeScreen = () => {
             <Text style={styles.profileName}>
               {vendorData?.name || vendorData?.business_name || 'Vendor Name'}
             </Text>
-            <Text style={styles.profileLocation}>
-              {vendorData?.location || vendorData?.address || 'No location provided'}
-            </Text>
+            <Text style={styles.profileLocation}>{village}</Text>
             <View style={styles.profileBadge}>
               <Text style={styles.profileBadgeText}>Premium ⭐</Text>
             </View>
@@ -431,7 +437,6 @@ const VendorHomeScreen = () => {
 
         {/* TABS */}
         <View style={styles.tabContainer}>
-          {/* <Text style={styles.sectionTitle}>Manage Connections</Text> */}
           <View style={styles.tabRow}>
             <TouchableOpacity
               style={[styles.tabButton, selectedTab === 'consumer' && styles.activeTab]}
@@ -471,19 +476,25 @@ const VendorHomeScreen = () => {
                     <View style={styles.listItemLeft}>
                       <View style={styles.avatarSmall}>
                         <Text style={styles.avatarText}>
-                          {((item.customer?.first_name?.[0] || '') + (item.customer?.last_name?.[0] || '')).toUpperCase() || 'U'}
+                          {((item.customer?.first_name?.[0] || '') +
+                            (item.customer?.last_name?.[0] || ''))
+                            .toUpperCase() || 'U'}
                         </Text>
                       </View>
                       <View>
                         <Text style={styles.listItemText}>
-                          {item.customer ? `${item.customer.first_name} ${item.customer.last_name}`.trim() : item.name || 'Unknown Consumer'}
+                          {item.customer
+                            ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
+                            : item.name || 'Unknown Consumer'}
                         </Text>
                         <Text style={styles.listItemSubtext}>
                           {item.customer?.contact || 'No contact'}
                         </Text>
                       </View>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                    <View
+                      style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
+                    >
                       <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
                         {item.status?.toUpperCase() || 'ACCEPTED'}
                       </Text>
@@ -494,50 +505,51 @@ const VendorHomeScreen = () => {
                 scrollEnabled={false}
               />
             )
+          ) : acceptedDistributors.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="business-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No accepted distributors found.</Text>
+            </View>
           ) : (
-            acceptedDistributors.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="business-outline" size={48} color="#ccc" />
-                <Text style={styles.emptyText}>No accepted distributors found.</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={acceptedDistributors}
-                keyExtractor={(item, index) => `distributor_${item.id || index}`}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
-                    <View style={styles.listItemLeft}>
-                      <View style={styles.avatarSmall}>
-                        <Text style={styles.avatarText}>
-                          {(item.milkman?.full_name?.[0] || item.name?.[0] || 'U').toUpperCase()}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text style={styles.listItemText}>
-                          {item.milkman?.full_name || item.name || 'Unknown Distributor'}
-                        </Text>
-                        <Text style={styles.listItemSubtext}>
-                          {item.milkman?.phone_number || 'No contact'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                      <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {item.status?.toUpperCase() || 'ACCEPTED'}
+            <FlatList
+              data={acceptedDistributors}
+              keyExtractor={(item, index) => `distributor_${item.id || index}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                  <View style={styles.listItemLeft}>
+                    <View style={styles.avatarSmall}>
+                      <Text style={styles.avatarText}>
+                        {(item.milkman?.full_name?.[0] || item.name?.[0] || 'U').toUpperCase()}
                       </Text>
                     </View>
-                  </TouchableOpacity>
-                )}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={false}
-              />
-            )
+                    <View>
+                      <Text style={styles.listItemText}>
+                        {item.milkman?.full_name || item.name || 'Unknown Distributor'}
+                      </Text>
+                      <Text style={styles.listItemSubtext}>
+                        {item.milkman?.phone_number || 'No contact'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
+                  >
+                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                      {item.status?.toUpperCase() || 'ACCEPTED'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
           )}
         </View>
       </View>
     </ScrollView>
   );
 };
+
 
 export default VendorHomeScreen;
 
