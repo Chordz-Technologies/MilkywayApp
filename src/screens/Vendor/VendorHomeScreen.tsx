@@ -34,16 +34,17 @@ type AcceptedItem = {
     id: number;
     first_name: string;
     last_name: string;
-    contact: string;
+    // contact: string;
   };
   milkman?: {
     id: number;
     full_name: string;
-    phone_number: string;
+    // phone_number: string;
   };
   name?: string | null;
   user_type: 'customer' | 'milkman';
-  created_at: string;
+  // created_at: string;
+  user_contact: string;
   vendor: number;
 };
 
@@ -488,7 +489,7 @@ const VendorHomeScreen = () => {
                             : item.name || 'Unknown Consumer'}
                         </Text>
                         <Text style={styles.listItemSubtext}>
-                          {item.customer?.contact || 'No contact'}
+                          {item.user_contact || 'No contact'}
                         </Text>
                       </View>
                     </View>
@@ -527,7 +528,7 @@ const VendorHomeScreen = () => {
                         {item.milkman?.full_name || item.name || 'Unknown Distributor'}
                       </Text>
                       <Text style={styles.listItemSubtext}>
-                        {item.milkman?.phone_number || 'No contact'}
+                        {item.user_contact || 'No contact'}
                       </Text>
                     </View>
                   </View>

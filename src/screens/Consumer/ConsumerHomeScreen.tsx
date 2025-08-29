@@ -628,8 +628,8 @@ type Vendor = {
   business_name?: string;
   location?: string;
   village?: string;
-  cow_milk_rate?: number;
-  buffalo_milk_rate?: number;
+  cr?: number;
+  br?: number;
 };
 
 const CustomerHomeScreen = () => {
@@ -748,7 +748,7 @@ const CustomerHomeScreen = () => {
 
     const village = item.village || 'No village provided';
 
-    console.log('Rendering vendor:', item.id, item.name, 'Cow Milk Rate:', item.cow_milk_rate, 'Buffalo Milk Rate:', item.buffalo_milk_rate);
+    console.log('Rendering vendor:', item.id, item.name, 'Cow Milk Rate:', item.cr, 'Buffalo Milk Rate:', item.br);
 
     return (
       <View style={styles.card}>
@@ -766,10 +766,10 @@ const CustomerHomeScreen = () => {
           </View>
 
           <Text style={styles.rateText}>
-            Cow Milk Rate: {item.cow_milk_rate !== undefined && item.cow_milk_rate !== null ? `₹${item.cow_milk_rate}/L` : 'N/A'}
+            Cow Milk Rate: {item.cr !== undefined && item.cr !== null ? `₹${item.cr}/L` : 'N/A'}
           </Text>
           <Text style={styles.rateText}>
-            Buffalo Milk Rate: {item.buffalo_milk_rate !== undefined && item.buffalo_milk_rate !== null ? `₹${item.buffalo_milk_rate}/L` : 'N/A'}
+            Buffalo Milk Rate: {item.br !== undefined && item.br !== null ? `₹${item.br}/L` : 'N/A'}
           </Text>
         </View>
 

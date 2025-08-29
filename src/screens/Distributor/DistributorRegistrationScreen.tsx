@@ -19,7 +19,7 @@ interface DistributorPayload {
   full_name: string;
   phone_number?: string;
   flat_house: string;
-  society_area: string;
+  society_name: string;
   village: string;
   tal: string;
   dist: string;
@@ -77,28 +77,28 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
   const handleInputChange = (field: keyof FormState, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    if (localError) {setLocalError('');}
-    if (error) {dispatch(clearError());}
+    if (localError) { setLocalError(''); }
+    if (error) { dispatch(clearError()); }
   };
 
   const validate = () => {
     setLocalError('');
-    if (!form.name.trim()) {return 'Full name is required';}
+    if (!form.name.trim()) { return 'Full name is required'; }
 
     const phone = form.phone.trim();
-    if (!phone) {return 'Phone number is required';}
-    if (!/^[6-9]\d{9}$/.test(phone)) {return 'Phone number must be valid 10 digits starting with 6-9';}
+    if (!phone) { return 'Phone number is required'; }
+    if (!/^[6-9]\d{9}$/.test(phone)) { return 'Phone number must be valid 10 digits starting with 6-9'; }
 
-    if (!form.flat.trim()) {return 'Flat/House is required';}
-    if (!form.society.trim()) {return 'Society/Area is required';}
-    if (!form.village.trim()) {return 'Village is required';}
-    if (!form.tal.trim()) {return 'Tal is required';}
-    if (!form.dist.trim()) {return 'District is required';}
-    if (!form.state.trim()) {return 'State is required';}
+    if (!form.flat.trim()) { return 'Flat/House is required'; }
+    if (!form.society.trim()) { return 'Society/Area is required'; }
+    if (!form.village.trim()) { return 'Village is required'; }
+    if (!form.tal.trim()) { return 'Tal is required'; }
+    if (!form.dist.trim()) { return 'District is required'; }
+    if (!form.state.trim()) { return 'State is required'; }
 
-    if (!form.password) {return 'Password is required';}
-    if (form.password.length < 6) {return 'Password must be at least 6 characters';}
-    if (form.password !== form.confirmPassword) {return 'Passwords do not match';}
+    if (!form.password) { return 'Password is required'; }
+    if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
+    if (form.password !== form.confirmPassword) { return 'Passwords do not match'; }
 
     return '';
   };
@@ -117,7 +117,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
   };
 
   const handleSubmit = async () => {
-    if (isLoading) {return;}
+    if (isLoading) { return; }
 
     const validationError = validate();
     if (validationError) {
@@ -130,7 +130,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
       full_name: form.name,
       phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
       flat_house: form.flat.trim(),
-      society_area: form.society.trim(),
+      society_name: form.society.trim(),
       village: form.village.trim(),
       tal: form.tal.trim(),
       dist: form.dist.trim(),
@@ -140,6 +140,8 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     };
 
     try {
+      console.log('Distributor Payload:', payload); // For debugging
+
       const result = await dispatch(registerDistributor(payload));
       if (registerDistributor.fulfilled.match(result)) {
         showSuccessAlert('Distributor registration successful!');

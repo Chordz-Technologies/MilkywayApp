@@ -25,22 +25,23 @@ import {
 type Request = {
   id: number;
   user_id: number;
-  contact?: string;
+  // contact?: string;
   status: string;
   customer?: {
     id: number;
     first_name: string;
     last_name: string;
-    contact: string;
+    // contact: string;
   };
   milkman?: {
     id: number;
     full_name: string;
-    phone_number: string;
+    // phone_number: string;
   };
   name?: string | null;
   user_type: 'customer' | 'milkman';
-  created_at: string;
+  // created_at: string;
+  user_contact: string;
   vendor: number;
 };
 
@@ -165,19 +166,19 @@ const AnimatedRequestItem = React.memo(({
     return displayName;
   }, [item]);
 
-  const getContactInfo = useCallback(() => {
-    if (item.user_type === 'customer' && item.customer) {
-      return item.customer.contact || '';
-    } else if (item.user_type === 'milkman' && item.milkman) {
-      return item.milkman.phone_number || '';
-    }
-    return '';
-  }, [item]);
+  // const getContactInfo = useCallback(() => {
+  //   if (item.user_type === 'customer' && item.customer) {
+  //     return item.customer.user_contact || '';
+  //   } else if (item.user_type === 'milkman' && item.milkman) {
+  //     return item.milkman.user_contact || '';
+  //   }
+  //   return '';
+  // }, [item]);
 
   const displayName = getDisplayName();
-  const contactInfo = getContactInfo();
-  const roleText = item.user_type === 'customer' ? 'Customer' : 'Distributor';
-  const formattedDate = new Date(item.created_at).toLocaleDateString();
+  const contactInfo = item.user_contact;
+  const roleText = item.user_type === 'customer' ? 'Consumer' : 'Distributor';
+  // const formattedDate = new Date(item.created_at).toLocaleDateString();
   const isPending = ['pending', 'requested', 'waiting'].includes(item.status?.toLowerCase());
 
   const translateY = slideValue.interpolate({
@@ -230,10 +231,10 @@ const AnimatedRequestItem = React.memo(({
             </View>
           ) : null}
 
-          <View style={styles.infoRow}>
+          {/* <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#666" />
             <Text style={styles.date}>{formattedDate}</Text>
-          </View>
+          </View> */}
 
           <View style={styles.statusContainer}>
             <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
@@ -455,9 +456,9 @@ const PendingRequestsScreen = () => {
     } catch (err: any) {
       console.error(`Error ${action === 'accepted' ? 'accepting' : 'rejecting'} request:`, err);
       const errorMessage = err.response?.data?.detail ||
-                          err.response?.data?.message ||
-                          err.message ||
-                          `Failed to ${action === 'accepted' ? 'accept' : 'reject'} request.`;
+        err.response?.data?.message ||
+        err.message ||
+        `Failed to ${action === 'accepted' ? 'accept' : 'reject'} request.`;
       Alert.alert('Error', errorMessage);
     } finally {
       setProcessingRequestId(null);
