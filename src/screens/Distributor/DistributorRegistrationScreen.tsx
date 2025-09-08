@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
@@ -24,6 +23,7 @@ interface DistributorPayload {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode
   password: string;
   confirm_password: string;
 }
@@ -37,6 +37,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode to form state
   password: string;
   confirmPassword: string;
 }
@@ -55,6 +56,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     tal: '',
     dist: '',
     state: '',
+    pincode: '', // ✅ Added pincode initialization
     password: '',
     confirmPassword: '',
   });
@@ -96,6 +98,10 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     if (!form.dist.trim()) { return 'District is required'; }
     if (!form.state.trim()) { return 'State is required'; }
 
+    // ✅ Added pincode validation
+    if (!form.pincode.trim()) { return 'Pincode is required'; }
+    if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
+
     if (!form.password) { return 'Password is required'; }
     if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
     if (form.password !== form.confirmPassword) { return 'Passwords do not match'; }
@@ -135,12 +141,13 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
       tal: form.tal.trim(),
       dist: form.dist.trim(),
       state: form.state.trim(),
+      pincode: form.pincode.trim(), // ✅ Added pincode to payload
       password: form.password,
       confirm_password: form.confirmPassword,
     };
 
     try {
-      console.log('Distributor Payload:', payload); // For debugging
+      console.log('Distributor Payload:', payload);
 
       const result = await dispatch(registerDistributor(payload));
       if (registerDistributor.fulfilled.match(result)) {
@@ -269,6 +276,23 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
           value={form.state}
           onChangeText={text => handleInputChange('state', text)}
           placeholder="Enter State"
+          placeholderTextColor="#888"
+        />
+      </View>
+
+      {/* ✅ Added Pincode Field */}
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
+        <TextInput
+          style={styles.input}
+          value={form.pincode}
+          onChangeText={text => {
+            const cleaned = text.replace(/\D/g, '').slice(0, 6);
+            handleInputChange('pincode', cleaned);
+          }}
+          placeholder="Enter 6-digit pincode"
+          keyboardType="number-pad"
+          maxLength={6}
           placeholderTextColor="#888"
         />
       </View>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -27,13 +26,14 @@ interface VendorPayload {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode
 
   // Individual cow milk fields (exactly as backend expects)
   gir_cow_milk_litre?: number;
   gir_cow_rate?: number;
   jarshi_cow_milk_litre?: number;
   jarshi_cow_rate?: number;
-  deshi_milk_litre?: number;      // Note: backend uses "deshi_milk_litre" not "deshi_cow_milk_litre"
+  deshi_milk_litre?: number;
   deshi_cow_rate?: number;
 
   // Buffalo fields
@@ -56,6 +56,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode to form state
 }
 
 export default function VendorRegisterScreen({ navigation }: { navigation: any }) {
@@ -87,6 +88,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     tal: '',
     dist: '',
     state: '',
+    pincode: '', // ✅ Added pincode initialization
   });
 
   const [localError, setLocalError] = useState('');
@@ -130,6 +132,10 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
       !form.flat.trim() || !form.society.trim() || !form.village.trim() ||
       !form.tal.trim() || !form.dist.trim() || !form.state.trim()
     ) {return 'All address fields (Flat, Society, Village, Tal, Dist, State) are required';}
+
+    // ✅ Added pincode validation
+    if (!form.pincode.trim()) {return 'Pincode is required';}
+    if (!/^\d{6}$/.test(form.pincode.trim())) {return 'Pincode must be exactly 6 digits';}
 
     if (!hasCow && !hasBuffalo) {return 'Select at least one milk type (Cow or Buffalo)';}
 
@@ -180,6 +186,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
         tal: form.tal,
         dist: form.dist,
         state: form.state,
+        pincode: form.pincode.trim(), // ✅ Added pincode to payload
 
         // Global rates (cr = cow rate, br = buffalo rate)
         cr: cowMilkRate ? Number(cowMilkRate) : undefined,
@@ -202,11 +209,9 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
       if (hasBuffalo) {
         vendorPayload.buffalo_milk_litre = Number(buffaloCapacity);
-        // Buffalo individual rate is handled by buffaloRate input
-        // Global buffalo rate is handled by br field above
       }
 
-      console.log('Vendor Payload:', vendorPayload); // For debugging
+      console.log('Vendor Payload:', vendorPayload);
 
       const result = await dispatch(registerVendor(vendorPayload));
       if (registerVendor.fulfilled.match(result)) {
@@ -402,6 +407,23 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
           value={form.state}
           onChangeText={text => handleInputChange('state', text)}
           placeholder="Enter State"
+          placeholderTextColor="#888"
+        />
+      </View>
+
+      {/* ✅ Added Pincode Field */}
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
+        <TextInput
+          style={styles.input}
+          value={form.pincode}
+          onChangeText={text => {
+            const cleaned = text.replace(/\D/g, '').slice(0, 6);
+            handleInputChange('pincode', cleaned);
+          }}
+          placeholder="Enter 6-digit pincode"
+          keyboardType="number-pad"
+          maxLength={6}
           placeholderTextColor="#888"
         />
       </View>

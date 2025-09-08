@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -25,6 +24,7 @@ interface UserPayload {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode
   contact?: string;
   password: string;
   confirm_password?: string;
@@ -45,6 +45,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
+  pincode: string; // ✅ Added pincode to form state
 }
 
 export default function ConsumerRegistrationScreen({ navigation }: { navigation: any }) {
@@ -69,6 +70,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     tal: '',
     dist: '',
     state: '',
+    pincode: '', // ✅ Added pincode initialization
   });
 
   const [localError, setLocalError] = useState('');
@@ -115,6 +117,10 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     if (!form.dist.trim()) {return 'District is required';}
     if (!form.state.trim()) {return 'State is required';}
 
+    // ✅ Added pincode validation
+    if (!form.pincode.trim()) {return 'Pincode is required';}
+    if (!/^\d{6}$/.test(form.pincode.trim())) {return 'Pincode must be exactly 6 digits';}
+
     if (!hasCow && !hasBuffalo) {return 'Select at least one milk type (Cow or Buffalo)';}
 
     if (hasCow) {
@@ -149,6 +155,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         tal: form.tal.trim(),
         dist: form.dist.trim(),
         state: form.state.trim(),
+        pincode: form.pincode.trim(), // ✅ Added pincode to payload
         contact: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
         password: form.password,
         confirm_password: form.confirmPassword,
@@ -320,7 +327,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         </View>
       </View>
 
-      {/* New Structured Address Fields */}
+      {/* Address Fields */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>
           Flat / House<Text style={styles.required}> *</Text>
@@ -395,6 +402,25 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
           value={form.state}
           onChangeText={(text) => handleInputChange('state', text)}
           placeholder="Enter State"
+          placeholderTextColor="#888"
+        />
+      </View>
+
+      {/* ✅ Added Pincode Field */}
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>
+          Pincode<Text style={styles.required}> *</Text>
+        </Text>
+        <TextInput
+          style={styles.input}
+          value={form.pincode}
+          onChangeText={(text) => {
+            const cleaned = text.replace(/\D/g, '').slice(0, 6);
+            handleInputChange('pincode', cleaned);
+          }}
+          placeholder="Enter 6-digit pincode"
+          keyboardType="number-pad"
+          maxLength={6}
           placeholderTextColor="#888"
         />
       </View>

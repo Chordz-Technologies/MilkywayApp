@@ -496,7 +496,7 @@ const PendingRequestsScreen = () => {
     return (
       <View style={[styles.container, styles.centerContainer]}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading user information...</Text>
+        <Text style={styles.loadingText}>Loading vendor requests...</Text>
       </View>
     );
   }
