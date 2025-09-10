@@ -1,4 +1,452 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+
+//New code for testing:
+// import React, { useEffect, useCallback, useMemo, useState } from 'react';
+// import {
+//   View,
+//   Text,
+//   ScrollView,
+//   TouchableOpacity,
+//   Alert,
+//   ActivityIndicator,
+//   RefreshControl,
+// } from 'react-native';
+// import { Calendar, DateData, MarkedDates } from 'react-native-calendars';
+// import Ionicons from 'react-native-vector-icons/Ionicons';
+// import { useSelector, useDispatch } from 'react-redux';
+// import type { RootState, AppDispatch } from '../../store/index';
+
+// import LeaveRequestModal from '../../components/LeaveRequestModal';
+// import ExtraMilkModal from '../../components/ExtraMilkModal';
+
+// import {
+//   calendarScreenStyles,
+//   calendarTheme,
+//   colors,
+// } from './../../styles/CalendorScreenStyle';
+
+// import {
+//   fetchCalendarData,
+//   submitLeaveRequest,
+//   submitExtraMilkRequest,
+//   setCurrentMonth,
+//   clearError,
+//   cancelLeave,
+// } from '../../store/calendarSlice';
+
+// import { checkStoredAuth } from '../../store/authSlice';
+
+// interface LeaveRequestData {
+//   startDate: string;
+//   endDate: string;
+//   reason: string;
+//   leaveType: 'single' | 'multiple';
+// }
+
+// interface ExtraMilkData {
+//   date: string;
+//   quantity: number;
+//   milkType: 'cow' | 'buffalo' | 'mixed';
+//   reason: string;
+// }
+
+// const ConsumerCalendarScreen: React.FC = () => {
+//   const dispatch = useDispatch<AppDispatch>();
+
+//   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+//   const customerId = user?.userID ? parseInt(user.userID.toString(), 10) : null;
+
+//   const {
+//     calendarData,
+//     deliveryTypes,
+//     upcomingLeaves,
+//     monthlySummary,
+//     loading,
+//     error,
+//     currentMonth,
+//     currentYear,
+//   } = useSelector((state: RootState) => state.calendar);
+
+//   const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
+//   const [showExtraMilkModal, setShowExtraMilkModal] = useState<boolean>(false);
+//   const [selectedDate, setSelectedDate] = useState<string>('');
+//   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+//   useEffect(() => {
+//     dispatch(checkStoredAuth());
+//   }, [dispatch]);
+
+//   useEffect(() => {
+//     if (customerId && isAuthenticated) {
+//       const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+//       dispatch(fetchCalendarData({ customerId, month: monthString }));
+//     }
+//   }, [dispatch, customerId, isAuthenticated, currentMonth, currentYear]);
+
+//   const handleLeaveSubmit = useCallback(
+//     async (leaveData: LeaveRequestData): Promise<void> => {
+//       if (!customerId) {
+//         Alert.alert('Error', 'Customer ID not found');
+//         return;
+//       }
+//       try {
+//         await dispatch(submitLeaveRequest({ customerId, leaveData })).unwrap();
+//         Alert.alert('Success', 'Leave request submitted successfully!');
+//         setShowLeaveModal(false);
+//       } catch (error) {
+//         Alert.alert('Error', (error as string) || 'Failed to submit leave request');
+//       }
+//     },
+//     [dispatch, customerId]
+//   );
+
+//   const handleExtraMilkSubmit = useCallback(
+//     async (extraMilkData: ExtraMilkData): Promise<void> => {
+//       if (!customerId) {
+//         Alert.alert('Error', 'Customer ID not found');
+//         return;
+//       }
+//       const requestData = {
+//         date: extraMilkData.date,
+//         quantity: extraMilkData.quantity,
+//         reason: extraMilkData.reason,
+//       };
+//       try {
+//         await dispatch(submitExtraMilkRequest({ customerId, extraMilkData: requestData })).unwrap();
+//         Alert.alert('Success', 'Extra milk request submitted successfully!');
+//         setShowExtraMilkModal(false);
+//       } catch (error) {
+//         Alert.alert('Error', (error as string) || 'Failed to request extra milk');
+//       }
+//     },
+//     [dispatch, customerId]
+//   );
+
+//   const markedDates: MarkedDates = useMemo(() => {
+//     const combinedDates = { ...calendarData };
+
+//     if (selectedDate) {
+//       combinedDates[selectedDate] = {
+//         selected: true,
+//         selectedColor: colors.primary,
+//         marked: combinedDates[selectedDate]?.marked ?? false,
+//         dotColor: colors.white,
+//       };
+//     }
+
+//     return combinedDates;
+//   }, [selectedDate, calendarData]);
+
+//   const handleDayPress = useCallback(
+//     (day: DateData): void => {
+//       setSelectedDate(day.dateString);
+//       const deliveryType = deliveryTypes[day.dateString];
+//       if (deliveryType) {
+//         const statusMessages: Record<string, string> = {
+//           delivered: 'Milk delivery completed',
+//           missed: 'Delivery missed (customer not at home)',
+//           not_requested: 'Customer requested no delivery',
+//           vendor_unavailable: 'Vendor/milkman unavailable',
+//           customer_paused: 'Customer on leave',
+//           extra_milk: 'Extra milk requested',
+//         };
+//         const message = statusMessages[deliveryType] || 'Unknown status';
+//         Alert.alert('Delivery Status', `${message} on ${day.dateString}`);
+//       }
+//     },
+//     [deliveryTypes]
+//   );
+
+//   const handleMonthChange = useCallback(
+//     (month: DateData): void => {
+//       dispatch(setCurrentMonth({ month: month.month - 1, year: month.year }));
+//     },
+//     [dispatch]
+//   );
+
+//   const handleApplyLeave = useCallback(() => {
+//     if (!customerId) {
+//       Alert.alert('Error', 'Please login first');
+//       return;
+//     }
+//     setShowLeaveModal(true);
+//   }, [customerId]);
+
+//   const handleExtraMilk = useCallback(() => {
+//     if (!customerId) {
+//       Alert.alert('Error', 'Please login first');
+//       return;
+//     }
+//     setShowExtraMilkModal(true);
+//   }, [customerId]);
+
+//   const handleCancelLeave = useCallback(
+//     (leaveId: string, leaveDate: string): void => {
+//       Alert.alert(
+//         'Cancel Leave',
+//         `Cancel leave for ${leaveDate}?`,
+//         [
+//           {
+//             text: 'Yes, Cancel',
+//             style: 'destructive',
+//             onPress: () => {
+//               dispatch(cancelLeave({ leaveId, leaveDate }));
+//               Alert.alert('Success', 'Leave cancelled successfully!');
+//             },
+//           },
+//           { text: 'No', style: 'cancel' },
+//         ]
+//       );
+//     },
+//     [dispatch]
+//   );
+
+//   const onRefresh = useCallback(() => {
+//     if (customerId) {
+//       setRefreshing(true);
+//       dispatch(clearError());
+//       const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+//       dispatch(fetchCalendarData({ customerId, month: monthString })).finally(() =>
+//         setRefreshing(false)
+//       );
+//     }
+//   }, [dispatch, customerId, currentMonth, currentYear]);
+
+//   const monthNames: string[] = [
+//     'January',
+//     'February',
+//     'March',
+//     'April',
+//     'May',
+//     'June',
+//     'July',
+//     'August',
+//     'September',
+//     'October',
+//     'November',
+//     'December',
+//   ];
+
+//   if (!isAuthenticated) {
+//     return (
+//       <View style={calendarScreenStyles.loadingContainer}>
+//         <Text style={calendarScreenStyles.loadingText}>Please login to view your calendar</Text>
+//       </View>
+//     );
+//   }
+
+//   if (loading && !refreshing) {
+//     return (
+//       <View style={calendarScreenStyles.loadingContainer}>
+//         <ActivityIndicator size="large" color={colors.primary} />
+//         <Text style={calendarScreenStyles.loadingText}>Loading calendar...</Text>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <View style={calendarScreenStyles.container}>
+//       {/* Header */}
+//       <View style={calendarScreenStyles.header}>
+//         <Text style={calendarScreenStyles.title}>Milkyway Calendar</Text>
+//         <View style={calendarScreenStyles.monthSelector}>
+//           <Text style={calendarScreenStyles.monthText}>
+//             {monthNames[currentMonth]} {currentYear}
+//           </Text>
+//         </View>
+//         {customerId && (
+//           <Text style={{ fontSize: 12, color: colors.gray500, textAlign: 'center' }}>
+//             Customer ID: {customerId}
+//           </Text>
+//         )}
+//       </View>
+
+//       {/* Error banner */}
+//       {error && (
+//         <View style={calendarScreenStyles.errorContainer}>
+//           <Text style={calendarScreenStyles.errorText}>{error}</Text>
+//           <TouchableOpacity style={calendarScreenStyles.retryButton} onPress={() => dispatch(clearError())}>
+//             <Text style={calendarScreenStyles.retryButtonText}>Dismiss</Text>
+//           </TouchableOpacity>
+//         </View>
+//       )}
+
+//       <ScrollView
+//         style={calendarScreenStyles.content}
+//         contentContainerStyle={calendarScreenStyles.scrollContainer}
+//         showsVerticalScrollIndicator={false}
+//         refreshControl={
+//           <RefreshControl
+//             refreshing={refreshing}
+//             onRefresh={onRefresh}
+//             colors={[colors.primary]}
+//             tintColor={colors.primary}
+//           />
+//         }
+//       >
+//         {/* Calendar */}
+//         <View style={calendarScreenStyles.calendarContainer}>
+//           <Calendar
+//             style={calendarScreenStyles.calendar}
+//             theme={calendarTheme}
+//             onDayPress={handleDayPress}
+//             onMonthChange={handleMonthChange}
+//             markedDates={markedDates}
+//             markingType={'dot'}
+//             hideExtraDays={true}
+//             disableMonthChange={false}
+//             firstDay={1}
+//             showWeekNumbers={false}
+//             enableSwipeMonths={true}
+//           />
+//         </View>
+
+//         {/* Legend */}
+//         <View style={calendarScreenStyles.legendContainer}>
+//           <Text style={calendarScreenStyles.legendTitle}>Status Legend</Text>
+//           <View style={calendarScreenStyles.legendGrid}>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#4CAF50' }]} />
+//               <Text style={calendarScreenStyles.legendText}>Delivered</Text>
+//             </View>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.primary }]} />
+//               <Text style={calendarScreenStyles.legendText}>Missed</Text>
+//             </View>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FF9800' }]} />
+//               <Text style={calendarScreenStyles.legendText}>Not Requested</Text>
+//             </View>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#F44336' }]} />
+//               <Text style={calendarScreenStyles.legendText}>Vendor Unavailable</Text>
+//             </View>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#9C27B0' }]} />
+//               <Text style={calendarScreenStyles.legendText}>Leave</Text>
+//             </View>
+//             <View style={calendarScreenStyles.legendItem}>
+//               <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FFC107' }]} />
+//               <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
+//             </View>
+//           </View>
+//         </View>
+
+//         {/* Monthly Summary */}
+//         <View style={calendarScreenStyles.summaryContainer}>
+//           <Text style={calendarScreenStyles.summaryTitle}>
+//             {monthNames[currentMonth]} {currentYear} Summary
+//           </Text>
+//           <View style={calendarScreenStyles.summaryGrid}>
+//             <View style={calendarScreenStyles.summaryItem}>
+//               <Ionicons name="water-outline" size={24} color={colors.primary} />
+//               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalMilk}</Text>
+//               <Text style={calendarScreenStyles.summaryLabel}>Total Milk</Text>
+//             </View>
+//             <View style={calendarScreenStyles.summaryItem}>
+//               <Ionicons name="receipt-outline" size={24} color={colors.success} />
+//               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalBill}</Text>
+//               <Text style={calendarScreenStyles.summaryLabel}>Total Bill</Text>
+//             </View>
+//             <View style={calendarScreenStyles.summaryItem}>
+//               <Ionicons name="calendar-outline" size={24} color={colors.danger} />
+//               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalLeaves}</Text>
+//               <Text style={calendarScreenStyles.summaryLabel}>Total Leaves</Text>
+//             </View>
+//             <View style={calendarScreenStyles.summaryItem}>
+//               <Ionicons name="checkmark-circle-outline" size={24} color={'#4CAF50'} />
+//               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalDeliveries}</Text>
+//               <Text style={calendarScreenStyles.summaryLabel}>Deliveries</Text>
+//             </View>
+//           </View>
+//         </View>
+
+//         {/* Leaves Section */}
+//         <View style={calendarScreenStyles.leavesContainer}>
+//           <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
+//           {upcomingLeaves.length > 0 ? (
+//             upcomingLeaves.map((leave) => (
+//               <View key={leave.id} style={calendarScreenStyles.leaveItem}>
+//                 <View style={calendarScreenStyles.leaveItemContent}>
+//                   <Text style={calendarScreenStyles.leaveDate}>{leave.date}</Text>
+//                   <Text style={calendarScreenStyles.leaveReason}>
+//                     {leave.reason} • {leave.status}
+//                   </Text>
+//                 </View>
+//                 {leave.status !== 'cancelled' && (
+//                   <TouchableOpacity
+//                     style={calendarScreenStyles.leaveButton}
+//                     onPress={() => handleCancelLeave(leave.id, leave.date)}
+//                   >
+//                     <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
+//                   </TouchableOpacity>
+//                 )}
+//               </View>
+//             ))
+//           ) : (
+//             <Text style={calendarScreenStyles.noLeavesText}>No upcoming leaves</Text>
+//           )}
+//         </View>
+
+//         {/* Actions */}
+//         <View style={calendarScreenStyles.actionsContainer}>
+//           <Text style={calendarScreenStyles.actionsTitle}>Quick Actions</Text>
+
+//           <TouchableOpacity
+//             style={calendarScreenStyles.actionButton}
+//             onPress={handleApplyLeave}
+//             activeOpacity={0.7}
+//           >
+//             <View style={calendarScreenStyles.actionIcon}>
+//               <Ionicons name="calendar-outline" size={22} color={colors.white} />
+//             </View>
+//             <View style={calendarScreenStyles.actionTextContainer}>
+//               <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
+//               <Text style={calendarScreenStyles.actionSubtitle}>
+//                 Request leave for specific date
+//               </Text>
+//             </View>
+//             <Ionicons name="chevron-forward-outline" size={16} color={colors.gray500} />
+//           </TouchableOpacity>
+
+//           <TouchableOpacity
+//             style={calendarScreenStyles.actionButton}
+//             onPress={handleExtraMilk}
+//             activeOpacity={0.7}
+//           >
+//             <View style={[calendarScreenStyles.actionIcon, calendarScreenStyles.actionIconGreen]}>
+//               <Ionicons name="add-circle-outline" size={22} color={colors.white} />
+//             </View>
+//             <View style={calendarScreenStyles.actionTextContainer}>
+//               <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
+//               <Text style={calendarScreenStyles.actionSubtitle}>
+//                 Request additional milk delivery
+//               </Text>
+//             </View>
+//             <Ionicons name="chevron-forward-outline" size={16} color={colors.gray500} />
+//           </TouchableOpacity>
+//         </View>
+//       </ScrollView>
+
+//       <LeaveRequestModal
+//         isVisible={showLeaveModal}
+//         onClose={() => setShowLeaveModal(false)}
+//         onSubmit={handleLeaveSubmit}
+//       />
+
+//       <ExtraMilkModal
+//         isVisible={showExtraMilkModal}
+//         onClose={() => setShowExtraMilkModal(false)}
+//         onSubmit={handleExtraMilkSubmit}
+//       />
+//     </View>
+//   );
+// };
+
+// export default ConsumerCalendarScreen;
+
+////////
+import React, { useEffect, useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -10,52 +458,40 @@ import {
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-// Import the modal components
+import { useSelector, useDispatch } from 'react-redux';
+import type { RootState, AppDispatch } from '../../store';
+
 import LeaveRequestModal from '../../components/LeaveRequestModal';
 import ExtraMilkModal from '../../components/ExtraMilkModal';
-// Import the comprehensive style file
+
 import {
   calendarScreenStyles,
   calendarTheme,
   colors,
-} from './../../styles/CalendorScreenStyle';
+} from '../../styles/CalendorScreenStyle';
 
-// ✅ Define your own marking type that matches react-native-calendars expectations
-type CustomMarking = {
-  selected?: boolean;
-  marked?: boolean;
-  dotColor?: string;
-  selectedColor?: string;
-  disabled?: boolean;
-  disableTouchEvent?: boolean;
-  textColor?: string;
-  selectedTextColor?: string;
-};
+import {
+  fetchCalendarData,
+  submitLeaveRequest,
+  submitExtraMilkRequest,
+  setCurrentMonth,
+  clearError,
+  cancelLeave,
+} from '../../store/calendarSlice';
 
-// ✅ Define markedDates type
-type MarkedDatesType = { [date: string]: CustomMarking };
+import { checkStoredAuth } from '../../store/authSlice';
 
-interface LeaveItem {
-  id: string;
-  date: string;
-  reason: string;
-  status: 'approved' | 'pending' | 'cancelled';
-}
+// Custom type for react-native-calendars markedDates
+type MarkedDates = Record<
+  string,
+  {
+    selected?: boolean;
+    marked?: boolean;
+    selectedColor?: string;
+    dotColor?: string;
+  }
+>;
 
-interface MonthlySummary {
-  totalMilk: string;
-  totalBill: string;
-  totalLeaves: number;
-  totalDeliveries: number;
-}
-
-interface BillInfo {
-  amount: number;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
-}
-
-// ✅ Define interfaces for modal data
 interface LeaveRequestData {
   startDate: string;
   endDate: string;
@@ -70,297 +506,192 @@ interface ExtraMilkData {
   reason: string;
 }
 
-export default function ConsumerCalendarScreen() {
-  // State variables
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth());
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+const ConsumerCalendarScreen: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ Add modal state variables
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const customerId = user?.userID ? parseInt(user.userID.toString(), 10) : null;
+
+  const {
+    calendarData,
+    deliveryTypes,
+    upcomingLeaves,
+    monthlySummary,
+    loading,
+    error,
+    currentMonth,
+    currentYear,
+  } = useSelector((state: RootState) => state.calendar);
+
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showExtraMilkModal, setShowExtraMilkModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ Dynamic state for calendar data (removed scheduled dates)
-  const [calendarData, setCalendarData] = useState<MarkedDatesType>({
-    '2025-09-02': { marked: true, dotColor: colors.delivered },
-    '2025-09-05': { marked: true, dotColor: colors.delivered },
-    '2025-09-10': { marked: true, dotColor: colors.pending },
-    '2025-09-11': { marked: true, dotColor: colors.primary }, // Blue for not delivered
-    '2025-09-12': { marked: true, dotColor: colors.delivered },
-  });
+  // Load auth info on mount
+  useEffect(() => {
+    dispatch(checkStoredAuth());
+  }, [dispatch]);
 
-  const [leaveDates, setLeaveDates] = useState<MarkedDatesType>({
-    '2025-09-15': { marked: true, dotColor: colors.leave },
-    '2025-09-20': { marked: true, dotColor: colors.leave },
-    '2025-09-25': { marked: true, dotColor: colors.leave },
-  });
+  // Fetch calendar data on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      if (customerId && isAuthenticated) {
+        const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+        dispatch(fetchCalendarData({ customerId, month: monthString }));
+      }
+    }, [customerId, isAuthenticated, currentMonth, currentYear, dispatch])
+  );
 
-  // ✅ Keep track of delivery types (removed scheduled)
-  const [deliveryTypes, setDeliveryTypes] = useState<Record<string, string>>({
-    '2025-09-02': 'delivered',
-    '2025-09-05': 'delivered',
-    '2025-09-10': 'pending',
-    '2025-09-11': 'not_delivered', // Blue for not delivered
-    '2025-09-12': 'delivered',
-    '2025-09-15': 'leave',
-    '2025-09-20': 'leave',
-    '2025-09-25': 'leave',
-  });
+  // Debug: log calendar state for verification
+  console.log('Redux calendarData:', calendarData);
+  console.log('Redux deliveryTypes:', deliveryTypes);
 
-  // Memoize other local data
-  const [upcomingLeaves, setUpcomingLeaves] = useState<LeaveItem[]>([
-    { id: '1', date: 'Sep 15, 2025', reason: 'Personal Leave', status: 'approved' },
-    { id: '2', date: 'Sep 20, 2025', reason: 'Festival Holiday', status: 'pending' },
-    { id: '3', date: 'Sep 25, 2025', reason: 'Family Function', status: 'approved' },
-  ]);
+  // Handlers for leave and extra milk submission
+  const handleLeaveSubmit = useCallback(
+    async (leaveData: LeaveRequestData) => {
+      if (!customerId) {
+        Alert.alert('Error', 'Customer ID not found');
+        return;
+      }
+      try {
+        await dispatch(submitLeaveRequest({ customerId, leaveData })).unwrap();
+        Alert.alert('Success', 'Leave request submitted successfully!');
+        setShowLeaveModal(false);
+      } catch (err) {
+        Alert.alert('Error', (err as string) || 'Failed to submit leave request');
+      }
+    },
+    [dispatch, customerId]
+  );
 
-  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary>({
-    totalMilk: '24L',
-    totalBill: '₹1,200',
-    totalLeaves: 3,
-    totalDeliveries: 22,
-  });
-
-  const [billInfo, setBillInfo] = useState<BillInfo>({
-    amount: 1450,
-    dueDate: 'September 30, 2025',
-    status: 'pending',
-  });
-
-  // Helper function to get dates between start and end
-  const getDatesBetween = (startDate: string, endDate: string): string[] => {
-    const dates = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
-      dates.push(dt.toISOString().split('T')[0]);
-    }
-
-    return dates;
-  };
-
-  // ✅ Handle Leave Request Submission (Local Update)
-  const handleLeaveSubmit = useCallback(async (leaveData: LeaveRequestData) => {
-    try {
-      setIsLoading(true);
-
-      // Update local leave dates state
-      const updatedLeaveDates = { ...leaveDates };
-      const dates = getDatesBetween(leaveData.startDate, leaveData.endDate);
-
-      dates.forEach(date => {
-        updatedLeaveDates[date] = { marked: true, dotColor: colors.leave };
-      });
-      setLeaveDates(updatedLeaveDates);
-
-      // Update delivery types
-      const updatedDeliveryTypes = { ...deliveryTypes };
-      dates.forEach(date => {
-        updatedDeliveryTypes[date] = 'leave';
-      });
-      setDeliveryTypes(updatedDeliveryTypes);
-
-      // Add to upcoming leaves list
-      const newLeave: LeaveItem = {
-        id: Date.now().toString(),
-        date: `${leaveData.startDate} to ${leaveData.endDate}`,
-        reason: leaveData.reason,
-        status: 'approved',
+  const handleExtraMilkSubmit = useCallback(
+    async (extraMilkData: ExtraMilkData) => {
+      if (!customerId) {
+        Alert.alert('Error', 'Customer ID not found');
+        return;
+      }
+      const requestData = {
+        date: extraMilkData.date,
+        quantity: extraMilkData.quantity,
+        reason: extraMilkData.reason,
       };
-      setUpcomingLeaves(prev => [...prev, newLeave]);
+      try {
+        await dispatch(submitExtraMilkRequest({ customerId, extraMilkData: requestData })).unwrap();
+        Alert.alert('Success', 'Extra milk request submitted successfully!');
+        setShowExtraMilkModal(false);
+      } catch (err) {
+        Alert.alert('Error', (err as string) || 'Failed to request extra milk');
+      }
+    },
+    [dispatch, customerId]
+  );
 
-      // Update monthly summary
-      setMonthlySummary(prev => ({
-        ...prev,
-        totalLeaves: prev.totalLeaves + dates.length,
-      }));
-
-      // Simulate processing time
-      setTimeout(() => {
-        Alert.alert(
-          'Success',
-          `Leave request submitted successfully!\nDates: ${leaveData.startDate} to ${leaveData.endDate}\nReason: ${leaveData.reason}`
-        );
-        setIsLoading(false);
-      }, 1000);
-
-    } catch (err: any) {
-      console.error('Leave request failed:', err);
-      Alert.alert('Error', 'Failed to submit leave request');
-      setIsLoading(false);
-    }
-  }, [leaveDates, deliveryTypes]);
-
-  // ✅ Handle Extra Milk Request Submission (Local Update)
-  const handleExtraMilkSubmit = useCallback(async (extraMilkData: ExtraMilkData) => {
-    try {
-      setIsLoading(true);
-
-      // Update local calendar data
-      const updatedCalendar = { ...calendarData };
-      updatedCalendar[extraMilkData.date] = {
-        ...updatedCalendar[extraMilkData.date],
-        marked: true,
-        dotColor: colors.warning || '#ffc107', // Orange for extra milk
-      };
-      setCalendarData(updatedCalendar);
-
-      // Update delivery types
-      const updatedDeliveryTypes = { ...deliveryTypes };
-      updatedDeliveryTypes[extraMilkData.date] = 'extra_milk';
-      setDeliveryTypes(updatedDeliveryTypes);
-
-      // Simulate processing time
-      setTimeout(() => {
-        Alert.alert(
-          'Success',
-          `Extra milk request submitted!\nDate: ${extraMilkData.date}\nQuantity: ${extraMilkData.quantity}L\nType: ${extraMilkData.milkType}\nReason: ${extraMilkData.reason}`
-        );
-        setIsLoading(false);
-      }, 1000);
-
-    } catch (err: any) {
-      console.error('Extra milk request failed:', err);
-      Alert.alert('Error', 'Failed to request extra milk');
-      setIsLoading(false);
-    }
-  }, [calendarData, deliveryTypes]);
-
-  // ✅ Create marked dates with proper typing
-  const markedDates: MarkedDatesType = useMemo(() => {
-    const combinedDates: MarkedDatesType = { ...calendarData, ...leaveDates };
+  // Prepare marked dates for calendar component
+  const markedDates: MarkedDates = useMemo(() => {
+    const combined = { ...calendarData };
 
     if (selectedDate) {
-      combinedDates[selectedDate] = {
+      combined[selectedDate] = {
         selected: true,
         selectedColor: colors.primary,
-        marked: !!(combinedDates[selectedDate]),
+        marked: combined[selectedDate]?.marked ?? false,
         dotColor: colors.white,
       };
     }
 
-    return combinedDates;
-  }, [selectedDate, calendarData, leaveDates]);
+    return combined;
+  }, [calendarData, selectedDate]);
 
-  // ✅ Event handlers (removed scheduled case)
-  const handleDayPress = useCallback((day: DateData) => {
-    setSelectedDate(day.dateString);
-
-    // Show info about selected date
-    const deliveryType = deliveryTypes[day.dateString];
-
-    if (deliveryType) {
-      if (deliveryType === 'leave') {
-        Alert.alert('Leave Day', `You have a leave on ${day.dateString}`);
-      } else if (deliveryType === 'extra_milk') {
-        Alert.alert('Extra Milk', `Extra milk requested on ${day.dateString}`);
-      } else if (deliveryType === 'not_delivered') {
-        Alert.alert('Delivery Status', `Milk delivery was not completed by distributor on ${day.dateString}`);
-      } else if (deliveryType === 'delivered') {
-        Alert.alert('Delivery Info', `Milk delivery completed on ${day.dateString}`);
-      } else if (deliveryType === 'pending') {
-        Alert.alert('Delivery Info', `Milk delivery pending on ${day.dateString}`);
+  // Handlers for user actions and calendar interaction
+  const handleDayPress = useCallback(
+    (day: DateData) => {
+      setSelectedDate(day.dateString);
+      const type = deliveryTypes[day.dateString];
+      if (type) {
+        const messages: Record<string, string> = {
+          delivered: 'Milk delivery completed',
+          missed: 'Delivery missed (customer not at home)',
+          not_requested: 'Customer requested no delivery',
+          vendor_unavailable: 'Vendor/milkman unavailable',
+          customer_paused: 'Customer on leave',
+          extra_milk: 'Extra milk requested',
+        };
+        Alert.alert('Delivery Status', `${messages[type] ?? 'Unknown status'} on ${day.dateString}`);
       }
-    }
-  }, [deliveryTypes]);
+    },
+    [deliveryTypes]
+  );
 
-  const handleMonthChange = useCallback((month: DateData) => {
-    setCurrentMonth(month.month - 1);
-  }, []);
+  const handleMonthChange = useCallback(
+    (month: DateData) => {
+      dispatch(setCurrentMonth({ month: month.month - 1, year: month.year }));
+    },
+    [dispatch]
+  );
 
-  // ✅ Updated handlers to show modals
   const handleApplyLeave = useCallback(() => {
+    if (!customerId) {
+      Alert.alert('Error', 'Please login first');
+      return;
+    }
     setShowLeaveModal(true);
-  }, []);
+  }, [customerId]);
 
   const handleExtraMilk = useCallback(() => {
+    if (!customerId) {
+      Alert.alert('Error', 'Please login first');
+      return;
+    }
     setShowExtraMilkModal(true);
-  }, []);
+  }, [customerId]);
 
-  const handlePayBill = useCallback(() => {
-    Alert.alert(
-      'Pay Bill',
-      `Pay ₹${billInfo.amount} now?`,
-      [
-        {
-          text: 'Pay Now',
-          onPress: () => {
-            setIsLoading(true);
-
-            // Simulate payment processing
-            setTimeout(() => {
-              setIsLoading(false);
-              Alert.alert('Success', 'Payment completed successfully!');
-
-              // Update bill status locally
-              setBillInfo(prev => ({ ...prev, status: 'paid' }));
-            }, 2000);
+  const handleCancelLeave = useCallback(
+    (leaveId: string, leaveDate: string) => {
+      Alert.alert(
+        'Cancel Leave',
+        `Cancel leave for ${leaveDate}?`,
+        [
+          {
+            text: 'Yes, Cancel',
+            style: 'destructive',
+            onPress: () => {
+              dispatch(cancelLeave({ leaveId, leaveDate }));
+              Alert.alert('Success', 'Leave cancelled successfully!');
+            },
           },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  }, [billInfo.amount]);
-
-  const handleCancelLeave = useCallback((leaveId: string, leaveDate: string) => {
-    Alert.alert(
-      'Cancel Leave',
-      `Cancel leave for ${leaveDate}?`,
-      [
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            // Remove leave from upcoming leaves
-            setUpcomingLeaves(prev => prev.filter(leave => leave.id !== leaveId));
-
-            // Remove leave dates from calendar
-            const updatedLeaveDates = { ...leaveDates };
-            Object.keys(updatedLeaveDates).forEach(date => {
-              if (leaveDate.includes(date)) {
-                delete updatedLeaveDates[date];
-              }
-            });
-            setLeaveDates(updatedLeaveDates);
-
-            Alert.alert('Success', 'Leave cancelled successfully!');
-          },
-        },
-        { text: 'No', style: 'cancel' },
-      ]
-    );
-  }, [leaveDates]);
+          { text: 'No', style: 'cancel' },
+        ]
+      );
+    },
+    [dispatch]
+  );
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setError(null);
+    if (customerId) {
+      setRefreshing(true);
+      dispatch(clearError());
+      const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+      dispatch(fetchCalendarData({ customerId, month: monthString })).finally(() =>
+        setRefreshing(false)
+      );
+    }
+  }, [dispatch, customerId, currentMonth, currentYear]);
 
-    // Simulate data refresh
-    setTimeout(() => {
-      setRefreshing(false);
-      console.log('Data refreshed');
-      Alert.alert('Success', 'Calendar data refreshed!');
-    }, 1500);
-  }, []);
-
-  useEffect(() => {
-    setIsLoading(true);
-
-    // Simulate initial loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
-
-  const monthNames: string[] = useMemo(() => [
+  const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
-  ], []);
+  ];
 
-  if (isLoading && !refreshing) {
+  if (!isAuthenticated) {
+    return (
+      <View style={calendarScreenStyles.loadingContainer}>
+        <Text style={calendarScreenStyles.loadingText}>Please login to view your calendar</Text>
+      </View>
+    );
+  }
+
+  if (loading && !refreshing) {
     return (
       <View style={calendarScreenStyles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -376,21 +707,27 @@ export default function ConsumerCalendarScreen() {
         <Text style={calendarScreenStyles.title}>Milkyway Calendar</Text>
         <View style={calendarScreenStyles.monthSelector}>
           <Text style={calendarScreenStyles.monthText}>
-            {monthNames[currentMonth]} 2025
+            {monthNames[currentMonth]} {currentYear}
           </Text>
         </View>
+        {customerId && (
+          <Text style={{ fontSize: 12, color: colors.gray500, textAlign: 'center' }}>
+            Customer ID: {customerId}
+          </Text>
+        )}
       </View>
 
       {/* Error Banner */}
       {error && (
         <View style={calendarScreenStyles.errorContainer}>
           <Text style={calendarScreenStyles.errorText}>{error}</Text>
-          <TouchableOpacity style={calendarScreenStyles.retryButton} onPress={onRefresh}>
-            <Text style={calendarScreenStyles.retryButtonText}>Retry</Text>
+          <TouchableOpacity style={calendarScreenStyles.retryButton} onPress={() => dispatch(clearError())}>
+            <Text style={calendarScreenStyles.retryButtonText}>Dismiss</Text>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* Content ScrollView */}
       <ScrollView
         style={calendarScreenStyles.content}
         contentContainerStyle={calendarScreenStyles.scrollContainer}
@@ -404,6 +741,7 @@ export default function ConsumerCalendarScreen() {
           />
         }
       >
+
         {/* Calendar */}
         <View style={calendarScreenStyles.calendarContainer}>
           <Calendar
@@ -412,80 +750,80 @@ export default function ConsumerCalendarScreen() {
             onDayPress={handleDayPress}
             onMonthChange={handleMonthChange}
             markedDates={markedDates}
-            markingType={'dot'}
-            hideExtraDays={true}
+            markingType="dot"
+            hideExtraDays
             disableMonthChange={false}
             firstDay={1}
             showWeekNumbers={false}
-            enableSwipeMonths={true}
+            enableSwipeMonths
           />
         </View>
 
-        {/* ✅ Updated Legend (removed Scheduled) */}
+        {/* Legend */}
         <View style={calendarScreenStyles.legendContainer}>
-          <Text style={calendarScreenStyles.legendTitle}>Details</Text>
+          <Text style={calendarScreenStyles.legendTitle}>Status Legend</Text>
           <View style={calendarScreenStyles.legendGrid}>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.delivered }]} />
+              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#4CAF50' }]} />
               <Text style={calendarScreenStyles.legendText}>Delivered</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.pending }]} />
-              <Text style={calendarScreenStyles.legendText}>Pending</Text>
-            </View>
-            <View style={calendarScreenStyles.legendItem}>
               <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.primary }]} />
-              <Text style={calendarScreenStyles.legendText}>Not Delivered</Text>
+              <Text style={calendarScreenStyles.legendText}>Missed</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.leave }]} />
+              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FF9800' }]} />
+              <Text style={calendarScreenStyles.legendText}>Not Requested</Text>
+            </View>
+            <View style={calendarScreenStyles.legendItem}>
+              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#F44336' }]} />
+              <Text style={calendarScreenStyles.legendText}>Vendor Unavailable</Text>
+            </View>
+            <View style={calendarScreenStyles.legendItem}>
+              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#9C27B0' }]} />
               <Text style={calendarScreenStyles.legendText}>Leave</Text>
+            </View>
+            <View style={calendarScreenStyles.legendItem}>
+              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FFC107' }]} />
+              <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
             </View>
           </View>
         </View>
 
         {/* Monthly Summary */}
         <View style={calendarScreenStyles.summaryContainer}>
-          <Text style={calendarScreenStyles.summaryTitle}>September Summary</Text>
+          <Text style={calendarScreenStyles.summaryTitle}>
+            {monthNames[currentMonth]} {currentYear} Summary
+          </Text>
           <View style={calendarScreenStyles.summaryGrid}>
             <View style={calendarScreenStyles.summaryItem}>
-              <Ionicons
-                name="water-outline"
-                size={24}
-                color={colors.primary}
-                style={calendarScreenStyles.summaryIcon}
-              />
+              <Ionicons name="water-outline" size={24} color={colors.primary} />
               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalMilk}</Text>
               <Text style={calendarScreenStyles.summaryLabel}>Total Milk</Text>
             </View>
             <View style={calendarScreenStyles.summaryItem}>
-              <Ionicons
-                name="receipt-outline"
-                size={24}
-                color={colors.success}
-                style={calendarScreenStyles.summaryIcon}
-              />
+              <Ionicons name="receipt-outline" size={24} color={colors.success} />
               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalBill}</Text>
               <Text style={calendarScreenStyles.summaryLabel}>Total Bill</Text>
             </View>
             <View style={calendarScreenStyles.summaryItem}>
-              <Ionicons
-                name="calendar-outline"
-                size={24}
-                color={colors.danger}
-                style={calendarScreenStyles.summaryIcon}
-              />
+              <Ionicons name="calendar-outline" size={24} color={colors.danger} />
               <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalLeaves}</Text>
               <Text style={calendarScreenStyles.summaryLabel}>Total Leaves</Text>
+            </View>
+            <View style={calendarScreenStyles.summaryItem}>
+              <Ionicons name="checkmark-circle-outline" size={24} color={'#4CAF50'} />
+              <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalDeliveries}</Text>
+              <Text style={calendarScreenStyles.summaryLabel}>Deliveries</Text>
             </View>
           </View>
         </View>
 
-        {/* Leaves Section */}
+        {/* Upcoming Leaves */}
         <View style={calendarScreenStyles.leavesContainer}>
           <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
           {upcomingLeaves.length > 0 ? (
-            upcomingLeaves.map((leave) => (
+            upcomingLeaves.map(leave => (
               <View key={leave.id} style={calendarScreenStyles.leaveItem}>
                 <View style={calendarScreenStyles.leaveItemContent}>
                   <Text style={calendarScreenStyles.leaveDate}>{leave.date}</Text>
@@ -508,7 +846,7 @@ export default function ConsumerCalendarScreen() {
           )}
         </View>
 
-        {/* Actions */}
+        {/* Quick Actions */}
         <View style={calendarScreenStyles.actionsContainer}>
           <Text style={calendarScreenStyles.actionsTitle}>Quick Actions</Text>
 
@@ -523,15 +861,10 @@ export default function ConsumerCalendarScreen() {
             <View style={calendarScreenStyles.actionTextContainer}>
               <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
               <Text style={calendarScreenStyles.actionSubtitle}>
-                Request leave for specific dates
+                Request leave for specific date
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={colors.gray500}
-              style={calendarScreenStyles.actionChevron}
-            />
+            <Ionicons name="chevron-forward-outline" size={16} color={colors.gray500} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -543,63 +876,22 @@ export default function ConsumerCalendarScreen() {
               <Ionicons name="add-circle-outline" size={22} color={colors.white} />
             </View>
             <View style={calendarScreenStyles.actionTextContainer}>
-              <Text style={calendarScreenStyles.actionTitle}>Apply for Extra Milk</Text>
+              <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
               <Text style={calendarScreenStyles.actionSubtitle}>
                 Request additional milk delivery
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={colors.gray500}
-              style={calendarScreenStyles.actionChevron}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Bill Payment */}
-        <View style={calendarScreenStyles.billPayContainer}>
-          <Text style={calendarScreenStyles.billPayTitle}>Bill Payment</Text>
-          <View style={calendarScreenStyles.billInfo}>
-            <Text style={calendarScreenStyles.billAmount}>₹{billInfo.amount}</Text>
-            <Text style={calendarScreenStyles.billDueDate}>Due: {billInfo.dueDate}</Text>
-            <Text style={[
-              calendarScreenStyles.billStatus,
-              { color: billInfo.status === 'overdue' ? colors.danger : colors.success },
-            ]}>
-              Status: {billInfo.status.toUpperCase()}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              calendarScreenStyles.payButton,
-              billInfo.status === 'paid' && calendarScreenStyles.payButtonDisabled,
-            ]}
-            onPress={handlePayBill}
-            disabled={billInfo.status === 'paid'}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Text style={[
-                calendarScreenStyles.payButtonText,
-                billInfo.status === 'paid' && calendarScreenStyles.payButtonTextDisabled,
-              ]}>
-                {billInfo.status === 'paid' ? 'Already Paid' : 'Pay Now'}
-              </Text>
-            )}
+            <Ionicons name="chevron-forward-outline" size={16} color={colors.gray500} />
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* ✅ Add the modal components */}
+      {/* Modals for leave and extra milk */}
       <LeaveRequestModal
         isVisible={showLeaveModal}
         onClose={() => setShowLeaveModal(false)}
         onSubmit={handleLeaveSubmit}
       />
-
       <ExtraMilkModal
         isVisible={showExtraMilkModal}
         onClose={() => setShowExtraMilkModal(false)}
@@ -607,4 +899,6 @@ export default function ConsumerCalendarScreen() {
       />
     </View>
   );
-}
+};
+
+export default ConsumerCalendarScreen;

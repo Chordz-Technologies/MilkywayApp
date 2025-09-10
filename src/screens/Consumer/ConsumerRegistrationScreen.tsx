@@ -70,7 +70,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     tal: '',
     dist: '',
     state: '',
-    pincode: '', // ✅ Added pincode initialization
+    pincode: '',
   });
 
   const [localError, setLocalError] = useState('');
@@ -155,7 +155,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         tal: form.tal.trim(),
         dist: form.dist.trim(),
         state: form.state.trim(),
-        pincode: form.pincode.trim(), // ✅ Added pincode to payload
+        pincode: form.pincode.trim(),
         contact: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
         password: form.password,
         confirm_password: form.confirmPassword,

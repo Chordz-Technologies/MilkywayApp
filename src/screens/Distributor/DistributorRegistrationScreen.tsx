@@ -23,7 +23,7 @@ interface DistributorPayload {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode
+  pincode: string;
   password: string;
   confirm_password: string;
 }
@@ -37,7 +37,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode to form state
+  pincode: string;
   password: string;
   confirmPassword: string;
 }
@@ -141,7 +141,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
       tal: form.tal.trim(),
       dist: form.dist.trim(),
       state: form.state.trim(),
-      pincode: form.pincode.trim(), // ✅ Added pincode to payload
+      pincode: form.pincode.trim(),
       password: form.password,
       confirm_password: form.confirmPassword,
     };

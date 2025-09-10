@@ -1,4 +1,3 @@
-// screens/Consumer/ConsumerProfileScreen.tsx
 import React from 'react';
 import {
   View,
@@ -15,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState, AppDispatch } from '../../store';
 import { logout } from '../../store/authSlice';
 
-export default function ConsumerProfileScreen() {
+export default function DistributorProfileScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -75,7 +74,7 @@ export default function ConsumerProfileScreen() {
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{user?.name || 'Consumer'}</Text>
+            <Text style={styles.userName}>{user?.name || 'Distributor'}</Text>
             {/* <Text style={styles.userEmail}>{user?.email || 'No email provided'}</Text> */}
             <Text style={styles.userPhone}>{user?.contact || 'No phone provided'}</Text>
           </View>
