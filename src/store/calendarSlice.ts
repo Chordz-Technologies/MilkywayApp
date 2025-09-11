@@ -194,8 +194,8 @@ const calendarSlice = createSlice({
     cancelLeave: (state, action: PayloadAction<{ leaveId: string; leaveDate: string }>) => {
       const { leaveId, leaveDate } = action.payload;
       state.upcomingLeaves = state.upcomingLeaves.filter((leave) => leave.id !== leaveId);
-      if (state.calendarData[leaveDate]) {delete state.calendarData[leaveDate];}
-      if (state.deliveryTypes[leaveDate]) {delete state.deliveryTypes[leaveDate];}
+      if (state.calendarData[leaveDate]) { delete state.calendarData[leaveDate]; }
+      if (state.deliveryTypes[leaveDate]) { delete state.deliveryTypes[leaveDate]; }
     },
     clearCalendar: (state) => {
       state.calendarData = {};

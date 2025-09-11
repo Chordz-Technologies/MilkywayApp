@@ -10,7 +10,7 @@ import DistributorProfileScreen from '../screens/Distributor/DistributorProfileS
 
 export type DistributorTabParamList = {
   Calendar: undefined;
-  Home: undefined;
+  Vendors: undefined;
   Profile: undefined;
 };
 
@@ -43,7 +43,7 @@ export default function DistributorTabs() {
             case 'Calendar':
               iconName = focused ? 'calendar' : 'calendar-outline';
               break;
-            case 'Home':
+            case 'Vendors':
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Profile':
@@ -63,13 +63,13 @@ export default function DistributorTabs() {
         options={{ tabBarLabel: 'Calendar' }}
       />
       <Tab.Screen
-        name="Home"
-        component={DistributorHomeScreen} 
-        options={{ tabBarLabel: 'Home' }}
+        name="Vendors"
+        component={DistributorHomeScreen}
+        options={{ tabBarLabel: 'Vendors' }}
       />
       <Tab.Screen
         name="Profile"
-        component={DistributorProfileScreen} 
+        component={DistributorProfileScreen}
         options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
