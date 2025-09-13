@@ -77,9 +77,9 @@ export default function DistributorTabs() {
         options={{ tabBarLabel: 'Calendar' }}
       />
       <Tab.Screen
-        name="Home"
+        name="Vendors"
         component={DistributorHomeScreen} 
-        options={{ tabBarLabel: 'Home' }}
+        options={{ tabBarLabel: 'Vendors' }}
       />
       <Tab.Screen
         name="Profile"

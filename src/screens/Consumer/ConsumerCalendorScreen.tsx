@@ -447,15 +447,7 @@
 ////////
 import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -464,20 +456,9 @@ import type { RootState, AppDispatch } from '../../store';
 import LeaveRequestModal from '../../components/LeaveRequestModal';
 import ExtraMilkModal from '../../components/ExtraMilkModal';
 
-import {
-  calendarScreenStyles,
-  calendarTheme,
-  colors,
-} from '../../styles/CalendorScreenStyle';
+import { calendarScreenStyles, calendarTheme, colors } from '../../styles/CalendorScreenStyle';
 
-import {
-  fetchCalendarData,
-  submitLeaveRequest,
-  submitExtraMilkRequest,
-  setCurrentMonth,
-  clearError,
-  cancelLeave,
-} from '../../store/calendarSlice';
+import { fetchCalendarData, submitLeaveRequest, submitExtraMilkRequest, setCurrentMonth, clearError, cancelLeave } from '../../store/calendarSlice';
 
 import { checkStoredAuth } from '../../store/authSlice';
 
@@ -549,11 +530,75 @@ const ConsumerCalendarScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       if (customerId && isAuthenticated) {
-        const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+        const today = new Date();
+
+        // ✅ Reset Redux to today's month & year whenever screen is focused
+        dispatch(
+          setCurrentMonth({
+            month: today.getMonth(),   // 0-based
+            year: today.getFullYear(),
+          })
+        );
+
+        const monthString = `${today.getFullYear()}-${(today.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`;
+
+        // ✅ Always fetch calendar data for today's month
         dispatch(fetchCalendarData({ customerId, month: monthString }));
       }
-    }, [customerId, isAuthenticated, currentMonth, currentYear, dispatch])
+    }, [customerId, isAuthenticated, dispatch])
   );
+
+  // ✅ FIXED - Prepare marked dates with all dependencies included
+  const markedDates: MarkedDates = useMemo(() => {
+    const marked: MarkedDates = {};
+
+    // Mark delivery statuses from server
+    Object.keys(deliveryTypes).forEach(date => {
+      const status = deliveryTypes[date];
+      if (status && statusColors[status]) {
+        marked[date] = {
+          ...(marked[date] || {}),
+          marked: true,
+          dotColor: statusColors[status],
+        };
+      }
+    });
+
+    // Mark upcoming leaves
+    upcomingLeaves.forEach(leave => {
+      if (leave.date) {
+        marked[leave.date] = {
+          ...(marked[leave.date] || {}),
+          marked: true,
+          dotColor: statusColors.leave,
+        };
+      }
+    });
+
+    // ✅ Mark upcoming extra milk requests
+    upcomingMilkRequests.forEach(request => {
+      if (request.date) {
+        marked[request.date] = {
+          ...(marked[request.date] || {}),
+          marked: true,
+          dotColor: statusColors.extra_milk,
+        };
+      }
+    });
+
+    // Add selected date highlight (but keep dots)
+    if (selectedDate) {
+      marked[selectedDate] = {
+        ...(marked[selectedDate] || {}),
+        selected: true,
+        selectedColor: colors.primary,
+      };
+    }
+
+    return marked;
+  }, [deliveryTypes, upcomingLeaves, upcomingMilkRequests, selectedDate]); // ✅ All dependencies included
 
   // Debug: log calendar state for verification
   console.log('Redux calendarData:', calendarData);
