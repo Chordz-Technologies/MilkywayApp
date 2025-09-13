@@ -15,7 +15,7 @@ export type DistributorTabParamList = {
   Vendors: undefined;
   Profile: undefined;
   Consumers: undefined;
-  
+
 };
 
 const Tab = createBottomTabNavigator<DistributorTabParamList>();
@@ -44,7 +44,7 @@ export default function DistributorTabs() {
           let iconName: string;
 
           switch (route.name) {
-            case 'Consumers':         
+            case 'Consumers':
           iconName = focused ? 'people' : 'people-outline';
           break;
             case 'Calendar':
@@ -78,7 +78,7 @@ export default function DistributorTabs() {
       />
       <Tab.Screen
         name="Vendors"
-        component={DistributorHomeScreen} 
+        component={DistributorHomeScreen}
         options={{ tabBarLabel: 'Vendors' }}
       />
       <Tab.Screen
