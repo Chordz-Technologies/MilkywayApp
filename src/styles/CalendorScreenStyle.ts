@@ -1,4 +1,4 @@
-// styles/CalendorScreenStyle.ts
+
 import { StyleSheet, Dimensions } from 'react-native';
 import { Theme } from 'react-native-calendars/src/types';
 
@@ -117,6 +117,32 @@ export const calendarScreenStyles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+  },
+
+  // ✅ NEW - LEGEND COLOR STYLES
+  // ===================
+  deliveredDot: {
+    backgroundColor: '#4CAF50',
+  },
+  missedDot: {
+    backgroundColor: '#2196F3',
+  },
+  notRequestedDot: {
+    backgroundColor: '#FF9800',
+  },
+  vendorUnavailableDot: {
+    backgroundColor: '#F44336',
+  },
+  leaveDot: {
+    backgroundColor: '#9C27B0',
+  },
+  extraMilkDot: {
+    backgroundColor: '#FFC107',
+  },
+  customerIdText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center' as 'center',
   },
 
   // ===================

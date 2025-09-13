@@ -7,11 +7,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import DistributorCalendarScreen from '../screens/Distributor/DistributorCalendorScreen';
 import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen'; // Distributor main screen
 import DistributorProfileScreen from '../screens/Distributor/DistributorProfileScreen'; // Distributor profile screen
+import ConsumersList from '../screens/Distributor/ConsumerList'; // Adjust path
+
 
 export type DistributorTabParamList = {
   Calendar: undefined;
   Home: undefined;
   Profile: undefined;
+  Consumers: undefined;
+  
 };
 
 const Tab = createBottomTabNavigator<DistributorTabParamList>();
@@ -40,6 +44,9 @@ export default function DistributorTabs() {
           let iconName: string;
 
           switch (route.name) {
+            case 'Consumers':         
+          iconName = focused ? 'people' : 'people-outline';
+          break;
             case 'Calendar':
               iconName = focused ? 'calendar' : 'calendar-outline';
               break;
@@ -58,18 +65,25 @@ export default function DistributorTabs() {
       })}
     >
       <Tab.Screen
+       name="Consumers"
+       component={ConsumersList}
+       options={{ tabBarLabel: 'Consumers' }}
+
+        />
+
+      <Tab.Screen
         name="Calendar"
         component={DistributorCalendarScreen}
         options={{ tabBarLabel: 'Calendar' }}
       />
       <Tab.Screen
         name="Home"
-        component={DistributorHomeScreen} 
+        component={DistributorHomeScreen}
         options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen
         name="Profile"
-        component={DistributorProfileScreen} 
+        component={DistributorProfileScreen}
         options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>

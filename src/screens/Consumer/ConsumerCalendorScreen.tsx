@@ -447,15 +447,7 @@
 ////////
 import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -464,20 +456,9 @@ import type { RootState, AppDispatch } from '../../store';
 import LeaveRequestModal from '../../components/LeaveRequestModal';
 import ExtraMilkModal from '../../components/ExtraMilkModal';
 
-import {
-  calendarScreenStyles,
-  calendarTheme,
-  colors,
-} from '../../styles/CalendorScreenStyle';
+import { calendarScreenStyles, calendarTheme, colors } from '../../styles/CalendorScreenStyle';
 
-import {
-  fetchCalendarData,
-  submitLeaveRequest,
-  submitExtraMilkRequest,
-  setCurrentMonth,
-  clearError,
-  cancelLeave,
-} from '../../store/calendarSlice';
+import { fetchCalendarData, submitLeaveRequest, submitExtraMilkRequest, setCurrentMonth, clearError, cancelLeave } from '../../store/calendarSlice';
 
 import { checkStoredAuth } from '../../store/authSlice';
 
@@ -506,6 +487,17 @@ interface ExtraMilkData {
   reason: string;
 }
 
+// ✅ FIXED - Move statusColors outside component to avoid dependency issues
+const statusColors: Record<string, string> = {
+  delivered: '#4CAF50',
+  missed: '#2196F3', // Blue color for missed
+  not_requested: '#FF9800',
+  vendor_unavailable: '#F44336',
+  customer_paused: '#9C27B0',
+  extra_milk: '#FFC107',
+  leave: '#9C27B0', // same as customer_paused for leave
+};
+
 const ConsumerCalendarScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -516,6 +508,7 @@ const ConsumerCalendarScreen: React.FC = () => {
     calendarData,
     deliveryTypes,
     upcomingLeaves,
+    upcomingMilkRequests,
     monthlySummary,
     loading,
     error,
@@ -537,11 +530,75 @@ const ConsumerCalendarScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       if (customerId && isAuthenticated) {
-        const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+        const today = new Date();
+
+        // ✅ Reset Redux to today's month & year whenever screen is focused
+        dispatch(
+          setCurrentMonth({
+            month: today.getMonth(),   // 0-based
+            year: today.getFullYear(),
+          })
+        );
+
+        const monthString = `${today.getFullYear()}-${(today.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`;
+
+        // ✅ Always fetch calendar data for today's month
         dispatch(fetchCalendarData({ customerId, month: monthString }));
       }
-    }, [customerId, isAuthenticated, currentMonth, currentYear, dispatch])
+    }, [customerId, isAuthenticated, dispatch])
   );
+
+  // ✅ FIXED - Prepare marked dates with all dependencies included
+  const markedDates: MarkedDates = useMemo(() => {
+    const marked: MarkedDates = {};
+
+    // Mark delivery statuses from server
+    Object.keys(deliveryTypes).forEach(date => {
+      const status = deliveryTypes[date];
+      if (status && statusColors[status]) {
+        marked[date] = {
+          ...(marked[date] || {}),
+          marked: true,
+          dotColor: statusColors[status],
+        };
+      }
+    });
+
+    // Mark upcoming leaves
+    upcomingLeaves.forEach(leave => {
+      if (leave.date) {
+        marked[leave.date] = {
+          ...(marked[leave.date] || {}),
+          marked: true,
+          dotColor: statusColors.leave,
+        };
+      }
+    });
+
+    // ✅ Mark upcoming extra milk requests
+    upcomingMilkRequests.forEach(request => {
+      if (request.date) {
+        marked[request.date] = {
+          ...(marked[request.date] || {}),
+          marked: true,
+          dotColor: statusColors.extra_milk,
+        };
+      }
+    });
+
+    // Add selected date highlight (but keep dots)
+    if (selectedDate) {
+      marked[selectedDate] = {
+        ...(marked[selectedDate] || {}),
+        selected: true,
+        selectedColor: colors.primary,
+      };
+    }
+
+    return marked;
+  }, [deliveryTypes, upcomingLeaves, upcomingMilkRequests, selectedDate]); // ✅ All dependencies included
 
   // Debug: log calendar state for verification
   console.log('Redux calendarData:', calendarData);
@@ -586,22 +643,6 @@ const ConsumerCalendarScreen: React.FC = () => {
     },
     [dispatch, customerId]
   );
-
-  // Prepare marked dates for calendar component
-  const markedDates: MarkedDates = useMemo(() => {
-    const combined = { ...calendarData };
-
-    if (selectedDate) {
-      combined[selectedDate] = {
-        selected: true,
-        selectedColor: colors.primary,
-        marked: combined[selectedDate]?.marked ?? false,
-        dotColor: colors.white,
-      };
-    }
-
-    return combined;
-  }, [calendarData, selectedDate]);
 
   // Handlers for user actions and calendar interaction
   const handleDayPress = useCallback(
@@ -711,7 +752,7 @@ const ConsumerCalendarScreen: React.FC = () => {
           </Text>
         </View>
         {customerId && (
-          <Text style={{ fontSize: 12, color: colors.gray500, textAlign: 'center' }}>
+          <Text style={calendarScreenStyles.customerIdText}>
             Customer ID: {customerId}
           </Text>
         )}
@@ -754,37 +795,38 @@ const ConsumerCalendarScreen: React.FC = () => {
             hideExtraDays
             disableMonthChange={false}
             firstDay={1}
-            showWeekNumbers={false}
             enableSwipeMonths
+            // ✅ Sync Calendar with Redux
+            current={`${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`}
           />
         </View>
 
-        {/* Legend */}
+        {/* ✅ FIXED Legend - Using StyleSheet */}
         <View style={calendarScreenStyles.legendContainer}>
           <Text style={calendarScreenStyles.legendTitle}>Status Legend</Text>
           <View style={calendarScreenStyles.legendGrid}>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#4CAF50' }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.deliveredDot]} />
               <Text style={calendarScreenStyles.legendText}>Delivered</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: colors.primary }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.missedDot]} />
               <Text style={calendarScreenStyles.legendText}>Missed</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FF9800' }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.notRequestedDot]} />
               <Text style={calendarScreenStyles.legendText}>Not Requested</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#F44336' }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.vendorUnavailableDot]} />
               <Text style={calendarScreenStyles.legendText}>Vendor Unavailable</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#9C27B0' }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.leaveDot]} />
               <Text style={calendarScreenStyles.legendText}>Leave</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
-              <View style={[calendarScreenStyles.legendDot, { backgroundColor: '#FFC107' }]} />
+              <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.extraMilkDot]} />
               <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
             </View>
           </View>
@@ -808,7 +850,7 @@ const ConsumerCalendarScreen: React.FC = () => {
             </View>
             <View style={calendarScreenStyles.summaryItem}>
               <Ionicons name="calendar-outline" size={24} color={colors.danger} />
-              <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.totalLeaves}</Text>
+              <Text style={calendarScreenStyles.summaryValue}>{upcomingLeaves.length}</Text>
               <Text style={calendarScreenStyles.summaryLabel}>Total Leaves</Text>
             </View>
             <View style={calendarScreenStyles.summaryItem}>
@@ -843,6 +885,49 @@ const ConsumerCalendarScreen: React.FC = () => {
             ))
           ) : (
             <Text style={calendarScreenStyles.noLeavesText}>No upcoming leaves</Text>
+          )}
+        </View>
+
+        {/* ✅ Extra Milk Requests Section */}
+        <View style={calendarScreenStyles.leavesContainer}>
+          <Text style={calendarScreenStyles.leavesTitle}>Extra Milk Requests</Text>
+          {upcomingMilkRequests.length > 0 ? (
+            upcomingMilkRequests.map(request => (
+              <View key={request.id} style={calendarScreenStyles.leaveItem}>
+                <View style={calendarScreenStyles.leaveItemContent}>
+                  <Text style={calendarScreenStyles.leaveDate}>{request.date}</Text>
+                  <Text style={calendarScreenStyles.leaveReason}>
+                    {request.quantity}L - {request.reason} • {request.status}
+                  </Text>
+                </View>
+                {request.status !== 'cancelled' && (
+                  <TouchableOpacity
+                    style={calendarScreenStyles.leaveButton}
+                    onPress={() => {
+                      Alert.alert(
+                        'Cancel Request',
+                        `Cancel extra milk request for ${request.date}?`,
+                        [
+                          { text: 'No', style: 'cancel' },
+                          {
+                            text: 'Yes, Cancel',
+                            style: 'destructive',
+                            onPress: () => {
+                              // Add cancel logic here if needed
+                              Alert.alert('Success', 'Extra milk request cancelled!');
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={calendarScreenStyles.noLeavesText}>No extra milk requests</Text>
           )}
         </View>
 

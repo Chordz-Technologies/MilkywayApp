@@ -169,7 +169,7 @@ const getStatusColor = (status: string): string => {
       return '#2196F3';
     case 'not_requested':
       return '#FF9800';
-    case 'vendor_unavailable':
+    case 'consumer_unavailable':
       return '#F44336';
     case 'customer_paused':
       return '#9C27B0';
