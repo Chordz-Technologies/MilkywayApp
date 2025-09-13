@@ -12,7 +12,7 @@ import ConsumersList from '../screens/Distributor/ConsumerList'; // Adjust path
 
 export type DistributorTabParamList = {
   Calendar: undefined;
-  Home: undefined;
+  Vendors: undefined;
   Profile: undefined;
   Consumers: undefined;
   
@@ -50,7 +50,7 @@ export default function DistributorTabs() {
             case 'Calendar':
               iconName = focused ? 'calendar' : 'calendar-outline';
               break;
-            case 'Home':
+            case 'Vendors':
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Profile':
@@ -78,7 +78,7 @@ export default function DistributorTabs() {
       />
       <Tab.Screen
         name="Home"
-        component={DistributorHomeScreen}
+        component={DistributorHomeScreen} 
         options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen
