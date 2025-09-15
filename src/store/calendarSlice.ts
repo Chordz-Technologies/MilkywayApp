@@ -1,4 +1,5 @@
 
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { REHYDRATE } from 'redux-persist';
 import {
@@ -20,14 +21,14 @@ interface CustomMarking {
   selectedColor?: string;
 }
 
-interface LeaveItem {
+export interface LeaveItem {
   id: string;
   date: string;
   reason: string;
   status: 'approved' | 'pending' | 'cancelled';
 }
 
-interface ExtraMilkItem {
+export interface ExtraMilkItem {
   id: string;
   date: string;
   quantity: number;
@@ -43,10 +44,10 @@ interface MonthlySummary {
 }
 
 interface CalendarState {
-  calendarData: { [date: string]: CustomMarking };
+  calendarData: { [key: string]: CustomMarking };
   deliveryTypes: Record<string, string>;
-  upcomingLeaves: LeaveItem[];
-  upcomingMilkRequests: ExtraMilkItem[];
+  upcomingLeaves: Record<number, LeaveItem[]>; // scoped by customerId
+  upcomingMilkRequests: Record<number, ExtraMilkItem[]>; // scoped by customerId
   monthlySummary: MonthlySummary;
   loading: boolean;
   error: string | null;
@@ -57,8 +58,8 @@ interface CalendarState {
 const initialState: CalendarState = {
   calendarData: {},
   deliveryTypes: {},
-  upcomingLeaves: [],
-  upcomingMilkRequests: [],
+  upcomingLeaves: {},
+  upcomingMilkRequests: {},
   monthlySummary: {
     totalMilk: '0L',
     totalBill: '₹0',
@@ -73,13 +74,13 @@ const initialState: CalendarState = {
 
 export const fetchCalendarData = createAsyncThunk(
   'calendar/fetchCalendarData',
-  async ({ customerId, month }: { customerId: number; month: string }, thunkAPI) => {
+  async (params: { customerId: number; month: string }, thunkAPI) => {
     try {
       const response = await getConsumerCalendar({
-        customer_id: customerId,
-        month,
+        customer_id: params.customerId,
+        month: params.month,
       });
-      return { data: response.data, month };
+      return { data: response.data, month: params.month, customerId: params.customerId };
     } catch (error: any) {
       return thunkAPI.rejectWithValue('Failed to fetch calendar data');
     }
@@ -87,6 +88,7 @@ export const fetchCalendarData = createAsyncThunk(
 );
 
 interface LeaveRequestInput {
+  id?: string;
   startDate: string;
   endDate: string;
   reason: string;
@@ -96,13 +98,11 @@ interface LeaveRequestInput {
 export const submitLeaveRequest = createAsyncThunk(
   'calendar/submitLeaveRequest',
   async (
-    {
-      customerId,
-      leaveData,
-    }: { customerId: number; leaveData: LeaveRequestInput },
-    thunkAPI,
+    params: { customerId: number; leaveData: LeaveRequestInput },
+    thunkAPI
   ) => {
     try {
+      const { customerId, leaveData } = params;
       const dates =
         leaveData.leaveType === 'single'
           ? [leaveData.startDate]
@@ -115,7 +115,7 @@ export const submitLeaveRequest = createAsyncThunk(
           remarks: leaveData.reason,
         });
       }
-      return { dates, reason: leaveData.reason };
+      return { dates, reason: leaveData.reason, customerId };
     } catch (error: any) {
       return thunkAPI.rejectWithValue('Failed to submit leave request');
     }
@@ -123,30 +123,29 @@ export const submitLeaveRequest = createAsyncThunk(
 );
 
 interface MilkRequestInput {
+  id?: string;
   date: string;
   quantity: number;
   reason: string;
 }
 
-export const submitExtraMilkRequest = createAsyncThunk(
-  'calendar/submitExtraMilkRequest',
+export const submitExtraMilk = createAsyncThunk(
+  'calendar/submitExtraMilk',
   async (
-    {
-      customerId,
-      extraMilkData,
-    }: { customerId: number; extraMilkData: MilkRequestInput },
-    thunkAPI,
+    params: { customerId: number; milkData: MilkRequestInput },
+    thunkAPI
   ) => {
     try {
+      const { customerId, milkData } = params;
       await requestExtraMilk({
         customer_id: customerId,
-        date: extraMilkData.date,
-        quantity: extraMilkData.quantity,
-        remarks: extraMilkData.reason,
+        date: milkData.date,
+        quantity: milkData.quantity,
+        remarks: milkData.reason,
       });
-      return extraMilkData;
+      return { ...milkData, customerId };
     } catch (error: any) {
-      return thunkAPI.rejectWithValue('Failed to submit extra milk');
+      return thunkAPI.rejectWithValue('Failed to request extra milk');
     }
   }
 );
@@ -161,7 +160,7 @@ const getDatesBetween = (startDate: string, endDate: string): string[] => {
   return dates;
 };
 
-const getStatusColor = (status: string): string => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'delivered':
       return '#4CAF50';
@@ -184,24 +183,31 @@ const calendarSlice = createSlice({
   name: 'calendar',
   initialState,
   reducers: {
-    setCurrentMonth: (state, action: PayloadAction<{ month: number; year: number }>) => {
+    setCurrentMonth(state, action: PayloadAction<{ month: number; year: number }>) {
       state.currentMonth = action.payload.month;
       state.currentYear = action.payload.year;
     },
-    clearError: (state) => {
+    clearError(state) {
       state.error = null;
     },
-    cancelLeave: (state, action: PayloadAction<{ leaveId: string; leaveDate: string }>) => {
-      const { leaveId, leaveDate } = action.payload;
-      state.upcomingLeaves = state.upcomingLeaves.filter((leave) => leave.id !== leaveId);
-      if (state.calendarData[leaveDate]) { delete state.calendarData[leaveDate]; }
-      if (state.deliveryTypes[leaveDate]) { delete state.deliveryTypes[leaveDate]; }
+    cancelLeave(state, action: PayloadAction<{ leaveId: string; leaveDate: string; customerId: number }>) {
+      const { leaveId, leaveDate, customerId } = action.payload;
+      // Remove leave only for given customer
+      state.upcomingLeaves[customerId] = (state.upcomingLeaves[customerId] || []).filter(
+        (leave) => leave.id !== leaveId
+      );
+      if (state.calendarData[leaveDate]) {
+        delete state.calendarData[leaveDate];
+      }
+      if (state.deliveryTypes[leaveDate]) {
+        delete state.deliveryTypes[leaveDate];
+      }
     },
-    clearCalendar: (state) => {
+    clearCalendar(state) {
       state.calendarData = {};
       state.deliveryTypes = {};
-      state.upcomingLeaves = [];
-      state.upcomingMilkRequests = [];
+      state.upcomingLeaves = {};
+      state.upcomingMilkRequests = {};
       state.monthlySummary = {
         totalMilk: '0L',
         totalBill: '₹0',
@@ -219,7 +225,7 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchCalendarData.fulfilled, (state, action) => {
         state.loading = false;
-        const newCalendarData: { [date: string]: CustomMarking } = {};
+        const newCalendarData: { [key: string]: CustomMarking } = {};
         const newDeliveryTypes: Record<string, string> = {};
         let deliveredCount = 0;
         let leaveCount = 0;
@@ -230,12 +236,8 @@ const calendarSlice = createSlice({
             newCalendarData[item.date] = { marked: true, dotColor: color };
             newDeliveryTypes[item.date] = item.status;
 
-            if (item.status === 'delivered') {
-              deliveredCount++;
-            }
-            if (item.status === 'customer_paused') {
-              leaveCount++;
-            }
+            if (item.status === 'delivered') {deliveredCount++;}
+            if (item.status === 'customer_paused') {leaveCount++;}
           });
         }
 
@@ -243,6 +245,15 @@ const calendarSlice = createSlice({
         state.deliveryTypes = newDeliveryTypes;
         state.monthlySummary.totalDeliveries = deliveredCount;
         state.monthlySummary.totalLeaves = leaveCount;
+
+        // Initialize leave and milk requests arrays for this customer if not existing
+        const custId = action.payload.customerId;
+        if (!(custId in state.upcomingLeaves)) {
+          state.upcomingLeaves[custId] = [];
+        }
+        if (!(custId in state.upcomingMilkRequests)) {
+          state.upcomingMilkRequests[custId] = [];
+        }
       })
       .addCase(fetchCalendarData.rejected, (state, action) => {
         state.loading = false;
@@ -254,45 +265,67 @@ const calendarSlice = createSlice({
       })
       .addCase(submitLeaveRequest.fulfilled, (state, action) => {
         state.loading = false;
-        const { dates, reason } = action.payload;
-        dates.forEach((date: string) => {
+
+        const { dates, reason, customerId } = action.payload;
+
+        const leaves = state.upcomingLeaves[customerId] || [];
+
+        dates.forEach(date => {
+          const uniqueId = `${customerId}_${date}_${Date.now()}`;
           state.calendarData[date] = { marked: true, dotColor: '#9C27B0' };
           state.deliveryTypes[date] = 'customer_paused';
+
+          if (!leaves.some(leave => leave.id === uniqueId)) {
+            leaves.push({
+              id: uniqueId,
+              date,
+              reason,
+              status: 'approved',
+            });
+          }
         });
-        const newLeave: LeaveItem = {
-          id: Date.now().toString(),
-          date:
-            dates.length === 1
-              ? dates[0]
-              : `${dates[0]} to ${dates[dates.length - 1]}`,
-          reason,
-          status: 'approved',
-        };
-        state.upcomingLeaves.push(newLeave);
+
+        state.upcomingLeaves[customerId] = leaves;
         state.monthlySummary.totalLeaves += dates.length;
       })
       .addCase(submitLeaveRequest.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
-      .addCase(submitExtraMilkRequest.pending, (state) => {
+      .addCase(submitExtraMilk.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(submitExtraMilkRequest.fulfilled, (state, action) => {
+      .addCase(submitExtraMilk.fulfilled, (state, action) => {
         state.loading = false;
-        const { date, quantity, reason } = action.payload;
-        state.calendarData[date] = { ...state.calendarData[date], marked: true, dotColor: '#FFC107' };
+
+        const { date, quantity, reason, customerId } = action.payload;
+
+        const milkRequests = state.upcomingMilkRequests[customerId] || [];
+
+        const uniqueId = `${customerId}_${date}_${Date.now()}`;
+
+        state.calendarData[date] = {
+          ...state.calendarData[date],
+          marked: true,
+          dotColor: '#FFC107',
+        };
+
         state.deliveryTypes[date] = 'extra_milk';
-        state.upcomingMilkRequests.push({
-          id: Date.now().toString(),
-          date,
-          quantity,
-          reason,
-          status: 'approved',
-        });
+
+        if (!milkRequests.some(req => req.id === uniqueId)) {
+          milkRequests.push({
+            id: uniqueId,
+            date,
+            quantity,
+            reason,
+            status: 'approved',
+          });
+        }
+
+        state.upcomingMilkRequests[customerId] = milkRequests;
       })
-      .addCase(submitExtraMilkRequest.rejected, (state, action) => {
+      .addCase(submitExtraMilk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -304,11 +337,6 @@ const calendarSlice = createSlice({
   },
 });
 
-export const {
-  setCurrentMonth,
-  clearError,
-  cancelLeave,
-  clearCalendar,
-} = calendarSlice.actions;
+export const { setCurrentMonth, clearError, cancelLeave, clearCalendar } = calendarSlice.actions;
 
 export default calendarSlice.reducer;
