@@ -215,260 +215,42 @@ import {
   Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/index';
-import { getDistributorAssignedConsumers } from '../../apiServices/allApi';
 
-type AssignedConsumer = {
-  id: number;
-  customer_id: number;
-  customer_name: string;
-  customer_contact: string;
-  customer_address?: {
-    flat_house?: string;
-    society_area?: string;
-    village?: string;
-    tal?: string;
-    dist?: string;
-    state?: string;
-    pincode?: string;
-  };
-  assignment_date?: string;
-  status?: string;
-  milk_requirement?: {
-    cow_milk_litre?: number | null;
-    buffalo_milk_litre?: number | null;
-  };
-  vendor_name?: string;
-};
+// Simple consumer data
+const CONSUMERS = [
+  { id: 1, name: 'Consumer1', location: 'MG Road, Pune', capacity: '2L', mobile: '+91 98765 43210' },
+  { id: 2, name: 'Consumer2', location: 'FC Road, Pune', capacity: '1L', mobile: '+91 87654 32109' },
+  { id: 3, name: 'Consumer3', location: 'Karve Road, Pune', capacity: '500ml', mobile: '+91 76543 21098' },
+  { id: 4, name: 'Consumer4', location: 'Baner, Pune', capacity: '3L', mobile: '+91 65432 10987' },
+  { id: 5, name: 'Consumer5', location: 'Hadapsar, Pune', capacity: '1.5L', mobile: '+91 54321 09876' },
+  { id: 6, name: 'Consumer6', location: 'Viman Nagar, Pune', capacity: '1L', mobile: '+91 43210 98765' },
+  { id: 7, name: 'Consumer7', location: 'Kothrud, Pune', capacity: '2.5L', mobile: '+91 32109 87654' },
+  { id: 8, name: 'Consumer8', location: 'Wakad, Pune', capacity: '1L', mobile: '+91 21098 76543' },
+  { id: 9, name: 'Consumer9', location: 'Pimpri, Pune', capacity: '2L', mobile: '+91 10987 65432' },
+  { id: 10, name: 'Consumer10', location: 'Aundh, Pune', capacity: '1.5L', mobile: '+91 09876 54321' },
+];
 
-const ConsumerListScreen = () => {
-  const navigation = useNavigation();
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+// interface Consumer {
+//   id: number;
+//   name: string;
+//   location: string;
+//   capacity: string;
+//   mobile: string;
+// }
 
-  const [consumers, setConsumers] = useState<AssignedConsumer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+const ConsumerList: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchAssignedConsumers = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      // Convert userID to number properly
-      let milkmanId: number | undefined;
-
-      if (user?.userID) {
-        milkmanId = typeof user.userID === 'string' ? parseInt(user.userID, 10) : Number(user.userID);
-      }
-
-      console.log('🔍 Fetching assigned consumers for milkman ID:', milkmanId);
-
-      const response = await getDistributorAssignedConsumers(milkmanId);
-      console.log('✅ Assigned consumers API response:', JSON.stringify(response.data, null, 2));
-
-      // Handle different response structures
-      const data = response.data?.data || response.data?.customers || response.data || [];
-
-      if (Array.isArray(data)) {
-        setConsumers(data);
-        console.log('📊 Total assigned consumers:', data.length);
-      } else {
-        console.log('❌ Invalid response format:', typeof data);
-        setConsumers([]);
-      }
-
-    } catch (err: any) {
-      console.error('❌ Error fetching assigned consumers:', err);
-      console.error('❌ Error response:', err.response?.data);
-
-      let errorMessage = 'Failed to load assigned consumers.';
-
-      if (err.response?.status === 404) {
-        errorMessage = 'No assigned consumers found.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'Access denied. You may not be authorized to view this data.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      setConsumers([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [user?.userID]);
-
-  useEffect(() => {
-    fetchAssignedConsumers();
-  }, [fetchAssignedConsumers]);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchAssignedConsumers();
-    }, [fetchAssignedConsumers])
+  // Filter consumers based on search
+  const filteredConsumers = CONSUMERS.filter(consumer =>
+    consumer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    consumer.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    consumer.mobile.includes(searchQuery)
   );
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchAssignedConsumers();
-  }, [fetchAssignedConsumers]);
-
-  function formatAddress(address?: {
-    flat_house?: string;
-    society_area?: string;
-    village?: string;
-    tal?: string;
-    dist?: string;
-    state?: string;
-    pincode?: string;
-  }): string {
-    if (!address) return "Not Available";
-
-    const parts = [
-      address.flat_house,
-      address.society_area,
-      address.village,
-      address.tal,
-      address.dist,
-      address.state,
-      address.pincode ? `- ${address.pincode}` : undefined,
-    ];
-
-    return parts.filter(Boolean).join(", ");
-  }
-
-  function getMilkRequirementText(milk?: {
-    cow_milk_litre?: number | null;
-    buffalo_milk_litre?: number | null;
-  }): string {
-    if (!milk) return "Not Available";
-
-    const cow = milk.cow_milk_litre ? `${milk.cow_milk_litre} L Cow` : null;
-    const buffalo = milk.buffalo_milk_litre ? `${milk.buffalo_milk_litre} L Buffalo` : null;
-
-    return [cow, buffalo].filter(Boolean).join(", ") || "Not Available";
-  }
-
-  const handleConsumerPress = useCallback((consumer: AssignedConsumer) => {
-    Alert.alert(
-      consumer.customer_name || 'Consumer Options',
-      'What would you like to do?',
-      [
-        // {
-        //   text: 'View Details',
-        //   onPress: () => {
-        //     Alert.alert(
-        //       'Consumer Details',
-        //       `Name: ${consumer.customer_name}\nContact: ${consumer.customer_contact}\nAddress: ${formatAddress(consumer.customer_address)}\nMilk: ${getMilkRequirementText(consumer.milk_requirement)}`
-        //     );
-        //   },
-        // },
-        // {
-        //   text: 'Mark Delivery',
-        //   onPress: () => {
-        //     console.log('Mark delivery for consumer:', consumer.customer_id);
-        //     // navigation.navigate('MarkDelivery', { consumerId: consumer.customer_id });
-        //   },
-        // },
-        {
-          text: 'View Calendar',
-          onPress: () => {
-            console.log('View calendar for consumer:', consumer.customer_id);
-            navigation.navigate('ConsumerCalendar' as never);
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  }, [formatAddress, getMilkRequirementText]);
-
-  const renderConsumerItem = ({ item }: { item: AssignedConsumer }) => {
-    const address = formatAddress(item.customer_address);
-    const milkText = getMilkRequirementText(item.milk_requirement);
-
-    return (
-      <TouchableOpacity
-        style={styles.consumerItem}
-        onPress={() => handleConsumerPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.consumerContent}>
-          {/* Avatar */}
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {item.customer_name?.[0]?.toUpperCase() || 'C'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Consumer Info */}
-          <View style={styles.consumerInfo}>
-            <Text style={styles.consumerName}>
-              {item.customer_name || 'Unknown Customer'}
-            </Text>
-
-            <View style={styles.contactRow}>
-              <Ionicons name="call-outline" size={14} color="#007AFF" />
-              <Text style={styles.consumerContact}>
-                {item.customer_contact || 'No contact'}
-              </Text>
-            </View>
-
-            {address && (
-              <View style={styles.addressRow}>
-                <Ionicons name="location-outline" size={14} color="#8E8E93" />
-                <Text style={styles.consumerAddress} numberOfLines={1}>
-                  {address}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.milkRow}>
-              <Ionicons name="nutrition-outline" size={14} color="#FF9500" />
-              <Text style={styles.milkRequirement} numberOfLines={1}>
-                {milkText}
-              </Text>
-            </View>
-
-            {item.vendor_name && (
-              <View style={styles.vendorRow}>
-                <Ionicons name="business-outline" size={14} color="#34C759" />
-                <Text style={styles.vendorName}>
-                  Vendor: {item.vendor_name}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Action */}
-          <View style={styles.actionContainer}>
-            <View style={[styles.statusBadge, { backgroundColor: '#E8F4FD' }]}>
-              <Text style={[styles.statusText, { color: '#007AFF' }]}>
-                {item.status?.toUpperCase() || 'ASSIGNED'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+  const handleCall = (mobile: string) => {
+    Linking.openURL(`tel:${mobile}`);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -848,4 +630,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ConsumerListScreen;
+export default ConsumerList;
