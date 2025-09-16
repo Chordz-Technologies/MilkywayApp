@@ -380,7 +380,7 @@ const ConsumerListScreen = () => {
           text: 'View Calendar',
           onPress: () => {
             console.log('View calendar for consumer:', consumer.customer_id);
-            navigation.navigate('ConsumerCalendar' as never));
+            navigation.navigate('Consumers' as never);
           },
         },
         { text: 'Cancel', style: 'cancel' },
