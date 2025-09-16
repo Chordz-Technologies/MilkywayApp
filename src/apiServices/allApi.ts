@@ -497,8 +497,8 @@ export const reportVendorUnavailable = (payload: {
 
 // ✅ Get Distributor Assigned Consumers - AUTHENTICATED
 // GET /consumer-calendar/distributor-calendar/list-customers/
-export const getDistributorAssignedConsumers = () =>
-  apiClient.get('/consumer-calendar/distributor-calendar/list-customers/');
+// export const getDistributorAssignedConsumers = () =>
+//   apiClient.get('/consumer-calendar/distributor-calendar/list-customers/');
 
 // ✅ Mark Consumer Delivery as Successful by Distributor - AUTHENTICATED
 // POST /consumer-calendar/distributor-calendar/mark-delivery/
@@ -569,3 +569,9 @@ export const assignConsumerToDistributor = (data: {
   customer_id: number;
   milkman_id: number;
 }) => apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', data);
+
+// ✅ Get Distributor Assigned Consumers - AUTHENTICATED
+export const getDistributorAssignedConsumers = (milkmanId?: number) => {
+  const params = milkmanId ? `?milkman_id=${milkmanId}` : '';
+  return apiClient.get(`/consumer-calendar/distributor-calendar/list-customers/${params}`);
+};
