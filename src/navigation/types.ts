@@ -49,6 +49,7 @@ export type RootStackParamList = {
   VendorList: { onSelectVendor: (vendor: Vendor) => void };
   BillDetails: { billId: string };
   PendingRequests: { pendingRequests?: Request[] }; // Optional param for pre-fetched requests
+  AssignDistributor: { consumerId: string; consumerName: string }; // New screen type
 };
 
 

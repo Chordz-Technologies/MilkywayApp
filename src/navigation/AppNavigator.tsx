@@ -15,10 +15,10 @@ import ConsumerRegistrationScreen from '../screens/Consumer/ConsumerRegistration
 import VendorRegistrationScreen from '../screens/Vendor/VendorRegistrationScreen';
 import DistributorRegistrationScreen from '../screens/Distributor/DistributorRegistrationScreen';
 import VendorHomeScreen from '../screens/Vendor/VendorHomeScreen';
-import ConsumerTabs from '../navigation/ConsumerTabs'; 
+import ConsumerTabs from '../navigation/ConsumerTabs';
 import DistributorTabs from './DistributorTabs';
+import AssignDistributorScreen from '../screens/Distributor/DistributorAssignmentScreen';
 // import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen';
-import VendorListScreen from '../screens/Vendor/VendorListScreen';
 // import BillDetailsScreen from '../screens/Consumer/BillDetailScreen';
 import PendingRequestsScreen from '../screens/PendingRequests';
 
@@ -50,9 +50,9 @@ const AppNavigator = () => {
         {/* CHANGE THIS LINE FROM ConsumerHomeScreen TO ConsumerTabs: */}
         <Stack.Screen name="ConsumerHome" component={ConsumerTabs} />
         <Stack.Screen name="DistributorHome" component={DistributorTabs} />
-        <Stack.Screen name="VendorList" component={VendorListScreen} />
         {/* <Stack.Screen name="BillDetails" component={BillDetailsScreen} /> */}
         <Stack.Screen name="PendingRequests" component={PendingRequestsScreen} />
+        <Stack.Screen name="AssignDistributor" component={AssignDistributorScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
