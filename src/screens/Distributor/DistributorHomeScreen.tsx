@@ -107,7 +107,7 @@ const DistributorHomeScreen = () => {
       Alert.alert('Success', 'Request sent to vendor!');
       setRequestedVendors(prev => [...prev, vendorId]);
     } catch (err: any) {
-      console.error('Send request error:', err);
+      // console.error('Send request error:', err);
       const errorMessage = err.response?.data?.detail ||
                            err.response?.data?.message ||
                            err.message ||

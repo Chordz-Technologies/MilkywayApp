@@ -740,7 +740,7 @@ const DistributorCalendarScreen: React.FC = () => {
           <View style={calendarScreenStyles.legendGrid}>
             <View style={calendarScreenStyles.legendItem}>
               <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.notRequestedDot]} />
-              <Text style={calendarScreenStyles.legendText}>leave</Text>
+              <Text style={calendarScreenStyles.legendText}>Leave</Text>
             </View>
             <View style={calendarScreenStyles.legendItem}>
               <View style={[calendarScreenStyles.legendDot, calendarScreenStyles.deliveredDot]} />
@@ -766,7 +766,7 @@ const DistributorCalendarScreen: React.FC = () => {
             </View>
             <View style={calendarScreenStyles.summaryItem}>
               <Ionicons name="remove-circle-outline" size={24} color={'#9C27B0'} />
-              <Text style={calendarScreenStyles.summaryValue}>{monthlySummary.pendingLeaves}</Text>
+              <Text style={calendarScreenStyles.summaryValue}>{leavesForDistributor.length}</Text>
               <Text style={calendarScreenStyles.summaryLabel}>Leave</Text>
             </View>
           </View>
