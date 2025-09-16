@@ -34,18 +34,16 @@ type AcceptedItem = {
     id: number;
     first_name: string;
     last_name: string;
-    // contact: string;
-  };
+  } | null;
   milkman?: {
     id: number;
     full_name: string;
-    // phone_number: string;
   };
   name?: string | null;
   user_type: 'customer' | 'milkman';
-  // created_at: string;
   user_contact: string;
   vendor: number;
+  assigned_customers_count?: number;
 };
 
 type NavigationProp = any;
@@ -172,55 +170,85 @@ const VendorHomeScreen = () => {
         throw new Error('Vendor ID not found. Please log in again.');
       }
 
-      console.log('Fetching data for vendor ID:', vendorId);
+      console.log('🔍 Fetching data for vendor ID:', vendorId);
 
       // Fetch Vendor Profile
       try {
         const vendorRes = await getVendorDetailsById(vendorId);
         console.log('Vendor profile response:', vendorRes.data);
-
         const vData = vendorRes.data?.data || vendorRes.data;
         setVendorData(vData);
-
-        // Debug logs for vendor location and address
-        console.log('Vendor data:', vData);
-        console.log('Vendor location:', vData?.location);
-        console.log('Vendor address:', vData?.address);
       } catch (vendorError) {
         console.error('Vendor profile fetch error:', vendorError);
       }
 
-      // Fetch Accepted Consumers
+      // Fetch Accepted Consumers - FIXED MAPPING
       try {
         const consumerRes = await getAcceptedCustomers(vendorId);
-        let consumersData = consumerRes?.data?.data || [];
+        console.log('🔍 Raw consumer response:', JSON.stringify(consumerRes.data, null, 2));
+        
+        let consumersData = consumerRes?.data?.data || consumerRes?.data || [];
         if (!Array.isArray(consumersData)) {
+          console.log('❌ Consumer data is not array:', typeof consumersData);
           consumersData = [];
         }
-        const consumersFiltered = consumersData.filter((item: AcceptedItem) => {
-          const isCustomer = item.user_type === 'customer';
-          const isAccepted = item.status?.toLowerCase() === 'accepted';
-          return isCustomer && isAccepted;
-        });
-        setAcceptedConsumers(consumersFiltered);
+
+        console.log('📊 Total raw consumers:', consumersData.length);
+
+        // Map the API response to the expected format
+        const mappedConsumers = consumersData.map((item: any, index: number) => ({
+          id: item.join_request_id || item.customer_id || index + 1,
+          user_id: item.customer_id || item.user_id || index + 1,
+          status: item.status || 'accepted',
+          customer: item.customer_name ? {
+            id: item.customer_id || index + 1,
+            first_name: item.customer_name?.split(' ')[0] || 'Unknown',
+            last_name: item.customer_name?.split(' ').slice(1).join(' ') || '',
+          } : null,
+          name: item.customer_name || item.name || `Consumer ${index + 1}`,
+          user_type: 'customer' as const,
+          user_contact: item.customer_contact || item.contact || 'No contact',
+          vendor: item.vendor_id || vendorId,
+        }));
+
+        console.log('✅ Mapped consumers:', mappedConsumers.length, mappedConsumers);
+        setAcceptedConsumers(mappedConsumers);
       } catch (consumerError) {
         console.error('Consumer fetch error:', consumerError);
         setAcceptedConsumers([]);
       }
 
-      // Fetch Accepted Distributors
+      // Fetch Accepted Distributors - FIXED MAPPING
       try {
         const distributorRes = await getAcceptedMilkmen(vendorId);
-        let distributorsData = distributorRes?.data?.data || [];
+        console.log('🔍 Raw distributor response:', JSON.stringify(distributorRes.data, null, 2));
+        
+        let distributorsData = distributorRes?.data?.data || distributorRes?.data || [];
         if (!Array.isArray(distributorsData)) {
+          console.log('❌ Distributor data is not array:', typeof distributorsData);
           distributorsData = [];
         }
-        const distributorsFiltered = distributorsData.filter((item: AcceptedItem) => {
-          const isMilkman = item.user_type === 'milkman';
-          const isAccepted = item.status?.toLowerCase() === 'accepted';
-          return isMilkman && isAccepted;
-        });
-        setAcceptedDistributors(distributorsFiltered);
+
+        console.log('📊 Total raw distributors:', distributorsData.length);
+
+        // Map the API response to the expected format
+        const mappedDistributors = distributorsData.map((item: any, index: number) => ({
+          id: item.join_request_id || item.milkman_id || index + 1,
+          user_id: item.milkman_id || item.user_id || index + 1,
+          status: item.status || 'accepted',
+          milkman: {
+            id: item.milkman_id || index + 1,
+            full_name: item.milkman_name || 'Unknown Distributor',
+          },
+          name: item.milkman_name || `Distributor ${index + 1}`,
+          user_type: 'milkman' as const,
+          user_contact: item.milkman_contact || 'No contact',
+          vendor: item.vendor_id || vendorId,
+          assigned_customers_count: item.assigned_customers_count || 0,
+        }));
+
+        console.log('✅ Mapped distributors:', mappedDistributors.length, mappedDistributors);
+        setAcceptedDistributors(mappedDistributors);
       } catch (distributorError) {
         console.error('Distributor fetch error:', distributorError);
         setAcceptedDistributors([]);
@@ -283,7 +311,7 @@ const VendorHomeScreen = () => {
       case 'rejected':
         return '#FF6B6B';
       default:
-        return '#666';
+        return '#4CD964'; // Default to green for accepted items
     }
   };
 
@@ -400,8 +428,6 @@ const VendorHomeScreen = () => {
                 stat={stat}
                 onPress={() => {
                   console.log(`Pressed ${stat.label}`);
-                  // Add navigation based on card type
-                  // Example: navigation.navigate('ConsumersList')
                 }}
               />
             ))}
@@ -460,6 +486,25 @@ const VendorHomeScreen = () => {
           </View>
         </View>
 
+        {/* Enhanced DEBUG INFO */}
+        {__DEV__ && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugTitle}>🐛 Debug Info</Text>
+            <Text style={styles.debugText}>Consumers: {acceptedConsumers.length}</Text>
+            <Text style={styles.debugText}>Distributors: {acceptedDistributors.length}</Text>
+            {acceptedConsumers.length > 0 && (
+              <Text style={styles.debugText}>
+                First Consumer: {acceptedConsumers[0]?.name}
+              </Text>
+            )}
+            {acceptedDistributors.length > 0 && (
+              <Text style={styles.debugText}>
+                First Distributor: {acceptedDistributors[0]?.name}
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* LIST */}
         <View style={styles.listContainer}>
           {selectedTab === 'consumer' ? (
@@ -467,6 +512,7 @@ const VendorHomeScreen = () => {
               <View style={styles.emptyState}>
                 <Ionicons name="people-outline" size={48} color="#ccc" />
                 <Text style={styles.emptyText}>No accepted consumers found.</Text>
+                <Text style={styles.emptySubtext}>Check console logs for more details</Text>
               </View>
             ) : (
               <FlatList
@@ -479,7 +525,7 @@ const VendorHomeScreen = () => {
                         <Text style={styles.avatarText}>
                           {((item.customer?.first_name?.[0] || '') +
                             (item.customer?.last_name?.[0] || ''))
-                            .toUpperCase() || 'U'}
+                            .toUpperCase() || item.name?.[0]?.toUpperCase() || 'U'}
                         </Text>
                       </View>
                       <View>
@@ -510,6 +556,7 @@ const VendorHomeScreen = () => {
             <View style={styles.emptyState}>
               <Ionicons name="business-outline" size={48} color="#ccc" />
               <Text style={styles.emptyText}>No accepted distributors found.</Text>
+              <Text style={styles.emptySubtext}>Check console logs for more details</Text>
             </View>
           ) : (
             <FlatList
@@ -530,6 +577,11 @@ const VendorHomeScreen = () => {
                       <Text style={styles.listItemSubtext}>
                         {item.user_contact || 'No contact'}
                       </Text>
+                      {item.assigned_customers_count !== undefined && item.assigned_customers_count > 0 && (
+                        <Text style={styles.assignedCount}>
+                          {item.assigned_customers_count} customers assigned
+                        </Text>
+                      )}
                     </View>
                   </View>
                   <View
@@ -550,7 +602,6 @@ const VendorHomeScreen = () => {
     </ScrollView>
   );
 };
-
 
 export default VendorHomeScreen;
 
@@ -800,13 +851,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statCardContainer: {
-    width: '48%', // 2 cards per row with space between
+    width: '48%',
     marginBottom: 12,
   },
   statCard: {
     borderRadius: 16,
     padding: 16,
-    minHeight: 195, // Consistent height
+    minHeight: 195,
     justifyContent: 'space-between',
     ...Platform.select({
       ios: {
@@ -938,6 +989,28 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  // DEBUG INFO
+  debugContainer: {
+    backgroundColor: '#FFF3CD',
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#856404',
+    marginBottom: 4,
+  },
+
   // LIST
   listContainer: {
     paddingHorizontal: 20,
@@ -992,6 +1065,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  assignedCount: {
+    fontSize: 11,
+    color: '#FF9500',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1012,6 +1091,12 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 12,
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 8,
   },
 
   // ERROR STATE

@@ -514,8 +514,7 @@ export const getDistributorLeaveRequests = () =>
   apiClient.get('/consumer-calendar/distributor-calendar/list-leave-requests/');
 
 // ✅ Get Distributor Calendar Data (Leave Allocation) - AUTHENTICATED
-// GET /consumer-calendar/distributor-calendar/check-leave-allocation/
-// Returns: MilkmanLeaveRequest[] with date, status, remarks fields
+
 export const getDistributorCalendar = (payload: {
   milkman_id?: number; // Optional - for specific milkman
   month: string; // Required - Format: YYYY-MM
@@ -530,9 +529,7 @@ export const getDistributorCalendar = (payload: {
   return apiClient.get(`/consumer-calendar/distributor-calendar/check-leave-allocation/?${params.toString()}`);
 };
 
-// ✅ Distributor Apply for Leave (Single Date) - AUTHENTICATED
-// POST /consumer-calendar/distributor-calendar/request-leave/
-// Response: DeliveryCalendar with date, status, remarks
+
 export const applyForDistributorLeave = (payload: {
   milkman_id?: number; // Optional - for requesting on behalf of another milkman
   date: string; // Required - Single date format: YYYY-MM-DD
@@ -540,8 +537,7 @@ export const applyForDistributorLeave = (payload: {
 }) => apiClient.post('/consumer-calendar/distributor-calendar/request-leave/', payload);
 
 // ✅ Get Leave Request Details for Specific Date - AUTHENTICATED
-// GET /consumer-calendar/distributor-calendar/leave-request-date/
-// Returns: Leave request details for specific milkman and date
+
 export const getDistributorLeaveRequestDetails = (payload: {
   milkman_id: number; // Required
   date: string; // Required - Format: YYYY-MM-DD
@@ -567,155 +563,6 @@ export const getAllVendors = () =>
 // ✅ Export both clients for specific use cases
 export { publicApiClient, apiClient };
 export default apiClient;
-
-/* ========= API USAGE EXAMPLES ========= */
-
-/*
-// Example: Get distributor calendar for September 2025
-const distributorCalendarData = await getDistributorCalendar({
-  milkman_id: 123,
-  month: '2025-09'
-});
-
-// Example: Apply for distributor leave
-const leaveResponse = await applyForDistributorLeave({
-  milkman_id: 123,
-  date: '2025-09-15',
-  remarks: 'Personal work'
-});
-
-// Example: Get leave details for specific date
-const leaveDetails = await getDistributorLeaveRequestDetails({
-  milkman_id: 123,
-  date: '2025-09-15'
-});
-*/
-
-// Assignment Api for distributor:
-
-
-/* ========= ASSIGNMENT APIs (Authenticated) ========= */
-
-// // ✅ Assign Customer to Distributor - AUTHENTICATED
-// // POST /consumer-calendar/distributor-calendar/assign-customer/
-// export const assignCustomerToDistributor = async (params: {
-//   customerId: number;
-//   distributorId: number;
-// }) => {
-//   try {
-//     const response = await apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', {
-//       customer_id: params.customerId,
-//       milkman_id: params.distributorId
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Assignment API Error:', error);
-//     throw new Error(error.response?.data?.message || 'Failed to assign customer to distributor');
-//   }
-// };
-
-// // ✅ Get Distributor's Assigned Customers - AUTHENTICATED
-// // GET /distributor/{distributorId}/assigned-customers/
-// export const getDistributorAssignedCustomers = async (distributorId: number) => {
-//   try {
-//     const response = await apiClient.get(`/distributor/${distributorId}/assigned-customers/`);
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Get assigned customers error:', error);
-//     // Return empty data structure on error
-//     return { data: { data: [] } };
-//   }
-// };
-
-// // ✅ Get All Distributors for a Vendor - AUTHENTICATED
-// // GET /vendor/{vendorId}/distributors/
-// export const getVendorDistributors = async (vendorId: string | number) => {
-//   try {
-//     const response = await apiClient.get(`/vendor/${vendorId}/distributors/`);
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Get vendor distributors error:', error);
-//     throw new Error('Failed to fetch distributors');
-//   }
-// };
-
-// // ✅ Accept Customer Request (for Vendor Request Flow) - AUTHENTICATED
-// // POST /vendor/requests/{requestId}/accept/
-// export const acceptCustomerRequest = async (requestId: number) => {
-//   try {
-//     const response = await apiClient.post(`/vendor/requests/${requestId}/accept/`);
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Accept request error:', error);
-//     throw new Error('Failed to accept customer request');
-//   }
-// };
-
-// // ✅ Reject Customer Request with Reason - AUTHENTICATED
-// // POST /vendor/requests/{requestId}/reject/
-// export const rejectCustomerRequest = async (requestId: number, reason: string) => {
-//   try {
-//     const response = await apiClient.post(`/vendor/requests/${requestId}/reject/`, {
-//       reason: reason
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Reject request error:', error);
-//     throw new Error('Failed to reject customer request');
-//   }
-// };
-
-// // ✅ Get Milk Delivery Requests for Vendor - AUTHENTICATED  
-// // GET /vendor/{vendorId}/milk-requests/
-// export const getVendorMilkRequests = async (vendorId: string | number) => {
-//   try {
-//     const response = await apiClient.get(`/vendor/${vendorId}/milk-requests/`);
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Get milk requests error:', error);
-//     return { data: { data: [] } };
-//   }
-// };
-
-// // ✅ Update Assignment (Reassign Customer to Different Distributor) - AUTHENTICATED
-// // PUT /consumer-calendar/distributor-calendar/assign-customer/
-// export const updateCustomerAssignment = async (params: {
-//   customerId: number;
-//   oldDistributorId: number;
-//   newDistributorId: number;
-//   reason?: string;
-// }) => {
-//   try {
-//     const response = await apiClient.put('/consumer-calendar/distributor-calendar/assign-customer/', {
-//       customer_id: params.customerId,
-//       old_milkman_id: params.oldDistributorId,
-//       new_milkman_id: params.newDistributorId,
-//       reason: params.reason || 'Reassignment requested by vendor'
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Update assignment error:', error);
-//     throw new Error('Failed to update customer assignment');
-//   }
-// };
-
-// // ✅ Remove Customer Assignment - AUTHENTICATED
-// // DELETE /consumer-calendar/distributor-calendar/assign-customer/
-// export const removeCustomerAssignment = async (customerId: number, distributorId: number, reason?: string) => {
-//   try {
-//     const response = await apiClient.delete('/consumer-calendar/distributor-calendar/assign-customer/', {
-//       data: {
-//         customer_id: customerId,
-//         milkman_id: distributorId,
-//         reason: reason || 'Assignment removed by vendor'
-//       }
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error('Remove assignment error:', error);
-//     throw new Error('Failed to remove customer assignment');
-//   }
-// };
 
 // ✅ Assign Customer to Milkman - AUTHENTICATED
 export const assignConsumerToDistributor = (data: {
