@@ -50,6 +50,21 @@ export type RootStackParamList = {
   BillDetails: { billId: string };
   PendingRequests: { pendingRequests?: Request[] }; // Optional param for pre-fetched requests
   AssignDistributor: { consumerId: string; consumerName: string }; // New screen type
+  ConsumerCalendar: {
+    consumerId: number;
+    consumerName: string;
+    consumerContact: string;
+    milkRequirement: {
+      cow_milk_litre: number | null;
+      buffalo_milk_litre: number | null;
+    };
+    distributorInfo?: {
+      id: number;
+      name: string;
+      contact: string;
+    };
+  };
+  ConsumerList: undefined;
 };
 
 

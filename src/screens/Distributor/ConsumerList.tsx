@@ -1,208 +1,5 @@
-// import React, { useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   ScrollView,
-//   TouchableOpacity,
-//   TextInput,
-//   StyleSheet,
-//   SafeAreaView,
-//   Linking,
-// } from 'react-native';
-// import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// // Simple consumer data
-// const CONSUMERS = [
-//   { id: 1, name: 'Consumer1', location: 'MG Road, Pune', capacity: '2L', mobile: '+91 98765 43210' },
-//   { id: 2, name: 'Consumer2', location: 'FC Road, Pune', capacity: '1L', mobile: '+91 87654 32109' },
-//   { id: 3, name: 'Consumer3', location: 'Karve Road, Pune', capacity: '500ml', mobile: '+91 76543 21098' },
-//   { id: 4, name: 'Consumer4', location: 'Baner, Pune', capacity: '3L', mobile: '+91 65432 10987' },
-//   { id: 5, name: 'Consumer5', location: 'Hadapsar, Pune', capacity: '1.5L', mobile: '+91 54321 09876' },
-//   { id: 6, name: 'Consumer6', location: 'Viman Nagar, Pune', capacity: '1L', mobile: '+91 43210 98765' },
-//   { id: 7, name: 'Consumer7', location: 'Kothrud, Pune', capacity: '2.5L', mobile: '+91 32109 87654' },
-//   { id: 8, name: 'Consumer8', location: 'Wakad, Pune', capacity: '1L', mobile: '+91 21098 76543' },
-//   { id: 9, name: 'Consumer9', location: 'Pimpri, Pune', capacity: '2L', mobile: '+91 10987 65432' },
-//   { id: 10, name: 'Consumer10', location: 'Aundh, Pune', capacity: '1.5L', mobile: '+91 09876 54321' },
-// ];
-
-// // interface Consumer {
-// //   id: number;
-// //   name: string;
-// //   location: string;
-// //   capacity: string;
-// //   mobile: string;
-// // }
-
-// const ConsumerList: React.FC = () => {
-//   const [searchQuery, setSearchQuery] = useState('');
-
-//   // Filter consumers based on search
-//   const filteredConsumers = CONSUMERS.filter(consumer =>
-//     consumer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//     consumer.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//     consumer.mobile.includes(searchQuery)
-//   );
-
-//   const handleCall = (mobile: string) => {
-//     Linking.openURL(`tel:${mobile}`);
-//   };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       {/* Header */}
-//       <View style={styles.header}>
-//         <Text style={styles.title}>Consumer List</Text>
-//         <Text style={styles.subtitle}>{filteredConsumers.length} consumers</Text>
-//       </View>
-
-//       {/* Search Bar */}
-//       <View style={styles.searchContainer}>
-//         <Ionicons name="search-outline" size={20} color="#666" />
-//         <TextInput
-//           style={styles.searchInput}
-//           placeholder="Search consumers..."
-//           value={searchQuery}
-//           onChangeText={setSearchQuery}
-//           placeholderTextColor="#999"
-//         />
-//         {searchQuery.length > 0 && (
-//           <TouchableOpacity onPress={() => setSearchQuery('')}>
-//             <Ionicons name="close-circle" size={20} color="#666" />
-//           </TouchableOpacity>
-//         )}
-//       </View>
-
-//       {/* Consumer List */}
-//       <ScrollView style={styles.listContainer}>
-//         {filteredConsumers.map((consumer) => (
-//           <View key={consumer.id} style={styles.consumerItem}>
-//             <View style={styles.consumerInfo}>
-//               <Text style={styles.consumerName}>{consumer.name}</Text>
-//               <Text style={styles.consumerLocation}>{consumer.location}</Text>
-//               <Text style={styles.consumerCapacity}>{consumer.capacity}</Text>
-//             </View>
-//             <TouchableOpacity
-//               style={styles.callButton}
-//               onPress={() => handleCall(consumer.mobile)}
-//             >
-//               <Ionicons name="call" size={20} color="#fff" />
-//               <Text style={styles.mobileNumber}>{consumer.mobile}</Text>
-//             </TouchableOpacity>
-//           </View>
-//         ))}
-
-//         {filteredConsumers.length === 0 && (
-//           <View style={styles.emptyContainer}>
-//             <Text style={styles.emptyText}>No consumers found</Text>
-//           </View>
-//         )}
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#f5f5f5',
-//   },
-//   header: {
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     paddingTop: 10,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#eee',
-//   },
-//   title: {
-//     fontSize: 22,
-//     fontWeight: 'bold',
-//     color: '#333',
-//   },
-//   subtitle: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginTop: 4,
-//   },
-//   searchContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: '#fff',
-//     margin: 16,
-//     paddingHorizontal: 16,
-//     paddingVertical: 12,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#ddd',
-//   },
-//   searchInput: {
-//     flex: 1,
-//     fontSize: 16,
-//     marginLeft: 10,
-//     color: '#333',
-//   },
-//   listContainer: {
-//     flex: 1,
-//     paddingHorizontal: 16,
-//   },
-//   consumerItem: {
-//     backgroundColor: '#fff',
-//     borderRadius: 8,
-//     padding: 16,
-//     marginBottom: 12,
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     elevation: 2,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 1 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 2,
-//   },
-//   consumerInfo: {
-//     flex: 1,
-//   },
-//   consumerName: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     color: '#333',
-//     marginBottom: 4,
-//   },
-//   consumerLocation: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 2,
-//   },
-//   consumerCapacity: {
-//     fontSize: 14,
-//     color: '#007AFF',
-//     fontWeight: '500',
-//   },
-//   callButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: '#007AFF',
-//     paddingHorizontal: 12,
-//     paddingVertical: 8,
-//     borderRadius: 6,
-//   },
-//   mobileNumber: {
-//     color: '#fff',
-//     fontSize: 12,
-//     fontWeight: '500',
-//     marginLeft: 6,
-//   },
-//   emptyContainer: {
-//     alignItems: 'center',
-//     paddingVertical: 40,
-//   },
-//   emptyText: {
-//     fontSize: 16,
-//     color: '#999',
-//   },
-// });
-
-// export default ConsumerList;
-import React, { useState, useCallback, useEffect } from 'react';
+// screens/ConsumerListScreen.tsx
+import React, { useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -216,243 +13,483 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/index';
-import { getDistributorAssignedConsumers } from '../../apiServices/allApi';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../store/index';
+import {
+  fetchAssignedConsumers,
+  markDelivery,
+  refreshConsumers,
+  setSelectedConsumer,
+  clearError,
+  selectConsumers,
+  selectConsumersLoading,
+  selectConsumersError,
+  selectMarkingDelivery,
+  selectConsumersRefreshing,
+  selectConsumersStats,
+  selectLastActiveDate,
+  checkDailyReset,
+  AssignedConsumer,
+} from '../../store/consumersSlice';
+import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 
-type AssignedConsumer = {
-  id: number;
-  customer_id: number;
-  customer_name: string;
-  customer_contact: string;
-  customer_address?: {
-    flat_house?: string;
-    society_area?: string;
-    village?: string;
-    tal?: string;
-    dist?: string;
-    state?: string;
-    pincode?: string;
-  };
-  assignment_date?: string;
-  status?: string;
-  milk_requirement?: {
-    cow_milk_litre?: number | null;
-    buffalo_milk_litre?: number | null;
-  };
-  vendor_name?: string;
+// const { width } = Dimensions.get('window');
+
+type NavigationProp = {
+  navigate: (screen: string, params?: any) => void;
+  goBack: () => void;
+};
+
+const safeParseMilkQuantity = (value: number | string | null | undefined): number => {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  if (typeof value === 'string') {
+    if (value.trim() === '') {
+      return 0;
+    }
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : value;
+  }
+
+  return 0;
 };
 
 const ConsumerListScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
+
+  useDailyDeliveryReset();
+
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const consumers = useSelector(selectConsumers);
+  const loading = useSelector(selectConsumersLoading);
+  const error = useSelector(selectConsumersError);
+  const markingDelivery = useSelector(selectMarkingDelivery);
+  const refreshing = useSelector(selectConsumersRefreshing);
+  const stats = useSelector(selectConsumersStats);
+  const lastActiveDate = useSelector(selectLastActiveDate);
 
-  const [consumers, setConsumers] = useState<AssignedConsumer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAssignedConsumers = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      // Convert userID to number properly
-      let milkmanId: number | undefined;
-      
-      if (user?.userID) {
-        milkmanId = typeof user.userID === 'string' ? parseInt(user.userID, 10) : Number(user.userID);
-      }
-      
-      console.log('🔍 Fetching assigned consumers for milkman ID:', milkmanId);
-
-      const response = await getDistributorAssignedConsumers(milkmanId);
-      console.log('✅ Assigned consumers API response:', JSON.stringify(response.data, null, 2));
-
-      // Handle different response structures
-      const data = response.data?.data || response.data?.customers || response.data || [];
-      
-      if (Array.isArray(data)) {
-        setConsumers(data);
-        console.log('📊 Total assigned consumers:', data.length);
-      } else {
-        console.log('❌ Invalid response format:', typeof data);
-        setConsumers([]);
-      }
-
-    } catch (err: any) {
-      console.error('❌ Error fetching assigned consumers:', err);
-      console.error('❌ Error response:', err.response?.data);
-      
-      let errorMessage = 'Failed to load assigned consumers.';
-      
-      if (err.response?.status === 404) {
-        errorMessage = 'No assigned consumers found.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'Access denied. You may not be authorized to view this data.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      setConsumers([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const getMilkmanId = useCallback(() => {
+    if (!user?.userID) {return 0;}
+    return typeof user.userID === 'string' ? parseInt(user.userID, 10) : Number(user.userID);
   }, [user?.userID]);
 
-  useEffect(() => {
-    fetchAssignedConsumers();
-  }, [fetchAssignedConsumers]);
+  const getTodayString = useCallback(() => {
+    return new Date().toISOString().split('T')[0];
+  }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchAssignedConsumers();
-    }, [fetchAssignedConsumers])
-  );
+  const getTodayDeliveryStatus = useCallback((consumer: AssignedConsumer) => {
+    const today = getTodayString();
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchAssignedConsumers();
-  }, [fetchAssignedConsumers]);
+    const todayDelivery = consumer.deliveryHistory?.find(d => d.date === today);
 
-  const formatAddress = useCallback((address?: AssignedConsumer['customer_address']) => {
-    if (!address) return '';
-    
-    const parts = [
-      address.flat_house,
-      address.society_area,
-      address.village,
-      address.tal,
-      address.dist,
-      address.state
-    ].filter(Boolean);
-    
-    return parts.join(', ');
+    if (todayDelivery) {
+      return {
+        hasDelivery: true,
+        status: todayDelivery.status,
+        isDelivered: todayDelivery.status === 'delivered',
+        isCancelled: todayDelivery.status === 'cancelled',
+        remarks: todayDelivery.remarks,
+      };
+    }
+
+    return {
+      hasDelivery: false,
+      status: null,
+      isDelivered: false,
+      isCancelled: false,
+      remarks: null,
+    };
+  }, [getTodayString]);
+
+  const formatAddress = useCallback((address?: string) => {
+    if (!address) {return '';}
+    return address;
   }, []);
 
   const getMilkRequirementText = useCallback((requirement?: AssignedConsumer['milk_requirement']) => {
-    if (!requirement) return 'No requirement specified';
-    
-    const cow = requirement.cow_milk_litre || 0;
-    const buffalo = requirement.buffalo_milk_litre || 0;
+    if (!requirement) {
+      return 'No requirement specified';
+    }
+
+    const cow = safeParseMilkQuantity(requirement.cow_milk_litre);
+    const buffalo = safeParseMilkQuantity(requirement.buffalo_milk_litre);
     const total = cow + buffalo;
-    
-    if (total === 0) return 'No milk required';
-    
-    const parts = [];
-    if (cow > 0) parts.push(`🐄 ${cow}L Cow`);
-    if (buffalo > 0) parts.push(`🐃 ${buffalo}L Buffalo`);
-    
-    return `${parts.join(' • ')} (Total: ${total}L)`;
+
+    if (total === 0) {
+      return 'No milk required';
+    }
+
+    if (cow > 0 && buffalo > 0) {
+      return `Mixed: ${cow}L Cow + ${buffalo}L Buffalo = ${total}L Total`;
+    } else if (cow > 0) {
+      return `Cow Milk Only: ${cow}L Daily`;
+    } else {
+      return `Buffalo Milk Only: ${buffalo}L Daily`;
+    }
   }, []);
 
-  const handleConsumerPress = useCallback((consumer: AssignedConsumer) => {
+  useEffect(() => {
+    if (isAuthenticated && user?.userID) {
+      dispatch(checkDailyReset()).then(() => {
+        dispatch(fetchAssignedConsumers(getMilkmanId()));
+      });
+    }
+  }, [dispatch, isAuthenticated, user?.userID, getMilkmanId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated && user?.userID) {
+        dispatch(checkDailyReset()).then(() => {
+          const lastFetch = new Date().getTime();
+          const fiveMinutes = 5 * 60 * 1000;
+
+          if (!consumers.length || (lastFetch - fiveMinutes > lastFetch)) {
+            dispatch(fetchAssignedConsumers(getMilkmanId()));
+          }
+        });
+      }
+    }, [dispatch, isAuthenticated, user?.userID, getMilkmanId, consumers.length])
+  );
+
+  const handleRefresh = useCallback(() => {
+    if (!user?.userID) {return;}
+
+    const today = getTodayString();
+    const isNewDay = lastActiveDate && lastActiveDate !== today;
+
+    if (isNewDay) {
+      Alert.alert(
+        '🗓️ New Day Detected',
+        'This is a new day! Delivery status will be reset but all other data will be preserved.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Refresh',
+            onPress: () => {
+              dispatch(checkDailyReset()).then(() => {
+                dispatch(refreshConsumers(getMilkmanId()));
+              });
+            },
+          },
+        ]
+      );
+    } else {
+      dispatch(checkDailyReset()).then(() => {
+        dispatch(refreshConsumers(getMilkmanId()));
+      });
+    }
+  }, [dispatch, user?.userID, getMilkmanId, getTodayString, lastActiveDate]);
+
+  const handleMarkDelivery = useCallback(async (consumer: AssignedConsumer) => {
+    const today = getTodayString();
+    const milkmanId = getMilkmanId();
+    const todayStatus = getTodayDeliveryStatus(consumer);
+
+    const currentStatusInfo = todayStatus.hasDelivery
+      ? `\n\nCurrent status: ${todayStatus.status === 'delivered' ? 'Delivered' : 'Cancelled'}\nThis will replace the existing status.`
+      : '';
+
     Alert.alert(
-      consumer.customer_name || 'Consumer Options',
-      'What would you like to do?',
+      'Mark as Delivered ✅',
+      `Mark delivery as successful for:\n\n👤 ${consumer.customer_name}\n📅 ${today}\n🥛 ${getMilkRequirementText(consumer.milk_requirement)}${currentStatusInfo}`,
       [
-        {
-          text: 'View Details',
-          onPress: () => {
-            Alert.alert(
-              'Consumer Details',
-              `Name: ${consumer.customer_name}\nContact: ${consumer.customer_contact}\nAddress: ${formatAddress(consumer.customer_address)}\nMilk: ${getMilkRequirementText(consumer.milk_requirement)}`
-            );
-          },
-        },
-        {
-          text: 'Mark Delivery',
-          onPress: () => {
-            console.log('Mark delivery for consumer:', consumer.customer_id);
-            // navigation.navigate('MarkDelivery', { consumerId: consumer.customer_id });
-          },
-        },
-        {
-          text: 'View Calendar',
-          onPress: () => {
-            console.log('View calendar for consumer:', consumer.customer_id);
-            // navigation.navigate('ConsumerCalendar', { consumerId: consumer.customer_id });
-          },
-        },
         { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Delivered',
+          onPress: async () => {
+            try {
+              await dispatch(markDelivery({
+                customer_id: consumer.customer_id,
+                date: today,
+                milkman_id: milkmanId,
+                status: 'delivered',
+                remarks: `Delivery completed successfully for ${consumer.customer_name}`,
+                replaceExisting: true,
+              })).unwrap();
+
+              Alert.alert(
+                'Success! ✅',
+                `Delivery marked as successful for ${consumer.customer_name || 'customer'}`,
+                [{ text: 'OK' }]
+              );
+            } catch (error: any) {
+              Alert.alert('Error ❌', error || 'Failed to mark delivery. Please try again.');
+            }
+          },
+        },
       ]
     );
-  }, [formatAddress, getMilkRequirementText]);
+  }, [dispatch, getMilkmanId, getMilkRequirementText, getTodayString, getTodayDeliveryStatus]);
+
+  const handleMarkDeliveryCancelled = useCallback(async (consumer: AssignedConsumer, reason?: string) => {
+    const today = getTodayString();
+    const milkmanId = getMilkmanId();
+
+    try {
+      await dispatch(markDelivery({
+        customer_id: consumer.customer_id,
+        date: today,
+        milkman_id: milkmanId,
+        status: 'cancelled',
+        remarks: reason || `Delivery cancelled for ${consumer.customer_name}`,
+        replaceExisting: true,
+      })).unwrap();
+
+      Alert.alert(
+        'Delivery Cancelled ❌',
+        `Delivery has been cancelled for ${consumer.customer_name}.\nReason: ${reason}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error || 'Failed to cancel delivery. Please try again.');
+    }
+  }, [dispatch, getMilkmanId, getTodayString]);
+
+  const handleViewCalendar = useCallback((consumer: AssignedConsumer) => {
+    dispatch(setSelectedConsumer(consumer));
+
+    const consumerData = {
+      consumerId: consumer.customer_id,
+      consumerName: consumer.customer_name,
+      consumerContact: consumer.customer_contact,
+      distributorId: getMilkmanId(),
+      milkRequirement: consumer.milk_requirement,
+      consumerAddress: formatAddress(consumer.customer_address),
+      vendorName: consumer.provider?.provider_name || consumer.vendor_name,
+      assignmentDate: consumer.assignment_date,
+      deliveryStatus: consumer.deliveryStatus,
+      lastDeliveryDate: consumer.lastDeliveryDate,
+      source: 'distributor',
+      sourceScreen: 'ConsumerList',
+    };
+
+    navigation.navigate('ConsumerHome', consumerData);
+  }, [dispatch, navigation, getMilkmanId, formatAddress]);
+
+  useEffect(() => {
+    return () => {
+      if (error) {
+        dispatch(clearError());
+      }
+    };
+  }, [dispatch, error]);
 
   const renderConsumerItem = ({ item }: { item: AssignedConsumer }) => {
     const address = formatAddress(item.customer_address);
-    const milkText = getMilkRequirementText(item.milk_requirement);
-    
+    const isMarkingThisDelivery = markingDelivery === item.customer_id;
+
+    const cowMilk = safeParseMilkQuantity(item.milk_requirement?.cow_milk_litre);
+    const buffaloMilk = safeParseMilkQuantity(item.milk_requirement?.buffalo_milk_litre);
+    const totalMilk = cowMilk + buffaloMilk;
+
+    const hasCow = cowMilk > 0;
+    const hasBuffalo = buffaloMilk > 0;
+    const hasAnyMilk = hasCow || hasBuffalo;
+
+    const todayStatus = getTodayDeliveryStatus(item);
+
     return (
-      <TouchableOpacity
-        style={styles.consumerItem}
-        onPress={() => handleConsumerPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.consumerContent}>
-          {/* Avatar */}
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
+      <View style={styles.modernCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.customerInfo}>
+            <View style={styles.modernAvatar}>
               <Text style={styles.avatarText}>
                 {item.customer_name?.[0]?.toUpperCase() || 'C'}
               </Text>
             </View>
-          </View>
-
-          {/* Consumer Info */}
-          <View style={styles.consumerInfo}>
-            <Text style={styles.consumerName}>
-              {item.customer_name || 'Unknown Customer'}
-            </Text>
-            
-            <View style={styles.contactRow}>
-              <Ionicons name="call-outline" size={14} color="#007AFF" />
-              <Text style={styles.consumerContact}>
-                {item.customer_contact || 'No contact'}
+            <View style={styles.customerDetails}>
+              <Text style={styles.customerName}>
+                {item.customer_name || 'Unknown Customer'}
               </Text>
-            </View>
-            
-            {address && (
-              <View style={styles.addressRow}>
-                <Ionicons name="location-outline" size={14} color="#8E8E93" />
-                <Text style={styles.consumerAddress} numberOfLines={1}>
-                  {address}
+              <View style={styles.contactContainer}>
+                <Ionicons name="call" size={12} color="#007AFF" />
+                <Text style={styles.contactText}>
+                  {item.customer_contact || 'No contact'}
                 </Text>
               </View>
-            )}
-
-            <View style={styles.milkRow}>
-              <Ionicons name="nutrition-outline" size={14} color="#FF9500" />
-              <Text style={styles.milkRequirement} numberOfLines={1}>
-                {milkText}
-              </Text>
             </View>
-
-            {item.vendor_name && (
-              <View style={styles.vendorRow}>
-                <Ionicons name="business-outline" size={14} color="#34C759" />
-                <Text style={styles.vendorName}>
-                  Vendor: {item.vendor_name}
-                </Text>
-              </View>
-            )}
           </View>
 
-          {/* Action */}
-          <View style={styles.actionContainer}>
-            <View style={[styles.statusBadge, { backgroundColor: '#E8F4FD' }]}>
-              <Text style={[styles.statusText, { color: '#007AFF' }]}>
-                {item.status?.toUpperCase() || 'ASSIGNED'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+          <View style={styles.statusContainer}>
+            {todayStatus.hasDelivery ? (
+              <View style={[
+                styles.statusBadge,
+                { backgroundColor: todayStatus.isDelivered ? '#34C759' : '#FF3B30' },
+              ]}>
+                <Ionicons
+                  name={todayStatus.isDelivered ? 'checkmark-circle' : 'close-circle'}
+                  size={14}
+                  color="#fff"
+                />
+                <Text style={styles.statusText}>
+                  {todayStatus.isDelivered ? 'Delivered Today' : 'Cancelled Today'}
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.statusBadge, { backgroundColor: '#FF9500' }]}>
+                <Ionicons name="time" size={14} color="#fff" />
+                <Text style={styles.statusText}>Pending Today</Text>
+              </View>
+            )}
           </View>
         </View>
-      </TouchableOpacity>
+
+        {address && (
+          <View style={styles.addressSection}>
+            <Ionicons name="location" size={14} color="#FF9500" />
+            <Text style={styles.addressText} numberOfLines={2}>
+              {address}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.milkSection}>
+          <View style={styles.milkHeader}>
+            <Ionicons name="water" size={16} color="#007AFF" />
+            <Text style={styles.milkHeaderText}>Daily Requirement</Text>
+            <View style={styles.totalMilkBadge}>
+              <Text style={styles.totalMilkBadgeText}>{totalMilk}L</Text>
+            </View>
+          </View>
+          <View style={styles.milkDetails}>
+            {hasAnyMilk ? (
+              <>
+                {/* ✅ SIMPLIFIED: Show only individual milk types without summary */}
+                {hasCow && (
+                  <View style={styles.milkType}>
+                    <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
+                    <Text style={styles.milkTypeText}>
+                      Cow: {cowMilk}L
+                    </Text>
+                  </View>
+                )}
+
+                {hasBuffalo && (
+                  <View style={styles.milkType}>
+                    <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
+                    <Text style={styles.milkTypeText}>
+                      Buffalo: {buffaloMilk}L
+                    </Text>
+                  </View>
+                )}
+
+                {/* ✅ REMOVED: Milk summary section completely removed */}
+              </>
+            ) : (
+              <View style={styles.noMilkContainer}>
+                <Text style={styles.noMilkText}>
+                  ⚠️ No milk requirement specified
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.calendarButton]}
+            onPress={() => handleViewCalendar(item)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="calendar" size={18} color="#007AFF" />
+            <Text style={[styles.actionButtonText, { color: '#007AFF' }]}>
+              Calendar
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.deliverButton,
+              (isMarkingThisDelivery || todayStatus.isCancelled || !hasAnyMilk) && styles.deliverButtonDisabled,
+            ]}
+            onPress={() => handleMarkDelivery(item)}
+            activeOpacity={0.8}
+            disabled={isMarkingThisDelivery || todayStatus.isCancelled || !hasAnyMilk}
+          >
+            {isMarkingThisDelivery ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                <Text style={[styles.actionButtonText, { color: '#fff' }]}>
+                  {todayStatus.isDelivered ? 'Delivered ✓' : 'Delivery'}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.cancelButton,
+              (isMarkingThisDelivery || todayStatus.isDelivered || !hasAnyMilk) && styles.cancelButtonDisabled,
+            ]}
+            onPress={() => {
+              Alert.alert(
+                'Cancel Delivery',
+                'Select reason for cancellation:',
+                [
+                  { text: 'Customer Unavailable', onPress: () => handleMarkDeliveryCancelled(item, 'Customer unavailable') },
+                  { text: 'Address Issue', onPress: () => handleMarkDeliveryCancelled(item, 'Address issue') },
+                  { text: 'Product Issue', onPress: () => handleMarkDeliveryCancelled(item, 'Product issue') },
+                  { text: 'Weather/Traffic', onPress: () => handleMarkDeliveryCancelled(item, 'Weather/Traffic delay') },
+                  { text: 'Other', onPress: () => handleMarkDeliveryCancelled(item, 'Other reason') },
+                  { text: 'Back', style: 'cancel' },
+                ]
+              );
+            }}
+            activeOpacity={0.8}
+            disabled={isMarkingThisDelivery || todayStatus.isDelivered || !hasAnyMilk}
+          >
+            <View style={styles.buttonContent}>
+              <Ionicons name="close-circle" size={18} color={todayStatus.isDelivered || !hasAnyMilk ? '#999' : '#FF3B30'} />
+              <Text style={[
+                styles.actionButtonText,
+                { color: todayStatus.isDelivered || !hasAnyMilk ? '#999' : '#FF3B30' },
+              ]}>
+                {todayStatus.isCancelled ? 'Cancelled ✗' : 'Cancel'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bottomSection}>
+          {item.provider?.provider_name && (
+            <View style={styles.vendorInfo}>
+              <Ionicons name="business" size={12} color="#8E8E93" />
+              <Text style={styles.vendorText}>
+                Provider: {item.provider.provider_name}
+              </Text>
+            </View>
+          )}
+
+          {item.milkman?.milkman_name && (
+            <View style={styles.vendorInfo}>
+              <Ionicons name="person" size={12} color="#8E8E93" />
+              <Text style={styles.vendorText}>
+                Milkman: {item.milkman.milkman_name}
+              </Text>
+            </View>
+          )}
+
+          {todayStatus.hasDelivery && todayStatus.remarks && (
+            <View style={styles.remarksInfo}>
+              <Ionicons name="chatbubble" size={12} color="#8E8E93" />
+              <Text style={styles.remarksText}>
+                Today: {todayStatus.remarks}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
     );
   };
 
@@ -467,63 +504,86 @@ const ConsumerListScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.modernHeader}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={styles.headerBackButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color="#1C1C1E" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>My Assigned Consumers</Text>
+          <Text style={styles.headerTitle}>Daily Deliveries</Text>
           <Text style={styles.headerSubtitle}>
-            {consumers.length} consumer{consumers.length !== 1 ? 's' : ''} assigned to you
+            {getTodayString()} • {stats.totalConsumers} consumers • {stats.totalMilk}L total
+            {lastActiveDate && lastActiveDate !== getTodayString() && ' • New Day!'}
           </Text>
         </View>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Ionicons name="refresh-outline" size={24} color="#007AFF" />
+        <TouchableOpacity onPress={handleRefresh} style={styles.headerRefreshButton}>
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <Ionicons name="refresh" size={22} color="#007AFF" />
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Stats Card */}
-      <View style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{consumers.length}</Text>
-          <Text style={styles.statLabel}>Total Consumers</Text>
+      <View style={styles.modernStatsContainer}>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconContainer, { backgroundColor: '#E8F4FD' }]}>
+            <Ionicons name="people" size={20} color="#007AFF" />
+          </View>
+          <Text style={styles.statValue}>{stats.totalConsumers}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
+
+        <View style={styles.statCard}>
+          <View style={[styles.statIconContainer, { backgroundColor: '#F0FFF4' }]}>
+            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+          </View>
           <Text style={styles.statValue}>
-            {consumers.reduce((total, consumer) => {
-              const cow = consumer.milk_requirement?.cow_milk_litre || 0;
-              const buffalo = consumer.milk_requirement?.buffalo_milk_litre || 0;
-              return total + cow + buffalo;
-            }, 0)}L
+            {consumers.filter(c => getTodayDeliveryStatus(c).isDelivered).length}
           </Text>
-          <Text style={styles.statLabel}>Daily Milk</Text>
+          <Text style={styles.statLabel}>Delivered</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
+
+        <View style={styles.statCard}>
+          <View style={[styles.statIconContainer, { backgroundColor: '#FFF5F5' }]}>
+            <Ionicons name="close-circle" size={20} color="#FF3B30" />
+          </View>
           <Text style={styles.statValue}>
-            {consumers.filter(c => c.status?.toLowerCase() === 'active' || !c.status).length}
+            {consumers.filter(c => getTodayDeliveryStatus(c).isCancelled).length}
           </Text>
-          <Text style={styles.statLabel}>Active</Text>
+          <Text style={styles.statLabel}>Cancelled</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <View style={[styles.statIconContainer, { backgroundColor: '#FFF9F0' }]}>
+            <Ionicons name="time" size={20} color="#FF9500" />
+          </View>
+          <Text style={styles.statValue}>
+            {consumers.filter(c => !getTodayDeliveryStatus(c).hasDelivery).length}
+          </Text>
+          <Text style={styles.statLabel}>Pending</Text>
         </View>
       </View>
 
-      {/* Error Banner */}
       {error && (
-        <View style={styles.errorBanner}>
+        <View style={styles.modernErrorBanner}>
+          <Ionicons name="alert-circle" size={20} color="#FF3B30" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchAssignedConsumers} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+          <TouchableOpacity
+            onPress={() => {
+              dispatch(clearError());
+              handleRefresh();
+            }}
+            style={styles.errorRetryButton}
+          >
+            <Text style={styles.errorRetryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Content */}
-      {loading ? (
+      {loading && consumers.length === 0 ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
@@ -533,25 +593,27 @@ const ConsumerListScreen = () => {
           data={consumers}
           keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
           renderItem={renderConsumerItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={styles.modernListContainer}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={onRefresh}
+              onRefresh={handleRefresh}
               colors={['#007AFF']}
               tintColor="#007AFF"
             />
           }
           ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={80} color="#E5E5EA" />
-              <Text style={styles.emptyTitle}>No Assigned Consumers</Text>
+            <View style={styles.modernEmptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="people-outline" size={60} color="#C7C7CC" />
+              </View>
+              <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
               <Text style={styles.emptyText}>
-                No consumers have been assigned to you yet. Contact your vendor or check back later.
+                You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
               </Text>
-              <TouchableOpacity onPress={fetchAssignedConsumers} style={styles.refreshButtonLarge}>
-                <Ionicons name="refresh-outline" size={20} color="#fff" />
-                <Text style={styles.refreshButtonLargeText}>Refresh</Text>
+              <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
+                <Ionicons name="refresh" size={18} color="#fff" />
+                <Text style={styles.modernRefreshButtonText}>Refresh</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -565,11 +627,9 @@ const ConsumerListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA',
   },
-
-  // Header
-  header: {
+  modernHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
@@ -577,85 +637,330 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-    elevation: 2,
+    borderBottomColor: '#E1E4E8',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  headerBackButton: {
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    borderRadius: 22,
+    backgroundColor: '#F8F9FA',
   },
   headerContent: {
     flex: 1,
+    marginLeft: 16,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#1C1C1E',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#8E8E93',
     marginTop: 2,
+    fontWeight: '500',
   },
-  refreshButton: {
-    width: 40,
-    height: 40,
+  headerRefreshButton: {
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#F0F8FF',
   },
-
-  // Stats Card
-  statsCard: {
+  modernStatsContainer: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 20,
     borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  modernCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginBottom: 16,
     padding: 20,
-    elevation: 2,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOpacity: 0.06,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 3 },
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 4,
       },
     }),
   },
-  statItem: {
-    flex: 1,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#E5E5EA',
-    marginHorizontal: 16,
-  },
-
-  // Error
-  errorBanner: {
+  customerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEBEB',
+    flex: 1,
+  },
+  modernAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  customerDetails: {
+    flex: 1,
+  },
+  customerName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 4,
+  },
+  contactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  contactText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  addressSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF9F0',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  addressText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    lineHeight: 18,
+    flex: 1,
+  },
+  milkSection: {
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  milkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  milkHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+    flex: 1,
+    marginLeft: 6,
+  },
+  totalMilkBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  totalMilkBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  milkDetails: {
+    gap: 6,
+  },
+  milkType: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  milkTypeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  milkTypeText: {
+    fontSize: 13,
+    color: '#1C1C1E',
+    fontWeight: '500',
+  },
+  noMilkContainer: {
+    backgroundColor: '#FFF8E1',
+    padding: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  noMilkText: {
+    fontSize: 13,
+    color: '#FF9500',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calendarButton: {
+    backgroundColor: '#F0F8FF',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  deliverButton: {
+    backgroundColor: '#34C759',
+  },
+  deliverButtonDisabled: {
+    backgroundColor: '#C7C7CC',
+  },
+  cancelButton: {
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  cancelButtonDisabled: {
+    backgroundColor: '#F8F9FA',
+    borderColor: '#C7C7CC',
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  bottomSection: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F4',
+    gap: 8,
+  },
+  vendorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  vendorText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  remarksInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  remarksText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  modernErrorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FFD6D6',
     padding: 16,
     marginHorizontal: 20,
-    marginTop: 16,
+    marginBottom: 16,
     borderRadius: 12,
-    justifyContent: 'space-between',
+    gap: 12,
   },
   errorText: {
     color: '#FF3B30',
@@ -663,19 +968,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '500',
   },
-  retryButton: {
+  errorRetryButton: {
     backgroundColor: '#FF3B30',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  retryButtonText: {
+  errorRetryText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-
-  // Loading
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -683,142 +986,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
     color: '#8E8E93',
     fontSize: 16,
+    fontWeight: '500',
   },
-
-  // List
-  listContainer: {
-    paddingTop: 20,
+  modernListContainer: {
     paddingBottom: 40,
   },
-
-  // Consumer Item
-  consumerItem: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    elevation: 2,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 3 },
-      },
-    }),
-  },
-  consumerContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 20,
-  },
-
-  // Avatar
-  avatarContainer: {
-    marginRight: 16,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-
-  // Consumer Info
-  consumerInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  consumerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 4,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  consumerContact: {
-    fontSize: 14,
-    color: '#007AFF',
-    flex: 1,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  consumerAddress: {
-    fontSize: 12,
-    color: '#8E8E93',
-    flex: 1,
-  },
-  milkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  milkRequirement: {
-    fontSize: 12,
-    color: '#FF9500',
-    fontWeight: '600',
-    flex: 1,
-  },
-  vendorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  vendorName: {
-    fontSize: 12,
-    color: '#34C759',
-    fontWeight: '500',
-    flex: 1,
-  },
-
-  // Action
-  actionContainer: {
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-
-  // Empty State
-  emptyContainer: {
+  modernEmptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingTop: 100,
+    paddingTop: 60,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#1C1C1E',
     marginBottom: 12,
     textAlign: 'center',
-    marginTop: 20,
   },
   emptyText: {
     fontSize: 16,
@@ -827,7 +1024,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 32,
   },
-  refreshButtonLarge: {
+  modernRefreshButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingHorizontal: 24,
@@ -836,9 +1033,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  refreshButtonLargeText: {
+  modernRefreshButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 16,
   },
 });

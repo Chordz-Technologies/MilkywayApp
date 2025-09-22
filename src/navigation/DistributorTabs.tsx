@@ -23,7 +23,7 @@ const Tab = createBottomTabNavigator<DistributorTabParamList>();
 export default function DistributorTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Calendar" // Calendar as default (same as consumer)
+      initialRouteName="Consumers" // Calendar as default (same as consumer)
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#007AFF',

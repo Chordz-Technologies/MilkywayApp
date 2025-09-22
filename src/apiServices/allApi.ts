@@ -575,3 +575,12 @@ export const getDistributorAssignedConsumers = (milkmanId?: number) => {
   const params = milkmanId ? `?milkman_id=${milkmanId}` : '';
   return apiClient.get(`/consumer-calendar/distributor-calendar/list-customers/${params}`);
 };
+
+// Updated API function in allApi.ts
+export const markDeliveryAsSuccessful = (payload: {
+  customer_id: number;
+  date: string; // Format: YYYY-MM-DD
+  milkman_id: number; // NEW: Required - Milkman ID who handled the delivery
+  status: 'delivered' | 'cancelled'; // NEW: Required - Delivery status
+  remarks?: string; // NEW: Optional - Remarks or reason for delivery status
+}) => apiClient.post('/consumer-calendar/distributor-calendar/mark-delivery/', payload);
