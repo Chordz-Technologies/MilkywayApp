@@ -487,7 +487,7 @@ const VendorHomeScreen = () => {
         </View>
 
         {/* Enhanced DEBUG INFO */}
-        {__DEV__ && (
+        {/*{__DEV__ && (
           <View style={styles.debugContainer}>
             <Text style={styles.debugTitle}>🐛 Debug Info</Text>
             <Text style={styles.debugText}>Consumers: {acceptedConsumers.length}</Text>
@@ -503,7 +503,7 @@ const VendorHomeScreen = () => {
               </Text>
             )}
           </View>
-        )}
+        )}*/}
 
         {/* LIST */}
         <View style={styles.listContainer}>
