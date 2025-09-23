@@ -1356,12 +1356,12 @@ const handleRequestAction = useCallback(async (
 
     if (action === 'accepted') {
       await acceptRequest(requestId.toString());
-      
+
       const acceptedRequest = requests.find(req => req.id === requestId);
-      
+
       if (acceptedRequest && acceptedRequest.user_type === 'customer') {
         Alert.alert(
-          'Consumer Request Accepted', 
+          'Consumer Request Accepted',
           `Consumer ${getRequestDisplayName(acceptedRequest)} has been accepted. Please assign a distributor.`,
           [
             {

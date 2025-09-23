@@ -1,341 +1,323 @@
-import React from 'react';
+
+// export default DistributorProfileScreen;
+import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RootState, AppDispatch } from '../../store';
-import { logout } from '../../store/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../store/index';
+import {
+  fetchDistributorProfile,
+  updateDistributorProfile,
+  clearError,
+  clearSuccess,
+} from '../../store/distributorProfileSlice';
 
-export default function DistributorProfileScreen() {
-  const navigation = useNavigation();
+const DistributorProfileScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const user = useSelector((state: RootState) => state.auth.user);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'userInfo']);
-              dispatch(logout());
-              navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
-            } catch (err) {
-              console.error('Logout error:', err);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
+  const { profile, loading, updating, error, success } = useSelector(
+    (state: RootState) => state.profile || {
+      profile: null,
+      loading: false,
+      updating: false,
+      error: null,
+      success: false,
+    }
+  );
+
+  // Safely cast any value to string
+  const toStringSafe = (val: any): string => (typeof val === 'string' ? val : '');
+
+  const [form, setForm] = useState({
+    full_name: '',
+    flat_house: '',
+    society_name: '',
+    village: '',
+    tal: '',
+    dist: '',
+    state: '',
+    pincode: '',
+    provider: 0,
+  });
+
+  useEffect(() => {
+    if (user?.userID) {
+      dispatch(fetchDistributorProfile(user.userID));
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    if (profile) {
+      const data = profile.data || profile;
+      setForm({
+        full_name: toStringSafe(data.full_name),
+        flat_house: toStringSafe(data.flat_house),
+        society_name: toStringSafe(data.society_name),
+        village: toStringSafe(data.village),
+        tal: toStringSafe(data.tal),
+        dist: toStringSafe(data.dist),
+        state: toStringSafe(data.state),
+        pincode: toStringSafe(data.pincode),
+        provider: data.provider || 0,
+      });
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (success) {
+      Alert.alert('Success', 'Profile updated successfully');
+      dispatch(clearSuccess());
+    }
+  }, [success, dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleChange = (key: keyof typeof form, value: string | number) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const validateForm = () => {
+    if (form.full_name.length > 100) {return 'Full name must be under 100 characters';}
+    if (form.flat_house.length > 100) {return 'Flat House must be under 100 characters';}
+    if (form.society_name.length > 255) {return 'Society Name must be under 255 characters';}
+    if (form.village.length > 100) {return 'Village must be under 100 characters';}
+    if (form.tal.length > 100) {return 'Tal must be under 100 characters';}
+    if (form.dist.length > 100) {return 'District must be under 100 characters';}
+    if (form.state.length > 100) {return 'State must be under 100 characters';}
+    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
+    return null;
+  };
+
+  const handleSubmit = () => {
+    const validationError = validateForm();
+    if (validationError) {
+      Alert.alert('Validation Error', validationError);
+      return;
+    }
+    if (!user?.userID) {
+      Alert.alert('Error', 'User ID not found');
+      return;
+    }
+    const submitData = {
+      ...form,
+      provider: typeof form.provider === 'string' ? Number(form.provider) : form.provider,
+    };
+    dispatch(updateDistributorProfile({ id: user.userID, data: submitData }));
+  };
+
+  if (loading && !form.full_name) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text>Loading profile...</Text>
+      </View>
     );
-  };
-
-  const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Edit profile functionality will be implemented here.');
-  };
-
-  const handleSettings = () => {
-    Alert.alert('Settings', 'Settings functionality will be implemented here.');
-  };
+  }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity onPress={handleSettings} style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
+        <Text style={styles.heading}>Edit Profile</Text>
+        <Text style={styles.subheading}>Update your information below</Text>
+      </View>
+      {/* Personal Info */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Personal Information</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
+            value={form.full_name}
+            onChangeText={(v) => handleChange('full_name', v)}
+            maxLength={100}
+          />
+        </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={40} color="#007AFF" />
-            </View>
-            <TouchableOpacity style={styles.editAvatarButton}>
-              <Ionicons name="camera" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{user?.name || 'Distributor'}</Text>
-            {/* <Text style={styles.userEmail}>{user?.email || 'No email provided'}</Text> */}
-            <Text style={styles.userPhone}>{user?.contact || 'No phone provided'}</Text>
-          </View>
-
-          <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-            <Ionicons name="pencil-outline" size={16} color="#007AFF" />
-            <Text style={styles.editProfileText}>Edit</Text>
-          </TouchableOpacity>
+      {/* Address Info */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Address</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="home-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Flat/House"
+            value={form.flat_house}
+            onChangeText={(v) => handleChange('flat_house', v)}
+            maxLength={100}
+          />
         </View>
-
-        {/* Profile Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>3</Text>
-            <Text style={styles.statLabel}>Active Vendors</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>24</Text>
-            <Text style={styles.statLabel}>Total Orders</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>₹2,450</Text>
-            <Text style={styles.statLabel}>This Month</Text>
-          </View>
+        <View style={styles.inputContainer}>
+          <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Society Name"
+            value={form.society_name}
+            onChangeText={(v) => handleChange('society_name', v)}
+            maxLength={255}
+          />
         </View>
-
-        {/* Menu Options */}
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="card-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>Payment Methods</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="receipt-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>Order History</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="notifications-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>Notifications</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="location-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>Delivery Address</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="help-circle-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>Help & Support</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="information-circle-outline" size={20} color="#666" />
-            </View>
-            <Text style={styles.menuText}>About</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#999" />
-          </TouchableOpacity>
+        <View style={styles.inputContainer}>
+          <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Village"
+            value={form.village}
+            onChangeText={(v) => handleChange('village', v)}
+            maxLength={100}
+          />
         </View>
-
-        {/* Logout Button */}
-        <View style={styles.logoutContainer}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+        <View style={styles.inputContainer}>
+          <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Tal"
+            value={form.tal}
+            onChangeText={(v) => handleChange('tal', v)}
+            maxLength={100}
+          />
         </View>
+        <View style={styles.inputContainer}>
+          <Ionicons name="location-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="District"
+            value={form.dist}
+            onChangeText={(v) => handleChange('dist', v)}
+            maxLength={100}
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Ionicons name="flag-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="State"
+            value={form.state}
+            onChangeText={(v) => handleChange('state', v)}
+            maxLength={100}
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Pincode"
+            value={form.pincode}
+            onChangeText={(v) => handleChange('pincode', v)}
+            maxLength={6}
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
 
-        {/* App Version */}
-        <Text style={styles.versionText}>Version 1.0.0</Text>
-      </ScrollView>
-    </View>
+      <TouchableOpacity
+        style={[styles.button, updating && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={updating}
+      >
+        {updating ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.buttonText}>Save Changes</Text>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: '#f0f0f0',
+  },
+  center: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    paddingTop: 50,
+    marginBottom: 20,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  subheading: {
+    color: '#666',
+    fontSize: 16,
+  },
+  section: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderRadius: 8,
+    padding: 15,
+    marginVertical: 8,
+    shadowColor: '#ccc',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-  },
-  settingsButton: {
-    padding: 4,
-  },
-  content: {
-    flex: 1,
-  },
-  profileHeader: {
-    backgroundColor: '#fff',
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f0f8ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#007AFF',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#007AFF',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  profileInfo: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 24,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    marginBottom: 12,
+    color: '#555',
   },
-  userEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  userPhone: {
-    fontSize: 14,
-    color: '#666',
-  },
-  editProfileButton: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f8ff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 12,
+    backgroundColor: '#fafafa',
   },
-  editProfileText: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginLeft: 4,
-    fontWeight: '500',
+  icon: {
+    marginRight: 10,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    marginTop: 12,
-    paddingVertical: 20,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
+  input: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#eee',
-  },
-  menuContainer: {
-    backgroundColor: '#fff',
-    marginTop: 12,
-    paddingVertical: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
-  },
-  menuIconContainer: {
-    width: 32,
-    alignItems: 'center',
-  },
-  menuText: {
+    height: 40,
     flex: 1,
-    fontSize: 16,
     color: '#333',
-    marginLeft: 12,
   },
-  logoutContainer: {
-    backgroundColor: '#fff',
-    marginTop: 12,
-    paddingVertical: 8,
-  },
-  logoutButton: {
-    flexDirection: 'row',
+  button: {
+    backgroundColor: '#007bff',
+    borderRadius: 6,
+    paddingVertical: 15,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-  versionText: {
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 12,
     marginTop: 20,
-    marginBottom: 40,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
+
+export default DistributorProfileScreen;

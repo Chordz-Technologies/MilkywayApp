@@ -525,7 +525,7 @@ const DistributorCalendarScreen: React.FC = () => {
 
   // Memoize leaves for current distributor
   const leavesForDistributor = useMemo(() => {
-    if (distributorId == null) return [];
+    if (distributorId == null) {return [];}
     const leaves = upcomingLeaves[distributorId];
     return Array.isArray(leaves) ? leaves : [];
   }, [distributorId, upcomingLeaves]);
@@ -644,7 +644,7 @@ const DistributorCalendarScreen: React.FC = () => {
   );
 
   const onRefresh = useCallback(() => {
-    if (!distributorId) return;
+    if (!distributorId) {return;}
     setRefreshing(true);
     dispatch(clearError());
     const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;

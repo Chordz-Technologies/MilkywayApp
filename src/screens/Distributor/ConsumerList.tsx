@@ -33,7 +33,6 @@ import {
 } from '../../store/consumersSlice';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 
-// const { width } = Dimensions.get('window');
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -67,61 +66,71 @@ const ConsumerListScreen = () => {
   useDailyDeliveryReset();
 
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const consumers = useSelector(selectConsumers);
+  const loading = useSelector(selectConsumersLoading);
+  const error = useSelector(selectConsumersError);
+  const markingDelivery = useSelector(selectMarkingDelivery);
+  const refreshing = useSelector(selectConsumersRefreshing);
+  const stats = useSelector(selectConsumersStats);
+  const lastActiveDate = useSelector(selectLastActiveDate);
 
-  const [consumers, setConsumers] = useState<AssignedConsumer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const getMilkmanId = useCallback(() => {
+    if (!user?.userID) {return 0;}
+    return typeof user.userID === 'string' ? parseInt(user.userID, 10) : Number(user.userID);
+  }, [user?.userID]);
 
-  const fetchAssignedConsumers = useCallback(async () => {
-    setError(null);
-    setLoading(true);
+  const getTodayString = useCallback(() => {
+    return new Date().toISOString().split('T')[0];
+  }, []);
 
-    try {
-      // Convert userID to number properly
-      let milkmanId: number | undefined;
-      
-      if (user?.userID) {
-        milkmanId = typeof user.userID === 'string' ? parseInt(user.userID, 10) : Number(user.userID);
-      }
-      
-      console.log('🔍 Fetching assigned consumers for milkman ID:', milkmanId);
+  const getTodayDeliveryStatus = useCallback((consumer: AssignedConsumer) => {
+    const today = getTodayString();
 
-      const response = await getDistributorAssignedConsumers(milkmanId);
-      console.log('✅ Assigned consumers API response:', JSON.stringify(response.data, null, 2));
+    const todayDelivery = consumer.deliveryHistory?.find(d => d.date === today);
 
-      // Handle different response structures
-      const data = response.data?.data || response.data?.customers || response.data || [];
-      
-      if (Array.isArray(data)) {
-        setConsumers(data);
-        console.log('📊 Total assigned consumers:', data.length);
-      } else {
-        console.log('❌ Invalid response format:', typeof data);
-        setConsumers([]);
-      }
+    if (todayDelivery) {
+      return {
+        hasDelivery: true,
+        status: todayDelivery.status,
+        isDelivered: todayDelivery.status === 'delivered',
+        isCancelled: todayDelivery.status === 'cancelled',
+        remarks: todayDelivery.remarks,
+      };
+    }
 
-    } catch (err: any) {
-      console.error('❌ Error fetching assigned consumers:', err);
-      console.error('❌ Error response:', err.response?.data);
-      
-      let errorMessage = 'Failed to load assigned consumers.';
-      
-      if (err.response?.status === 404) {
-        errorMessage = 'No assigned consumers found.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'Access denied. You may not be authorized to view this data.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
+    return {
+      hasDelivery: false,
+      status: null,
+      isDelivered: false,
+      isCancelled: false,
+      remarks: null,
+    };
+  }, [getTodayString]);
 
-      setError(errorMessage);
-      setConsumers([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const formatAddress = useCallback((address?: string) => {
+    if (!address) {return '';}
+    return address;
+  }, []);
+
+  const getMilkRequirementText = useCallback((requirement?: AssignedConsumer['milk_requirement']) => {
+    if (!requirement) {
+      return 'No requirement specified';
+    }
+
+    const cow = safeParseMilkQuantity(requirement.cow_milk_litre);
+    const buffalo = safeParseMilkQuantity(requirement.buffalo_milk_litre);
+    const total = cow + buffalo;
+
+    if (total === 0) {
+      return 'No milk required';
+    }
+
+    if (cow > 0 && buffalo > 0) {
+      return `Mixed: ${cow}L Cow + ${buffalo}L Buffalo = ${total}L Total`;
+    } else if (cow > 0) {
+      return `Cow Milk Only: ${cow}L Daily`;
+    } else {
+      return `Buffalo Milk Only: ${buffalo}L Daily`;
     }
   }, []);
 
@@ -148,74 +157,143 @@ const ConsumerListScreen = () => {
     }, [dispatch, isAuthenticated, user?.userID, getMilkmanId, consumers.length])
   );
 
-  const formatAddress = useCallback((address?: AssignedConsumer['customer_address']) => {
-    if (!address) return '';
-    
-    const parts = [
-      address.flat_house,
-      address.society_area,
-      address.village,
-      address.tal,
-      address.dist,
-      address.state
-    ].filter(Boolean);
-    
-    return parts.join(', ');
-  }, []);
+  const handleRefresh = useCallback(() => {
+    if (!user?.userID) {return;}
 
-  const getMilkRequirementText = useCallback((requirement?: AssignedConsumer['milk_requirement']) => {
-    if (!requirement) return 'No requirement specified';
-    
-    const cow = requirement.cow_milk_litre || 0;
-    const buffalo = requirement.buffalo_milk_litre || 0;
-    const total = cow + buffalo;
-    
-    if (total === 0) return 'No milk required';
-    
-    const parts = [];
-    if (cow > 0) parts.push(`🐄 ${cow}L Cow`);
-    if (buffalo > 0) parts.push(`🐃 ${buffalo}L Buffalo`);
-    
-    return `${parts.join(' • ')} (Total: ${total}L)`;
-  }, []);
+    const today = getTodayString();
+    const isNewDay = lastActiveDate && lastActiveDate !== today;
 
-  const handleConsumerPress = useCallback((consumer: AssignedConsumer) => {
+    if (isNewDay) {
+      Alert.alert(
+        '🗓️ New Day Detected',
+        'This is a new day! Delivery status will be reset but all other data will be preserved.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Refresh',
+            onPress: () => {
+              dispatch(checkDailyReset()).then(() => {
+                dispatch(refreshConsumers(getMilkmanId()));
+              });
+            },
+          },
+        ]
+      );
+    } else {
+      dispatch(checkDailyReset()).then(() => {
+        dispatch(refreshConsumers(getMilkmanId()));
+      });
+    }
+  }, [dispatch, user?.userID, getMilkmanId, getTodayString, lastActiveDate]);
+
+  const handleMarkDelivery = useCallback(async (consumer: AssignedConsumer) => {
+    const today = getTodayString();
+    const milkmanId = getMilkmanId();
+    const todayStatus = getTodayDeliveryStatus(consumer);
+
+    const currentStatusInfo = todayStatus.hasDelivery
+      ? `\n\nCurrent status: ${todayStatus.status === 'delivered' ? 'Delivered' : 'Cancelled'}\nThis will replace the existing status.`
+      : '';
+
     Alert.alert(
-      consumer.customer_name || 'Consumer Options',
-      'What would you like to do?',
+      'Mark as Delivered ✅',
+      `Mark delivery as successful for:\n\n👤 ${consumer.customer_name}\n📅 ${today}\n🥛 ${getMilkRequirementText(consumer.milk_requirement)}${currentStatusInfo}`,
       [
-        {
-          text: 'View Details',
-          onPress: () => {
-            Alert.alert(
-              'Consumer Details',
-              `Name: ${consumer.customer_name}\nContact: ${consumer.customer_contact}\nAddress: ${formatAddress(consumer.customer_address)}\nMilk: ${getMilkRequirementText(consumer.milk_requirement)}`
-            );
-          },
-        },
-        {
-          text: 'Mark Delivery',
-          onPress: () => {
-            console.log('Mark delivery for consumer:', consumer.customer_id);
-            // navigation.navigate('MarkDelivery', { consumerId: consumer.customer_id });
-          },
-        },
-        {
-          text: 'View Calendar',
-          onPress: () => {
-            console.log('View calendar for consumer:', consumer.customer_id);
-            // navigation.navigate('ConsumerCalendar', { consumerId: consumer.customer_id });
-          },
-        },
         { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Delivered',
+          onPress: async () => {
+            try {
+              await dispatch(markDelivery({
+                customer_id: consumer.customer_id,
+                date: today,
+                milkman_id: milkmanId,
+                status: 'delivered',
+                remarks: `Delivery completed successfully for ${consumer.customer_name}`,
+                replaceExisting: true,
+              })).unwrap();
+
+              Alert.alert(
+                'Success! ✅',
+                `Delivery marked as successful for ${consumer.customer_name || 'customer'}`,
+                [{ text: 'OK' }]
+              );
+            } catch (error: any) {
+              Alert.alert('Error ❌', error || 'Failed to mark delivery. Please try again.');
+            }
+          },
+        },
       ]
     );
-  }, [formatAddress, getMilkRequirementText]);
+  }, [dispatch, getMilkmanId, getMilkRequirementText, getTodayString, getTodayDeliveryStatus]);
+
+  const handleMarkDeliveryCancelled = useCallback(async (consumer: AssignedConsumer, reason?: string) => {
+    const today = getTodayString();
+    const milkmanId = getMilkmanId();
+
+    try {
+      await dispatch(markDelivery({
+        customer_id: consumer.customer_id,
+        date: today,
+        milkman_id: milkmanId,
+        status: 'cancelled',
+        remarks: reason || `Delivery cancelled for ${consumer.customer_name}`,
+        replaceExisting: true,
+      })).unwrap();
+
+      Alert.alert(
+        'Delivery Cancelled ❌',
+        `Delivery has been cancelled for ${consumer.customer_name}.\nReason: ${reason}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error || 'Failed to cancel delivery. Please try again.');
+    }
+  }, [dispatch, getMilkmanId, getTodayString]);
+
+  const handleViewCalendar = useCallback((consumer: AssignedConsumer) => {
+    dispatch(setSelectedConsumer(consumer));
+
+    const consumerData = {
+      consumerId: consumer.customer_id,
+      consumerName: consumer.customer_name,
+      consumerContact: consumer.customer_contact,
+      distributorId: getMilkmanId(),
+      milkRequirement: consumer.milk_requirement,
+      consumerAddress: formatAddress(consumer.customer_address),
+      vendorName: consumer.provider?.provider_name || consumer.vendor_name,
+      assignmentDate: consumer.assignment_date,
+      deliveryStatus: consumer.deliveryStatus,
+      lastDeliveryDate: consumer.lastDeliveryDate,
+      source: 'distributor',
+      sourceScreen: 'ConsumerList',
+    };
+
+    navigation.navigate('ConsumerHome', consumerData);
+  }, [dispatch, navigation, getMilkmanId, formatAddress]);
+
+  useEffect(() => {
+    return () => {
+      if (error) {
+        dispatch(clearError());
+      }
+    };
+  }, [dispatch, error]);
 
   const renderConsumerItem = ({ item }: { item: AssignedConsumer }) => {
     const address = formatAddress(item.customer_address);
-    const milkText = getMilkRequirementText(item.milk_requirement);
-    
+    const isMarkingThisDelivery = markingDelivery === item.customer_id;
+
+    const cowMilk = safeParseMilkQuantity(item.milk_requirement?.cow_milk_litre);
+    const buffaloMilk = safeParseMilkQuantity(item.milk_requirement?.buffalo_milk_litre);
+    const totalMilk = cowMilk + buffaloMilk;
+
+    const hasCow = cowMilk > 0;
+    const hasBuffalo = buffaloMilk > 0;
+    const hasAnyMilk = hasCow || hasBuffalo;
+
+    const todayStatus = getTodayDeliveryStatus(item);
+
     return (
       <View style={styles.modernCard}>
         <View style={styles.cardHeader}>
@@ -225,29 +303,51 @@ const ConsumerListScreen = () => {
                 {item.customer_name?.[0]?.toUpperCase() || 'C'}
               </Text>
             </View>
-          </View>
-
-          {/* Consumer Info */}
-          <View style={styles.consumerInfo}>
-            <Text style={styles.consumerName}>
-              {item.customer_name || 'Unknown Customer'}
-            </Text>
-            
-            <View style={styles.contactRow}>
-              <Ionicons name="call-outline" size={14} color="#007AFF" />
-              <Text style={styles.consumerContact}>
-                {item.customer_contact || 'No contact'}
+            <View style={styles.customerDetails}>
+              <Text style={styles.customerName}>
+                {item.customer_name || 'Unknown Customer'}
               </Text>
-            </View>
-            
-            {address && (
-              <View style={styles.addressRow}>
-                <Ionicons name="location-outline" size={14} color="#8E8E93" />
-                <Text style={styles.consumerAddress} numberOfLines={1}>
-                  {address}
+              <View style={styles.contactContainer}>
+                <Ionicons name="call" size={12} color="#007AFF" />
+                <Text style={styles.contactText}>
+                  {item.customer_contact || 'No contact'}
                 </Text>
               </View>
+            </View>
+          </View>
+
+          <View style={styles.statusContainer}>
+            {todayStatus.hasDelivery ? (
+              <View style={[
+                styles.statusBadge,
+                { backgroundColor: todayStatus.isDelivered ? '#34C759' : '#FF3B30' },
+              ]}>
+                <Ionicons
+                  name={todayStatus.isDelivered ? 'checkmark-circle' : 'close-circle'}
+                  size={14}
+                  color="#fff"
+                />
+                <Text style={styles.statusText}>
+                  {todayStatus.isDelivered ? 'Delivered Today' : 'Cancelled Today'}
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.statusBadge, { backgroundColor: '#FF9500' }]}>
+                <Ionicons name="time" size={14} color="#fff" />
+                <Text style={styles.statusText}>Pending Today</Text>
+              </View>
             )}
+          </View>
+        </View>
+
+        {address && (
+          <View style={styles.addressSection}>
+            <Ionicons name="location" size={14} color="#FF9500" />
+            <Text style={styles.addressText} numberOfLines={2}>
+              {address}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.milkSection}>
           <View style={styles.milkHeader}>
@@ -365,7 +465,7 @@ const ConsumerListScreen = () => {
             <View style={styles.vendorInfo}>
               <Ionicons name="business" size={12} color="#8E8E93" />
               <Text style={styles.vendorText}>
-                Provider: {item.provider.provider_name}
+                Vendor: {item.provider.provider_name}
               </Text>
             </View>
           )}
@@ -374,7 +474,7 @@ const ConsumerListScreen = () => {
             <View style={styles.vendorInfo}>
               <Ionicons name="person" size={12} color="#8E8E93" />
               <Text style={styles.vendorText}>
-                Milkman: {item.milkman.milkman_name}
+                Distributor: {item.milkman.milkman_name}
               </Text>
             </View>
           )}

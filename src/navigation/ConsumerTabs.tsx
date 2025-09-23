@@ -6,7 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 // Import your screens
 import ConsumerCalendarScreen from '../screens/Consumer/ConsumerCalendorScreen';
 import CustomerHomeScreen from '../screens/Consumer/ConsumerHomeScreen'; // Your vendor screen
-import ConsumerProfileScreen from '../screens/Consumer/ConsumerProfile'; // New profile screen
+import ConsumerProfileScreen from '../screens/Consumer/ConsumerProfileScreen.tsx'; // New profile screen
 
 export type ConsumerTabParamList = {
   Calendar: undefined;
