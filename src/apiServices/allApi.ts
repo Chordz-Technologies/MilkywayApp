@@ -271,8 +271,17 @@ export const requestDistributorLeave = (payload: {
 /* ========= VENDOR LISTS (Authenticated) ========= */
 
 // ✅ Get list of all vendors - AUTHENTICATED
-export const getAllVendors = () =>
-  apiClient.get('/registration/vendor-business-registration/');
+// export const getAllVendors = () =>
+//   apiClient.get('/registration/vendor-business-registration/');
+// Update your existing getAllVendors function in allApi.ts
+export const getAllVendors = (pincode?: string | number) => {
+  const url = '/vendor/join-requests/list-vendors/';
+  if (pincode) {
+    return apiClient.get(`${url}?pincode=${pincode}`);
+  }
+  return apiClient.get(url);
+};
+
 
 /* ========= API CLIENT EXPORTS ========= */
 

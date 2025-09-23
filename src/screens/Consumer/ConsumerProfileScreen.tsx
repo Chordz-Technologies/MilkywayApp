@@ -11,15 +11,18 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store/index';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootState, AppDispatch } from '../../store';
 import {
   fetchConsumerProfile,
   updateConsumerProfile,
   clearError,
   clearSuccess,
+  resetConsumerProfileState,
 } from '../../store/consumerProfileSlice';
+import { logout } from '../../store/authSlice';
 
-const ConsumerProfileEditScreen = () => {
+const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -132,6 +135,51 @@ const ConsumerProfileEditScreen = () => {
     dispatch(updateConsumerProfile({ id: user.userID, data: form }));
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear AsyncStorage
+              await AsyncStorage.multiRemove([
+                'userToken',
+                'userID',
+                'userRole',
+                'userData',
+              ]);
+
+              // Reset consumer profile state
+              dispatch(resetConsumerProfileState());
+
+              // Dispatch logout action
+              dispatch(logout());
+
+              // Navigate to login (if navigation prop is available)
+              if (navigation) {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading && !form.first_name && !form.last_name) {
     return (
       <View style={styles.center}>
@@ -143,6 +191,7 @@ const ConsumerProfileEditScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Simple Header */}
       <View style={styles.header}>
         <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
         <Text style={styles.heading}>Edit Profile</Text>
@@ -339,6 +388,12 @@ const ConsumerProfileEditScreen = () => {
           <Text style={styles.buttonText}>Save Changes</Text>
         )}
       </TouchableOpacity>
+
+      {/* Bottom Logout Button */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -456,7 +511,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 30,
+    marginBottom: 20,
     shadowColor: '#007BFF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -476,6 +531,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#dc3545',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 30,
+  },
+  logoutButtonText: {
+    color: '#dc3545',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

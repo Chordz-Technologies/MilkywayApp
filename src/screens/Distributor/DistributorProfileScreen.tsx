@@ -1,5 +1,3 @@
-
-// export default DistributorProfileScreen;
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -13,15 +11,18 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState, AppDispatch } from '../../store/index';
 import {
   fetchDistributorProfile,
   updateDistributorProfile,
   clearError,
   clearSuccess,
+  resetDistributorProfileState,
 } from '../../store/distributorProfileSlice';
+import { logout } from '../../store/authSlice';
 
-const DistributorProfileScreen = () => {
+const DistributorProfileScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -75,7 +76,7 @@ const DistributorProfileScreen = () => {
 
   useEffect(() => {
     if (success) {
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Success', 'Profile updated successfully!');
       dispatch(clearSuccess());
     }
   }, [success, dispatch]);
@@ -92,14 +93,15 @@ const DistributorProfileScreen = () => {
   };
 
   const validateForm = () => {
-    if (form.full_name.length > 100) {return 'Full name must be under 100 characters';}
-    if (form.flat_house.length > 100) {return 'Flat House must be under 100 characters';}
-    if (form.society_name.length > 255) {return 'Society Name must be under 255 characters';}
-    if (form.village.length > 100) {return 'Village must be under 100 characters';}
-    if (form.tal.length > 100) {return 'Tal must be under 100 characters';}
-    if (form.dist.length > 100) {return 'District must be under 100 characters';}
-    if (form.state.length > 100) {return 'State must be under 100 characters';}
-    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
+    if (!form.full_name.trim()) return 'Full name is required';
+    if (form.full_name.length > 100) return 'Full name must be under 100 characters';
+    if (form.flat_house.length > 100) return 'Flat House must be under 100 characters';
+    if (form.society_name.length > 255) return 'Society Name must be under 255 characters';
+    if (form.village.length > 100) return 'Village must be under 100 characters';
+    if (form.tal.length > 100) return 'Tal must be under 100 characters';
+    if (form.dist.length > 100) return 'District must be under 100 characters';
+    if (form.state.length > 100) return 'State must be under 100 characters';
+    if (form.pincode.trim() && form.pincode.length !== 6) return 'Pincode must be exactly 6 digits';
     return null;
   };
 
@@ -110,7 +112,7 @@ const DistributorProfileScreen = () => {
       return;
     }
     if (!user?.userID) {
-      Alert.alert('Error', 'User ID not found');
+      Alert.alert('Error', 'User session expired. Please login again.');
       return;
     }
     const submitData = {
@@ -120,11 +122,55 @@ const DistributorProfileScreen = () => {
     dispatch(updateDistributorProfile({ id: user.userID, data: submitData }));
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Clear AsyncStorage
+              await AsyncStorage.multiRemove([
+                'userToken',
+                'userID', 
+                'userRole',
+                'userData'
+              ]);
+              
+              // Reset distributor profile state
+              dispatch(resetDistributorProfileState());
+              
+              // Dispatch logout action
+              dispatch(logout());
+              
+              // Navigate to login (if navigation prop is available)
+              if (navigation) {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+              }
+            } catch (error) {
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading && !form.full_name) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text>Loading profile...</Text>
+        <Text style={styles.loading}>Loading profile...</Text>
       </View>
     );
   }
@@ -134,8 +180,9 @@ const DistributorProfileScreen = () => {
       <View style={styles.header}>
         <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
         <Text style={styles.heading}>Edit Profile</Text>
-        <Text style={styles.subheading}>Update your information below</Text>
+        <Text style={styles.subheading}>Update your information</Text>
       </View>
+
       {/* Personal Info */}
       <View style={styles.section}>
         <Text style={styles.title}>Personal Information</Text>
@@ -143,10 +190,11 @@ const DistributorProfileScreen = () => {
           <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
+            placeholder="Full Name *"
             value={form.full_name}
             onChangeText={(v) => handleChange('full_name', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
       </View>
@@ -162,6 +210,7 @@ const DistributorProfileScreen = () => {
             value={form.flat_house}
             onChangeText={(v) => handleChange('flat_house', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -172,6 +221,7 @@ const DistributorProfileScreen = () => {
             value={form.society_name}
             onChangeText={(v) => handleChange('society_name', v)}
             maxLength={255}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -182,16 +232,18 @@ const DistributorProfileScreen = () => {
             value={form.village}
             onChangeText={(v) => handleChange('village', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
           <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Tal"
+            placeholder="Taluka"
             value={form.tal}
             onChangeText={(v) => handleChange('tal', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -202,6 +254,7 @@ const DistributorProfileScreen = () => {
             value={form.dist}
             onChangeText={(v) => handleChange('dist', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -212,6 +265,7 @@ const DistributorProfileScreen = () => {
             value={form.state}
             onChangeText={(v) => handleChange('state', v)}
             maxLength={100}
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.inputContainer}>
@@ -223,6 +277,7 @@ const DistributorProfileScreen = () => {
             onChangeText={(v) => handleChange('pincode', v)}
             maxLength={6}
             keyboardType="numeric"
+            placeholderTextColor="#999"
           />
         </View>
       </View>
@@ -233,10 +288,19 @@ const DistributorProfileScreen = () => {
         disabled={updating}
       >
         {updating ? (
-          <ActivityIndicator color="#fff" size="small" />
+          <View style={styles.buttonContent}>
+            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+            <Text style={styles.buttonText}>Updating...</Text>
+          </View>
         ) : (
           <Text style={styles.buttonText}>Save Changes</Text>
         )}
+      </TouchableOpacity>
+
+      {/* Bottom Logout Button */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+        <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -246,77 +310,116 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f8f9fa',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f8f9fa',
+  },
+  loading: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   heading: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    marginTop: 10,
   },
   subheading: {
     color: '#666',
     fontSize: 16,
+    textAlign: 'center',
   },
   section: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    marginVertical: 8,
-    shadowColor: '#ccc',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
-    color: '#555',
+    marginBottom: 15,
+    color: '#333',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+    paddingBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#ccc',
+    borderColor: '#e1e5e9',
     borderWidth: 1,
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 12,
-    backgroundColor: '#fafafa',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    minHeight: 50,
   },
   icon: {
     marginRight: 10,
   },
   input: {
-    fontSize: 18,
-    height: 40,
     flex: 1,
+    fontSize: 16,
     color: '#333',
+    paddingVertical: 12,
   },
   button: {
-    backgroundColor: '#007bff',
-    borderRadius: 6,
+    backgroundColor: '#007BFF',
+    borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    marginBottom: 20,
+    shadowColor: '#007BFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   buttonText: {
-    fontSize: 20,
     color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#dc3545',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 30,
+  },
+  logoutButtonText: {
+    color: '#dc3545',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
