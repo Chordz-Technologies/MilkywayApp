@@ -65,6 +65,12 @@ export type RootStackParamList = {
     };
   };
   ConsumerList: undefined;
+  DistributorConsumerCalendar: {
+    viewerRole: 'distributor';
+    targetConsumerId: number;
+    targetConsumerName: string;
+    showBackButton: boolean;
+  };
 };
 
 
