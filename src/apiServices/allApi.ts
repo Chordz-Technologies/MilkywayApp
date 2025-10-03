@@ -322,3 +322,19 @@ export const updateVendorProfile = (id: number | string, data: any) =>
 // Update Customer Profile - AUTHENTICATED
 export const updateCustomerProfile = (id: number | string, data: any) =>
   apiClient.put(`/customer/customers/${id}/`, data);
+
+// Returns vendor-join status, vendor id/name if assigned
+export const getJoinAssignmentStatus = async (
+  userId: number,
+  userType: 'milkman' | 'customer'
+) => {
+  const token = await AsyncStorage.getItem('access_token');
+  return apiClient.get(
+    '/vendor/join-requests/check-assignment',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { user_id: userId, user_type: userType },
+    }
+  );
+};
+
