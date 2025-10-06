@@ -55,6 +55,13 @@ export type RootStackParamList = {
     userType: 'consumer' | 'distributor';
     userName: string;
   };
+   TemporaryDistributorAssignment: {
+    consumerId: number;
+    consumerName: string;
+    currentDistributorId?: number;
+    currentDistributorName?: string;
+    isTemporary?: boolean;
+  };
 };
 
 

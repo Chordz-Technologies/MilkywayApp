@@ -338,3 +338,17 @@ export const getJoinAssignmentStatus = async (
   );
 };
 
+// Assign temporary distributor to consumer
+export const assignTemporaryDistributor = (data: {
+  customer_id: number;
+  milkman_id: number;
+}) => {
+  return apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', data);
+};
+
+// Remove temporary distributor assignment
+export const deassignDistributor = (data: {
+  customer_id: number;
+}) => {
+  return apiClient.post('/consumer-calendar/vendor-calendar/deassign-milkman/', data);
+};
