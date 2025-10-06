@@ -33,8 +33,11 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const error = useSelector((state: RootState) => state.consumerProfile?.error);
   const success = useSelector((state: RootState) => state.consumerProfile?.success || false);
 
-  const toStringSafe = (val: any): string => (typeof val === 'string' ? val : '');
-  const toNumberSafe = (val: any): number => (typeof val === 'number' ? val : 0);
+const toStringSafe = (val: any): string => {
+  if (typeof val === 'string') {return val;}
+  if (typeof val === 'number') {return val.toString();}
+  return '';
+};  const toNumberSafe = (val: any): number => (typeof val === 'number' ? val : 0);
 
   const [form, setForm] = useState({
     first_name: '',

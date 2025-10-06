@@ -37,7 +37,11 @@ const DistributorProfileScreen = ({ navigation }: any) => {
   );
 
   // Safely cast any value to string
-  const toStringSafe = (val: any): string => (typeof val === 'string' ? val : '');
+  const toStringSafe = (val: any): string => {
+  if (typeof val === 'string') {return val;}
+  if (typeof val === 'number') {return val.toString();}
+  return '';
+};
 
   const [form, setForm] = useState({
     full_name: '',
@@ -93,15 +97,15 @@ const DistributorProfileScreen = ({ navigation }: any) => {
   };
 
   const validateForm = () => {
-    if (!form.full_name.trim()) return 'Full name is required';
-    if (form.full_name.length > 100) return 'Full name must be under 100 characters';
-    if (form.flat_house.length > 100) return 'Flat House must be under 100 characters';
-    if (form.society_name.length > 255) return 'Society Name must be under 255 characters';
-    if (form.village.length > 100) return 'Village must be under 100 characters';
-    if (form.tal.length > 100) return 'Tal must be under 100 characters';
-    if (form.dist.length > 100) return 'District must be under 100 characters';
-    if (form.state.length > 100) return 'State must be under 100 characters';
-    if (form.pincode.trim() && form.pincode.length !== 6) return 'Pincode must be exactly 6 digits';
+    if (!form.full_name.trim()) {return 'Full name is required';}
+    if (form.full_name.length > 100) {return 'Full name must be under 100 characters';}
+    if (form.flat_house.length > 100) {return 'Flat House must be under 100 characters';}
+    if (form.society_name.length > 255) {return 'Society Name must be under 255 characters';}
+    if (form.village.length > 100) {return 'Village must be under 100 characters';}
+    if (form.tal.length > 100) {return 'Tal must be under 100 characters';}
+    if (form.dist.length > 100) {return 'District must be under 100 characters';}
+    if (form.state.length > 100) {return 'State must be under 100 characters';}
+    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
     return null;
   };
 
@@ -124,32 +128,32 @@ const DistributorProfileScreen = ({ navigation }: any) => {
 
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
+      'Logout',
+      'Are you sure you want to logout?',
       [
         {
-          text: "Cancel",
-          style: "cancel"
+          text: 'Cancel',
+          style: 'cancel',
         },
         {
-          text: "Logout",
-          style: "destructive",
+          text: 'Logout',
+          style: 'destructive',
           onPress: async () => {
             try {
               // Clear AsyncStorage
               await AsyncStorage.multiRemove([
                 'userToken',
-                'userID', 
+                'userID',
                 'userRole',
-                'userData'
+                'userData',
               ]);
-              
+
               // Reset distributor profile state
               dispatch(resetDistributorProfileState());
-              
+
               // Dispatch logout action
               dispatch(logout());
-              
+
               // Navigate to login (if navigation prop is available)
               if (navigation) {
                 navigation.reset({
@@ -158,10 +162,10 @@ const DistributorProfileScreen = ({ navigation }: any) => {
                 });
               }
             } catch (error) {
-              Alert.alert("Error", "Failed to logout. Please try again.");
+              Alert.alert('Error', 'Failed to logout. Please try again.');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };

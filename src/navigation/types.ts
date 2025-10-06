@@ -9,27 +9,6 @@ type Vendor = {
   // Add additional fields as required (e.g., profilePhoto, email)
 };
 
-// Milkman
-// type Milkman = {
-//   id: string;
-//   name: string;
-//   phone: string;
-//   assignedRoute: string; // Optional
-//   // Add further specifics if needed
-// };
-
-// // Request (for both customers and milkmen)
-// type Request = {
-//   id: string;
-//   vendorId: string;
-//   userId: string;
-//   userRole: 'customer' | 'milkman';
-//   status: 'pending' | 'accepted' | 'rejected';
-//   createdAt: string;
-//   // Optionally: vendorName, userName, etc., for easy UI rendering
-// };
-
-
 export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
@@ -70,6 +49,11 @@ export type RootStackParamList = {
     targetConsumerId: number;
     targetConsumerName: string;
     showBackButton: boolean;
+  };
+  UserDetails: {
+    userId: number;
+    userType: 'consumer' | 'distributor';
+    userName: string;
   };
 };
 

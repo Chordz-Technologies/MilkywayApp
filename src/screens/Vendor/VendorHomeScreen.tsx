@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -182,7 +183,7 @@ const VendorHomeScreen = () => {
         console.error('Vendor profile fetch error:', vendorError);
       }
 
-      // Fetch Accepted Consumers - FIXED MAPPING
+      // Fetch Accepted Consumers
       try {
         const consumerRes = await getAcceptedCustomers(vendorId);
         console.log('🔍 Raw consumer response:', JSON.stringify(consumerRes.data, null, 2));
@@ -195,7 +196,6 @@ const VendorHomeScreen = () => {
 
         console.log('📊 Total raw consumers:', consumersData.length);
 
-        // Map the API response to the expected format
         const mappedConsumers = consumersData.map((item: any, index: number) => ({
           id: item.join_request_id || item.customer_id || index + 1,
           user_id: item.customer_id || item.user_id || index + 1,
@@ -218,7 +218,7 @@ const VendorHomeScreen = () => {
         setAcceptedConsumers([]);
       }
 
-      // Fetch Accepted Distributors - FIXED MAPPING
+      // Fetch Accepted Distributors
       try {
         const distributorRes = await getAcceptedMilkmen(vendorId);
         console.log('🔍 Raw distributor response:', JSON.stringify(distributorRes.data, null, 2));
@@ -231,7 +231,6 @@ const VendorHomeScreen = () => {
 
         console.log('📊 Total raw distributors:', distributorsData.length);
 
-        // Map the API response to the expected format
         const mappedDistributors = distributorsData.map((item: any, index: number) => ({
           id: item.join_request_id || item.milkman_id || index + 1,
           user_id: item.milkman_id || item.user_id || index + 1,
@@ -311,11 +310,29 @@ const VendorHomeScreen = () => {
       case 'rejected':
         return '#FF6B6B';
       default:
-        return '#4CD964'; // Default to green for accepted items
+        return '#4CD964';
     }
   };
 
-  // Extract village from vendorData.location string (third segment)
+  const handleNavigateToUserDetails = useCallback((item: AcceptedItem) => {
+    try {
+      const userName = item.user_type === 'customer'
+        ? (item.customer
+            ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
+            : item.name || 'Unknown Consumer')
+        : (item.milkman?.full_name || item.name || 'Unknown Distributor');
+
+      navigation.navigate('UserDetails', {
+        userId: item.user_id,
+        userType: item.user_type === 'customer' ? 'consumer' : 'distributor',
+        userName: userName,
+      });
+    } catch (navError) {
+      console.error('Navigation error:', navError);
+      Alert.alert('Error', 'Cannot navigate to user details');
+    }
+  }, [navigation]);
+
   const village = vendorData?.location?.split(',')[2]?.trim() || 'No village provided';
 
   // LOADING STATE WITH SKELETON
@@ -360,7 +377,7 @@ const VendorHomeScreen = () => {
     {
       icon: 'cash-outline',
       label: 'Total Billed Amount',
-      value: 25000, // Replace with API data
+      value: 25000,
       subtext: 'This Month',
       backgroundColor: '#E8F8F0',
       iconBg: '#34C759',
@@ -370,7 +387,7 @@ const VendorHomeScreen = () => {
     {
       icon: 'alert-circle-outline',
       label: 'Total Overdue Amount',
-      value: 15000, // Replace with API data
+      value: 15000,
       subtext: 'Need Action',
       backgroundColor: '#FFE8E8',
       iconBg: '#FF3B30',
@@ -486,25 +503,6 @@ const VendorHomeScreen = () => {
           </View>
         </View>
 
-        {/* Enhanced DEBUG INFO */}
-        {/*{__DEV__ && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugTitle}>🐛 Debug Info</Text>
-            <Text style={styles.debugText}>Consumers: {acceptedConsumers.length}</Text>
-            <Text style={styles.debugText}>Distributors: {acceptedDistributors.length}</Text>
-            {acceptedConsumers.length > 0 && (
-              <Text style={styles.debugText}>
-                First Consumer: {acceptedConsumers[0]?.name}
-              </Text>
-            )}
-            {acceptedDistributors.length > 0 && (
-              <Text style={styles.debugText}>
-                First Distributor: {acceptedDistributors[0]?.name}
-              </Text>
-            )}
-          </View>
-        )}*/}
-
         {/* LIST */}
         <View style={styles.listContainer}>
           {selectedTab === 'consumer' ? (
@@ -519,7 +517,11 @@ const VendorHomeScreen = () => {
                 data={acceptedConsumers}
                 keyExtractor={(item, index) => `consumer_${item.id || index}`}
                 renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={styles.listItem}
+                    activeOpacity={0.7}
+                    onPress={() => handleNavigateToUserDetails(item)}
+                  >
                     <View style={styles.listItemLeft}>
                       <View style={styles.avatarSmall}>
                         <Text style={styles.avatarText}>
@@ -528,7 +530,7 @@ const VendorHomeScreen = () => {
                             .toUpperCase() || item.name?.[0]?.toUpperCase() || 'U'}
                         </Text>
                       </View>
-                      <View>
+                      <View style={styles.listItemInfo}>
                         <Text style={styles.listItemText}>
                           {item.customer
                             ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
@@ -539,12 +541,15 @@ const VendorHomeScreen = () => {
                         </Text>
                       </View>
                     </View>
-                    <View
-                      style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
-                    >
-                      <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {item.status?.toUpperCase() || 'ACCEPTED'}
-                      </Text>
+                    <View style={styles.listItemRight}>
+                      <View
+                        style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
+                      >
+                        <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                          {item.status?.toUpperCase() || 'ACCEPTED'}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 8 }} />
                     </View>
                   </TouchableOpacity>
                 )}
@@ -563,14 +568,18 @@ const VendorHomeScreen = () => {
               data={acceptedDistributors}
               keyExtractor={(item, index) => `distributor_${item.id || index}`}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={styles.listItem}
+                  activeOpacity={0.7}
+                  onPress={() => handleNavigateToUserDetails(item)}
+                >
                   <View style={styles.listItemLeft}>
                     <View style={styles.avatarSmall}>
                       <Text style={styles.avatarText}>
                         {(item.milkman?.full_name?.[0] || item.name?.[0] || 'U').toUpperCase()}
                       </Text>
                     </View>
-                    <View>
+                    <View style={styles.listItemInfo}>
                       <Text style={styles.listItemText}>
                         {item.milkman?.full_name || item.name || 'Unknown Distributor'}
                       </Text>
@@ -584,12 +593,15 @@ const VendorHomeScreen = () => {
                       )}
                     </View>
                   </View>
-                  <View
-                    style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
-                  >
-                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                      {item.status?.toUpperCase() || 'ACCEPTED'}
-                    </Text>
+                  <View style={styles.listItemRight}>
+                    <View
+                      style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}
+                    >
+                      <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                        {item.status?.toUpperCase() || 'ACCEPTED'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 8 }} />
                   </View>
                 </TouchableOpacity>
               )}
@@ -989,28 +1001,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // DEBUG INFO
-  debugContainer: {
-    backgroundColor: '#FFF3CD',
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FFEAA7',
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#856404',
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#856404',
-    marginBottom: 4,
-  },
-
   // LIST
   listContainer: {
     paddingHorizontal: 20,
@@ -1039,6 +1029,13 @@ const styles = StyleSheet.create({
   listItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  listItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listItemInfo: {
     flex: 1,
   },
   avatarSmall: {
