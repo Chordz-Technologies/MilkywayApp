@@ -57,12 +57,12 @@ const TemporaryDistributorAssignmentScreen = () => {
     try {
       const response = await getAcceptedMilkmen(user.userID);
       const data = response?.data?.data || response?.data || [];
-      
+
       // Filter out the current permanent distributor if exists
       const filteredDistributors = Array.isArray(data)
         ? data.filter((d: Distributor) => d.milkman_id !== params.currentDistributorId)
         : [];
-      
+
       setDistributors(filteredDistributors);
     } catch (err: any) {
       console.error('Error fetching distributors:', err);
@@ -150,7 +150,7 @@ const TemporaryDistributorAssignmentScreen = () => {
   };
 
   const getInitials = (name: string) => {
-    if (!name) return 'D';
+    if (!name) {return 'D';}
     const parts = name.split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();

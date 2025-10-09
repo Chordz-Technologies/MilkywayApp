@@ -1,26 +1,25 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getVendorDetailsById } from '../apiServices/allApi'; // Your existing API
+import { getVendorDetailsById, updateVendorProfile } from '../apiServices/allApi';
 
 interface VendorProfileData {
   name?: string;
+  email?: string;
+  contact?: string;
   flat_house?: string;
   society_area?: string;
   village?: string;
   tal?: string;
   dist?: string;
   state?: string;
-  confirm_password?: string;
-  buffalo_milk_litre?: number;
-  br?: string;
-  gir_cow_milk_litre?: number;
-  jarshi_cow_milk_litre?: number;
-  deshi_milk_litre?: number;
+  pincode?: number | undefined;
+  buffalo_milk_litre?: number | undefined;
+  gir_cow_milk_litre?: number | undefined;
+  jarshi_cow_milk_litre?: number | undefined;
+  deshi_milk_litre?: number | undefined;
   gir_cow_rate?: string;
   jarshi_cow_rate?: string;
   deshi_cow_rate?: string;
   cr?: string;
-  email?: string;
-  pincode?: string;
   [key: string]: any;
 }
 
@@ -49,52 +48,98 @@ export const fetchVendorProfile = createAsyncThunk<
 >(
   'vendorProfile/fetchVendorProfile',
   async (userID, { rejectWithValue }) => {
-    if (!userID) {return rejectWithValue('User ID is required');}
+    if (!userID) {
+      return rejectWithValue('User ID is required');
+    }
     try {
+      console.log('🔍 Fetching vendor profile for ID:', userID);
       const response = await getVendorDetailsById(userID);
-      if (!response?.data) {throw new Error('No profile data received');}
+      console.log('✅ Vendor profile fetched:', response.data);
+
+      if (!response?.data) {
+        throw new Error('No profile data received');
+      }
       return response.data;
     } catch (error: any) {
+      console.error('❌ Fetch vendor profile error:', error);
+      if (error?.response?.status === 404) {
+        return rejectWithValue('Vendor profile not found');
+      }
+      if (error?.response?.status === 401) {
+        return rejectWithValue('Authentication failed. Please login again.');
+      }
       return rejectWithValue(
-        error?.response?.data?.message || error?.message || 'Failed to fetch vendor profile'
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        'Failed to fetch profile'
       );
     }
   }
 );
 
-export const updateVendorProfile = createAsyncThunk<
+export const updateVendorProfileData = createAsyncThunk<
   VendorProfileData,
   { id: string | number; data: VendorProfileData },
   { rejectValue: string }
 >(
   'vendorProfile/updateVendorProfile',
   async ({ id, data }, { rejectWithValue }) => {
-    if (!id) {return rejectWithValue('User ID is required');}
+    if (!id) {
+      return rejectWithValue('User ID is required');
+    }
     try {
-      // Clean data - remove empty/null/undefined values
-      const cleanData: VendorProfileData = {};
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          cleanData[key] = value;
-        }
-      });
+      console.log('📤 Updating vendor profile:', { id, data });
 
-      if (Object.keys(cleanData).length === 0) {throw new Error('No valid data to update');}
+      // For PUT, send all fields (use undefined instead of null for optional fields)
+      const submitData: VendorProfileData = {
+        name: data.name || '',
+        email: data.email || '',
+        contact: data.contact || '',
+        flat_house: data.flat_house || '',
+        society_area: data.society_area || '',
+        village: data.village || '',
+        tal: data.tal || '',
+        dist: data.dist || '',
+        state: data.state || '',
+        pincode: data.pincode || undefined, // ✅ Changed from null to undefined
+        buffalo_milk_litre: data.buffalo_milk_litre || undefined, // ✅ Changed
+        br: data.br || '',
+        gir_cow_milk_litre: data.gir_cow_milk_litre || undefined, // ✅ Changed
+        gir_cow_rate: data.gir_cow_rate || '',
+        jarshi_cow_milk_litre: data.jarshi_cow_milk_litre || undefined, // ✅ Changed
+        jarshi_cow_rate: data.jarshi_cow_rate || '',
+        deshi_milk_litre: data.deshi_milk_litre || undefined, // ✅ Changed
+        deshi_cow_rate: data.deshi_cow_rate || '',
+        cr: data.cr || '',
+      };
 
-      const { default: apiClient } = await import('../apiServices/allApi');
-      const response = await apiClient.put(`/vendor/vendors/${id}/`, cleanData);
-      if (!response?.data) {throw new Error('No response data received');}
+      console.log('📦 Cleaned data for PUT:', submitData);
 
+      const response = await updateVendorProfile(id, submitData);
+      console.log('✅ Vendor profile updated:', response.data);
+
+      if (!response?.data) {
+        throw new Error('Update failed');
+      }
       return response.data;
     } catch (error: any) {
-      let message = 'Failed to update vendor profile';
-      if (error?.code === 'NETWORK_ERROR' || error?.message === 'Network Error')
-        {message = 'Network error: Please check your internet connection';}
-      else if (error?.response) {
+      console.error('❌ Update vendor profile error:', error);
+      let message = 'Failed to update profile';
+
+      if (error?.response) {
         const status = error.response.status;
+        const detail = error.response.data?.detail || error.response.data?.message;
+
+        console.log('❌ Error response:', {
+          status,
+          detail,
+          fullError: error.response.data,
+        });
+
         switch (status) {
           case 400:
-            message = 'Invalid data provided';
+            message = detail || 'Invalid data provided';
             break;
           case 401:
             message = 'Authentication failed';
@@ -103,20 +148,22 @@ export const updateVendorProfile = createAsyncThunk<
             message = 'Permission denied';
             break;
           case 404:
-            message = 'Vendor profile not found';
+            message = 'Profile not found';
             break;
           case 422:
-            message = 'Validation error';
+            message = detail || 'Validation error';
             break;
           case 500:
             message = 'Server error';
             break;
           default:
-            message = `Error: ${status}`;
+            message = detail || `Error: ${status}`;
         }
-      } else if (error?.request) {message = 'No response from server';}
-      else if (error?.message) {message = error.message;}
-
+      } else if (error?.code === 'NETWORK_ERROR' || error?.message === 'Network Error') {
+        message = 'Network error. Please check your connection.';
+      } else if (error?.message) {
+        message = error.message;
+      }
       return rejectWithValue(message);
     }
   }
@@ -135,6 +182,9 @@ const vendorProfileSlice = createSlice({
     resetVendorProfileState() {
       return initialState;
     },
+    setProfile(state, action: PayloadAction<VendorProfileData>) {
+      state.profile = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -151,21 +201,20 @@ const vendorProfileSlice = createSlice({
       .addCase(fetchVendorProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.profile = null;
       })
-      .addCase(updateVendorProfile.pending, (state) => {
+      .addCase(updateVendorProfileData.pending, (state) => {
         state.updating = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(updateVendorProfile.fulfilled, (state, action: PayloadAction<VendorProfileData>) => {
+      .addCase(updateVendorProfileData.fulfilled, (state, action: PayloadAction<VendorProfileData>) => {
         state.updating = false;
         state.success = true;
         state.error = null;
         state.lastUpdated = Date.now();
         state.profile = { ...state.profile, ...action.payload };
       })
-      .addCase(updateVendorProfile.rejected, (state, action) => {
+      .addCase(updateVendorProfileData.rejected, (state, action) => {
         state.updating = false;
         state.success = false;
         state.error = action.payload as string;
@@ -173,5 +222,11 @@ const vendorProfileSlice = createSlice({
   },
 });
 
-export const { clearError, clearSuccess, resetVendorProfileState } = vendorProfileSlice.actions;
+export const {
+  clearError,
+  clearSuccess,
+  resetVendorProfileState,
+  setProfile,
+} = vendorProfileSlice.actions;
+
 export default vendorProfileSlice.reducer;
