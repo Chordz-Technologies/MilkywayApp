@@ -45,7 +45,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode to form state
+  pincode: string;
 }
 
 export default function ConsumerRegistrationScreen({ navigation }: { navigation: any }) {

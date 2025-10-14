@@ -1,5 +1,4 @@
 
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { REHYDRATE } from 'redux-persist';
 import {
@@ -46,13 +45,15 @@ interface MonthlySummary {
 interface CalendarState {
   calendarData: { [key: string]: CustomMarking };
   deliveryTypes: Record<string, string>;
-  upcomingLeaves: Record<number, LeaveItem[]>; // scoped by customerId
-  upcomingMilkRequests: Record<number, ExtraMilkItem[]>; // scoped by customerId
+  upcomingLeaves: Record<number, LeaveItem[]>;
+  upcomingMilkRequests: Record<number, ExtraMilkItem[]>;
   monthlySummary: MonthlySummary;
   loading: boolean;
   error: string | null;
   currentMonth: number;
   currentYear: number;
+  lastUpdated: number | null;
+  lastFetchedMonths: string[];
 }
 
 const initialState: CalendarState = {
@@ -70,18 +71,132 @@ const initialState: CalendarState = {
   error: null,
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
+  lastUpdated: null,
+  lastFetchedMonths: [],
+};
+
+// ✅ Date normalization utility
+const normalizeDateFormat = (dateStr: string): string => {
+  if (!dateStr) {return '';}
+
+  // Already in YYYY-MM-DD format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+
+  // Convert DD-MM-YYYY to YYYY-MM-DD
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('-');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Convert DD/MM/YYYY to YYYY-MM-DD
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Try parsing as Date object
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    console.error('Failed to normalize date:', dateStr, e);
+  }
+
+  return dateStr;
 };
 
 export const fetchCalendarData = createAsyncThunk(
   'calendar/fetchCalendarData',
   async (params: { customerId: number; month: string }, thunkAPI) => {
     try {
+      console.log('📡 Fetching calendar data:', params);
       const response = await getConsumerCalendar({
         customer_id: params.customerId,
         month: params.month,
       });
-      return { data: response.data, month: params.month, customerId: params.customerId };
+
+      console.log('🔍 RAW API Response:', {
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        keys: response.data ? Object.keys(response.data) : [],
+        hasData: !!response.data,
+      });
+
+      // ✅ Extract actual calendar array from response
+      let calendarArray: any[] = [];
+      let summaryData: any = null;
+
+      // Handle different response structures
+      if (Array.isArray(response.data)) {
+        calendarArray = response.data;
+        console.log('✅ Direct array response');
+      } else if (response.data && typeof response.data === 'object') {
+        // Nested response structure
+        if (Array.isArray(response.data.data)) {
+          calendarArray = response.data.data;
+          console.log('✅ Extracted from response.data.data');
+
+          // ✅ Extract summary if it exists
+          summaryData = {
+            totalMilk: response.data.total_milk || response.data.totalMilk || '0L',
+            totalBill: response.data.total_bill || response.data.totalBill || '₹0',
+            totalDeliveries: response.data.total_deliveries || response.data.totalDeliveries || 0,
+            totalLeaves: response.data.total_leaves || response.data.totalLeaves || 0,
+          };
+
+          console.log('📊 Extracted summary from response:', summaryData);
+        } else if (Array.isArray(response.data.calendar)) {
+          calendarArray = response.data.calendar;
+          console.log('✅ Extracted from response.data.calendar');
+
+          summaryData = {
+            totalMilk: response.data.total_milk || '0L',
+            totalBill: response.data.total_bill || '₹0',
+            totalDeliveries: response.data.total_deliveries || 0,
+            totalLeaves: response.data.total_leaves || 0,
+          };
+        } else if (Array.isArray(response.data.deliveries)) {
+          calendarArray = response.data.deliveries;
+          console.log('✅ Extracted from response.data.deliveries');
+        } else if (Array.isArray(response.data.results)) {
+          calendarArray = response.data.results;
+          console.log('✅ Extracted from response.data.results');
+        } else {
+          const keys = Object.keys(response.data);
+          if (keys.length > 0 && keys[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+            console.log('🔄 Converting object with date keys to array');
+            calendarArray = keys.map(date => ({
+              date,
+              status: response.data[date],
+              remarks: '',
+            }));
+          } else {
+            console.error('❌ Unknown response structure:', keys);
+            console.error('Full response:', JSON.stringify(response.data, null, 2));
+          }
+        }
+      }
+
+      console.log('✅ Final calendar array:', {
+        isArray: Array.isArray(calendarArray),
+        length: calendarArray?.length || 0,
+        firstItem: calendarArray?.[0],
+        lastItem: calendarArray?.[calendarArray.length - 1],
+      });
+
+      return {
+        data: calendarArray,
+        summary: summaryData,
+        month: params.month,
+        customerId: params.customerId,
+      };
     } catch (error: any) {
+      console.error('❌ fetchCalendarData error:', error);
+      console.error('Error details:', error.response?.data || error.message);
       return thunkAPI.rejectWithValue('Failed to fetch calendar data');
     }
   }
@@ -174,6 +289,14 @@ const getStatusColor = (status: string) => {
       return '#9C27B0';
     case 'extra_milk':
       return '#FFC107';
+    case 'vendor_unavailable':
+      return '#F44336';
+    case 'distributor_unavailable':
+      return '#F44336';
+    case 'cancelled':
+      return '#FF5722';
+    case 'leave':
+      return '#9C27B0';
     default:
       return '#757575';
   }
@@ -192,7 +315,6 @@ const calendarSlice = createSlice({
     },
     cancelLeave(state, action: PayloadAction<{ leaveId: string; leaveDate: string; customerId: number }>) {
       const { leaveId, leaveDate, customerId } = action.payload;
-      // Remove leave only for given customer
       state.upcomingLeaves[customerId] = (state.upcomingLeaves[customerId] || []).filter(
         (leave) => leave.id !== leaveId
       );
@@ -215,6 +337,8 @@ const calendarSlice = createSlice({
         totalDeliveries: 0,
       };
       state.error = null;
+      state.lastUpdated = null;
+      state.lastFetchedMonths = [];
     },
   },
   extraReducers: (builder) => {
@@ -224,29 +348,135 @@ const calendarSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCalendarData.fulfilled, (state, action) => {
+        console.log('📅 ========== FETCH CALENDAR DATA ==========');
+        console.log('📦 Payload:', {
+          month: action.payload.month,
+          customerId: action.payload.customerId,
+          dataLength: action.payload.data?.length || 0,
+          hasSummary: !!action.payload.summary,
+        });
+
         state.loading = false;
+
+        // Log BEFORE merge
+        console.log('📊 BEFORE MERGE:');
+        console.log('  - deliveryTypes count:', Object.keys(state.deliveryTypes).length);
+        console.log('  - calendarData count:', Object.keys(state.calendarData).length);
+        if (Object.keys(state.deliveryTypes).length > 0) {
+          const dates = Object.keys(state.deliveryTypes).sort();
+          console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
+          console.log('  - Sample dates:', dates.slice(0, 5));
+        }
+
+        // Process new data with date normalization
         const newCalendarData: { [key: string]: CustomMarking } = {};
         const newDeliveryTypes: Record<string, string> = {};
         let deliveredCount = 0;
         let leaveCount = 0;
 
         if (Array.isArray(action.payload.data)) {
-          action.payload.data.forEach((item: DeliveryCalendarItem) => {
-            const color = getStatusColor(item.status);
-            newCalendarData[item.date] = { marked: true, dotColor: color };
-            newDeliveryTypes[item.date] = item.status;
+          console.log('🔄 Processing', action.payload.data.length, 'items from backend');
 
+          action.payload.data.forEach((item: DeliveryCalendarItem, index) => {
+            const originalDate = item.date;
+            const normalizedDate = normalizeDateFormat(item.date);
+
+            if (index < 5) {
+              console.log(`  [${index}] Date: ${originalDate} → ${normalizedDate}, Status: ${item.status}`);
+            }
+
+            const color = getStatusColor(item.status);
+            newCalendarData[normalizedDate] = { marked: true, dotColor: color };
+            newDeliveryTypes[normalizedDate] = item.status;
+
+            // Count deliveries and leaves from calendar data
             if (item.status === 'delivered') {deliveredCount++;}
-            if (item.status === 'customer_paused') {leaveCount++;}
+            if (item.status === 'customer_paused' || item.status === 'leave') {leaveCount++;}
           });
+
+          console.log('✅ Processed data:', {
+            newDates: Object.keys(newDeliveryTypes).length,
+            delivered: deliveredCount,
+            leaves: leaveCount,
+          });
+        } else {
+          console.error('❌ Payload data is not an array!');
+          console.error('   Type:', typeof action.payload.data);
+          console.error('   Value:', action.payload.data);
         }
 
-        state.calendarData = newCalendarData;
-        state.deliveryTypes = newDeliveryTypes;
-        state.monthlySummary.totalDeliveries = deliveredCount;
-        state.monthlySummary.totalLeaves = leaveCount;
+        // MERGE instead of REPLACE
+        state.calendarData = {
+          ...state.calendarData,
+          ...newCalendarData,
+        };
 
-        // Initialize leave and milk requests arrays for this customer if not existing
+        state.deliveryTypes = {
+          ...state.deliveryTypes,
+          ...newDeliveryTypes,
+        };
+
+        // Update tracking
+        state.lastUpdated = Date.now();
+        const monthKey = action.payload.month;
+        if (!state.lastFetchedMonths.includes(monthKey)) {
+          state.lastFetchedMonths.push(monthKey);
+        }
+
+        // Log AFTER merge
+        console.log('📊 AFTER MERGE:');
+        console.log('  - deliveryTypes count:', Object.keys(state.deliveryTypes).length);
+        console.log('  - calendarData count:', Object.keys(state.calendarData).length);
+        if (Object.keys(state.deliveryTypes).length > 0) {
+          const dates = Object.keys(state.deliveryTypes).sort();
+          console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
+          console.log('  - Recent dates:', dates.slice(-5));
+        }
+        console.log('  - Fetched months:', state.lastFetchedMonths);
+        console.log('  - Last updated:', new Date(state.lastUpdated).toISOString());
+
+        // ✅ IMPROVED: Use backend summary, but validate and fallback to calculated values
+        if (action.payload.summary) {
+          console.log('✅ Backend summary received:', action.payload.summary);
+
+          // Check if backend values are valid (not zero/empty)
+          const hasValidMilk = action.payload.summary.totalMilk &&
+                              action.payload.summary.totalMilk !== '0L' &&
+                              action.payload.summary.totalMilk !== '0';
+          const hasValidLeaves = action.payload.summary.totalLeaves > 0;
+          const hasValidDeliveries = action.payload.summary.totalDeliveries > 0;
+
+          state.monthlySummary = {
+            totalMilk: hasValidMilk ? action.payload.summary.totalMilk : '0L',
+            totalBill: action.payload.summary.totalBill || '₹0',
+            totalDeliveries: hasValidDeliveries ? action.payload.summary.totalDeliveries : deliveredCount,
+            totalLeaves: hasValidLeaves ? action.payload.summary.totalLeaves : leaveCount,
+          };
+
+          console.log('📊 Summary validation:', {
+            backendValues: action.payload.summary,
+            hasValidMilk,
+            hasValidLeaves,
+            hasValidDeliveries,
+            calculatedDeliveries: deliveredCount,
+            calculatedLeaves: leaveCount,
+            usingBackend: { milk: hasValidMilk, leaves: hasValidLeaves, deliveries: hasValidDeliveries },
+            usingCalculated: { deliveries: !hasValidDeliveries, leaves: !hasValidLeaves },
+          });
+        } else {
+          console.log('⚠️ No backend summary, using calculated values');
+          state.monthlySummary.totalDeliveries = deliveredCount;
+          state.monthlySummary.totalLeaves = leaveCount;
+        }
+
+        console.log('📊 Final Summary:', state.monthlySummary);
+        console.log('   - Total Milk:', state.monthlySummary.totalMilk);
+        console.log('   - Total Bill:', state.monthlySummary.totalBill);
+        console.log('   - Deliveries:', state.monthlySummary.totalDeliveries);
+        console.log('   - Leaves:', state.monthlySummary.totalLeaves);
+        console.log('=========================================');
+
+        // Initialize leave and milk requests arrays for this customer
         const custId = action.payload.customerId;
         if (!(custId in state.upcomingLeaves)) {
           state.upcomingLeaves[custId] = [];
@@ -258,6 +488,7 @@ const calendarSlice = createSlice({
       .addCase(fetchCalendarData.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        console.error('❌ fetchCalendarData rejected:', action.payload);
       })
       .addCase(submitLeaveRequest.pending, (state) => {
         state.loading = true;
@@ -331,6 +562,12 @@ const calendarSlice = createSlice({
       })
       .addCase(REHYDRATE, (state, action: any) => {
         if (action.payload?.calendar) {
+          console.log('🔄 ========== REHYDRATE ==========');
+          console.log('  - Restoring calendar from storage');
+          console.log('  - deliveryTypes:', Object.keys(action.payload.calendar.deliveryTypes || {}).length);
+          console.log('  - calendarData:', Object.keys(action.payload.calendar.calendarData || {}).length);
+          console.log('  - lastFetchedMonths:', action.payload.calendar.lastFetchedMonths);
+          console.log('===================================');
           return { ...state, ...action.payload.calendar, loading: false };
         }
       });

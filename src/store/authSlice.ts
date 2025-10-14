@@ -34,7 +34,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
 };
 
-// ✅ LOGIN - Reads from backend's role-based login response
+//  LOGIN - Reads from backend's role-based login response
 export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials: { contact: string; password: string }, { rejectWithValue }) => {
@@ -72,7 +72,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// ✅ REGISTRATION - vendor
+//  REGISTRATION - vendor
 export const registerVendor = createAsyncThunk(
   'auth/registerVendor',
   async (payload: any, { rejectWithValue }) => {
@@ -89,7 +89,7 @@ export const registerVendor = createAsyncThunk(
   }
 );
 
-// ✅ REGISTRATION - customer
+//  REGISTRATION - customer
 export const registerCustomer = createAsyncThunk(
   'auth/registerCustomer',
   async (payload: any, { rejectWithValue }) => {
@@ -106,7 +106,7 @@ export const registerCustomer = createAsyncThunk(
   }
 );
 
-// ✅ REGISTRATION - distributor
+//  REGISTRATION - distributor
 export const registerDistributor = createAsyncThunk(
   'auth/registerDistributor',
   async (payload: any, { rejectWithValue }) => {
@@ -123,7 +123,7 @@ export const registerDistributor = createAsyncThunk(
   }
 );
 
-// ✅ TOKEN REFRESH - Reads from either .data.data or .data
+//  TOKEN REFRESH - Reads from either .data.data or .data
 export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { rejectWithValue }) => {
@@ -149,7 +149,7 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
-// ✅ LOGOUT - Clears tokens and user info
+//  LOGOUT - Clears tokens and user info
 export const logoutUserAction = createAsyncThunk('auth/logout', async () => {
   try {
     await logoutUser();
@@ -161,7 +161,7 @@ export const logoutUserAction = createAsyncThunk('auth/logout', async () => {
   return true;
 });
 
-// ✅ CHECK STORED AUTH
+//  CHECK STORED AUTH
 export const checkStoredAuth = createAsyncThunk('auth/checkStored', async () => {
   const token = await AsyncStorage.getItem('access_token');
   const userInfo = await AsyncStorage.getItem('userInfo');

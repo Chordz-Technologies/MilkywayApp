@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { getVendorDetailsById, updateVendorProfile } from '../apiServices/allApi';
 
@@ -11,13 +12,14 @@ interface VendorProfileData {
   tal?: string;
   dist?: string;
   state?: string;
-  pincode?: number | undefined;
-  buffalo_milk_litre?: number | undefined;
-  gir_cow_milk_litre?: number | undefined;
-  jarshi_cow_milk_litre?: number | undefined;
-  deshi_milk_litre?: number | undefined;
+  pincode?: number | null;
+  buffalo_milk_litre?: number | null;
+  br?: string;
+  gir_cow_milk_litre?: number | null;
   gir_cow_rate?: string;
+  jarshi_cow_milk_litre?: number | null;
   jarshi_cow_rate?: string;
+  deshi_milk_litre?: number | null;
   deshi_cow_rate?: string;
   cr?: string;
   [key: string]: any;
@@ -59,6 +61,7 @@ export const fetchVendorProfile = createAsyncThunk<
       if (!response?.data) {
         throw new Error('No profile data received');
       }
+
       return response.data;
     } catch (error: any) {
       console.error('❌ Fetch vendor profile error:', error);
@@ -84,44 +87,87 @@ export const updateVendorProfileData = createAsyncThunk<
   { rejectValue: string }
 >(
   'vendorProfile/updateVendorProfile',
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, data }, { rejectWithValue, getState }) => {
     if (!id) {
       return rejectWithValue('User ID is required');
     }
     try {
-      console.log('📤 Updating vendor profile:', { id, data });
+      console.log('📤 Updating vendor profile - RAW DATA:', { id, data });
 
-      // For PUT, send all fields (use undefined instead of null for optional fields)
-      const submitData: VendorProfileData = {
-        name: data.name || '',
-        email: data.email || '',
-        contact: data.contact || '',
-        flat_house: data.flat_house || '',
-        society_area: data.society_area || '',
-        village: data.village || '',
-        tal: data.tal || '',
-        dist: data.dist || '',
-        state: data.state || '',
-        pincode: data.pincode || undefined, // ✅ Changed from null to undefined
-        buffalo_milk_litre: data.buffalo_milk_litre || undefined, // ✅ Changed
-        br: data.br || '',
-        gir_cow_milk_litre: data.gir_cow_milk_litre || undefined, // ✅ Changed
-        gir_cow_rate: data.gir_cow_rate || '',
-        jarshi_cow_milk_litre: data.jarshi_cow_milk_litre || undefined, // ✅ Changed
-        jarshi_cow_rate: data.jarshi_cow_rate || '',
-        deshi_milk_litre: data.deshi_milk_litre || undefined, // ✅ Changed
-        deshi_cow_rate: data.deshi_cow_rate || '',
-        cr: data.cr || '',
-      };
+      // Get current profile from state
+      const state = getState() as { vendorProfile: VendorProfileState };
+      const currentProfile = state.vendorProfile.profile;
 
-      console.log('📦 Cleaned data for PUT:', submitData);
+      // Extract the actual data object (handle nested structure)
+      const profileData = currentProfile?.data || currentProfile;
+
+      console.log('📋 Current profile data:', profileData);
+
+      // Format contact number
+      let formattedContact = data.contact;
+      if (data.contact) {
+        let cleaned = data.contact.trim();
+
+        console.log('🔍 RAW contact received:', cleaned);
+
+        // Remove +91 prefix if exists
+        if (cleaned.startsWith('+91')) {
+          cleaned = cleaned.substring(3);
+        }
+        // Remove 91 prefix ONLY if it's at start AND total length is 12
+        else if (cleaned.startsWith('91') && cleaned.length === 12) {
+          cleaned = cleaned.substring(2);
+        }
+
+        // Remove any non-digit characters
+        cleaned = cleaned.replace(/\D/g, '');
+
+        console.log('🧹 Cleaned contact:', cleaned);
+        console.log('📏 Contact length:', cleaned.length);
+
+        if (cleaned.length === 10) {
+          formattedContact = `+91${cleaned}`;
+        } else if (cleaned.length > 0) {
+          console.error('❌ Invalid contact length:', cleaned.length, 'Expected: 10');
+          return rejectWithValue('Contact must be exactly 10 digits');
+        }
+      }
+
+      console.log('📞 Final formatted contact:', formattedContact);
+
+      // ✅ Build submit data - ONLY send fields that are being updated (PATCH behavior)
+      const submitData: any = {};
+
+      // Only include fields that are explicitly provided in the update
+      if (data.name !== undefined) {submitData.name = data.name;}
+      if (data.email !== undefined) {submitData.email = data.email;}
+      if (formattedContact !== undefined) {submitData.contact = formattedContact;}
+      if (data.flat_house !== undefined) {submitData.flat_house = data.flat_house;}
+      if (data.society_area !== undefined) {submitData.society_area = data.society_area;}
+      if (data.village !== undefined) {submitData.village = data.village;}
+      if (data.tal !== undefined) {submitData.tal = data.tal;}
+      if (data.dist !== undefined) {submitData.dist = data.dist;}
+      if (data.state !== undefined) {submitData.state = data.state;}
+      if (data.pincode !== undefined) {submitData.pincode = data.pincode;}
+      if (data.buffalo_milk_litre !== undefined) {submitData.buffalo_milk_litre = data.buffalo_milk_litre;}
+      if (data.br !== undefined) {submitData.br = data.br;}
+      if (data.gir_cow_milk_litre !== undefined) {submitData.gir_cow_milk_litre = data.gir_cow_milk_litre;}
+      if (data.gir_cow_rate !== undefined) {submitData.gir_cow_rate = data.gir_cow_rate;}
+      if (data.jarshi_cow_milk_litre !== undefined) {submitData.jarshi_cow_milk_litre = data.jarshi_cow_milk_litre;}
+      if (data.jarshi_cow_rate !== undefined) {submitData.jarshi_cow_rate = data.jarshi_cow_rate;}
+      if (data.deshi_milk_litre !== undefined) {submitData.deshi_milk_litre = data.deshi_milk_litre;}
+      if (data.deshi_cow_rate !== undefined) {submitData.deshi_cow_rate = data.deshi_cow_rate;}
+      if (data.cr !== undefined) {submitData.cr = data.cr;}
+
+      console.log('📦 PATCH data (only updated fields):', submitData);
 
       const response = await updateVendorProfile(id, submitData);
-      console.log('✅ Vendor profile updated:', response.data);
+      console.log('✅ Vendor profile updated successfully:', response.data);
 
       if (!response?.data) {
-        throw new Error('Update failed');
+        throw new Error('Update failed - no data returned');
       }
+
       return response.data;
     } catch (error: any) {
       console.error('❌ Update vendor profile error:', error);
@@ -137,24 +183,26 @@ export const updateVendorProfileData = createAsyncThunk<
           fullError: error.response.data,
         });
 
+        console.log('❌ Request payload that failed:', error.config?.data);
+
         switch (status) {
           case 400:
-            message = detail || 'Invalid data provided';
+            message = detail || 'Invalid data provided. Please check all fields.';
             break;
           case 401:
-            message = 'Authentication failed';
+            message = 'Authentication failed. Please login again.';
             break;
           case 403:
-            message = 'Permission denied';
+            message = 'Permission denied. You cannot update this profile.';
             break;
           case 404:
-            message = 'Profile not found';
+            message = 'Profile not found.';
             break;
           case 422:
-            message = detail || 'Validation error';
+            message = detail || 'Validation error. Please check your input.';
             break;
           case 500:
-            message = 'Server error';
+            message = 'Server error. Please try again later.';
             break;
           default:
             message = detail || `Error: ${status}`;
@@ -197,6 +245,7 @@ const vendorProfileSlice = createSlice({
         state.error = null;
         state.profile = action.payload;
         state.lastUpdated = Date.now();
+        console.log('✅ Profile saved to Redux state:', action.payload);
       })
       .addCase(fetchVendorProfile.rejected, (state, action) => {
         state.loading = false;
@@ -212,7 +261,14 @@ const vendorProfileSlice = createSlice({
         state.success = true;
         state.error = null;
         state.lastUpdated = Date.now();
-        state.profile = { ...state.profile, ...action.payload };
+
+        // ✅ Merge updated data with existing profile (PATCH behavior)
+        state.profile = {
+          ...state.profile,
+          ...action.payload,
+        };
+
+        console.log('✅ Profile updated in Redux state:', state.profile);
       })
       .addCase(updateVendorProfileData.rejected, (state, action) => {
         state.updating = false;

@@ -4,7 +4,7 @@ import { BackHandler, Alert, Platform } from 'react-native';
 const useExitAppConfirmation = () => {
   useEffect(() => {
     // We only add the listener on Android devices
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android') {return;}
 
     const backAction = () => {
       Alert.alert('Hold on!', 'Are you sure you want to exit the app?', [

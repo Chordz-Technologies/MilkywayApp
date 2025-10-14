@@ -173,8 +173,8 @@ const toStringSafe = (val: any): string => {
                   routes: [{ name: 'Login' }],
                 });
               }
-            } catch (error) {
-              console.error('Logout error:', error);
+            } catch (err) {
+              console.error('Logout error:', err);
               Alert.alert('Error', 'Failed to logout. Please try again.');
             }
           },

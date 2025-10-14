@@ -22,11 +22,11 @@ const VerifyOtpScreen = () => {
 
 
     const handleChange = (text: string, index: number) => {
-        if (text.length > 1) return;
+        if (text.length > 1) {return;}
         const updated = [...otp];
         updated[index] = text;
         setOtp(updated);
-        if (text && index < 3) inputs.current[index + 1]?.focus();
+        if (text && index < 3) {inputs.current[index + 1]?.focus();}
     };
 
     const handleKeyPress = (e: any, index: number) => {
@@ -89,7 +89,7 @@ const VerifyOtpScreen = () => {
                         key={index}
                         style={[
                             styles.otpBox,
-                            focusedIndex === index && styles.otpBoxFocused
+                            focusedIndex === index && styles.otpBoxFocused,
                         ]}
                         keyboardType="number-pad"
                         maxLength={1}
@@ -99,7 +99,7 @@ const VerifyOtpScreen = () => {
                         onChangeText={(text) => handleChange(text, index)}
                         onKeyPress={(e) => handleKeyPress(e, index)}
                         ref={(ref) => {
-                            if (ref) inputs.current[index] = ref;
+                            if (ref) {inputs.current[index] = ref;}
                         }}
                     />
 

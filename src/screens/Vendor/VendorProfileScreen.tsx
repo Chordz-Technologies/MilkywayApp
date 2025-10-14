@@ -37,10 +37,29 @@ const VendorProfileScreen = ({ navigation }: any) => {
     }
   );
 
+  // Enhanced toStringSafe to handle numbers properly
   const toStringSafe = (val: any): string => {
+    if (val === null || val === undefined) {return '';}
     if (typeof val === 'string') {return val;}
     if (typeof val === 'number') {return val.toString();}
     return '';
+  };
+
+  // ✅ FIXED: Helper to strip country code from phone
+  const stripCountryCode = (phone: string): string => {
+    if (!phone) {return '';}
+    let cleaned = phone.trim();
+
+    // Remove +91 prefix if exists
+    if (cleaned.startsWith('+91')) {
+      cleaned = cleaned.substring(3);
+    }
+    // Remove 91 prefix ONLY if it's at start AND results in 10 digits
+    else if (cleaned.startsWith('91') && cleaned.length === 12) {
+      cleaned = cleaned.substring(2);
+    }
+
+    return cleaned;
   };
 
   const [form, setForm] = useState({
@@ -87,11 +106,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
       }
 
       console.log('📋 Final Data Object:', JSON.stringify(data, null, 2));
+      console.log('🔍 Pincode value:', data.pincode, 'Type:', typeof data.pincode);
+      console.log('📞 Original contact:', data.contact);
 
       const formData = {
         name: toStringSafe(data.name),
         email: toStringSafe(data.email),
-        contact: toStringSafe(data.contact),
+        contact: stripCountryCode(toStringSafe(data.contact)), // Strip +91 prefix
         flat_house: toStringSafe(data.flat_house),
         society_area: toStringSafe(data.society_area),
         village: toStringSafe(data.village),
@@ -111,6 +132,8 @@ const VendorProfileScreen = ({ navigation }: any) => {
       };
 
       console.log('✅ Form Data to Set:', formData);
+      console.log('✅ Pincode in form:', formData.pincode);
+      console.log('📞 Cleaned contact:', formData.contact);
       setForm(formData);
     }
   }, [profile]);
@@ -133,6 +156,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
   }, [error, dispatch]);
 
   const handleChange = (key: keyof typeof form, value: string) => {
+    console.log(`📝 Field changed: ${key} = ${value}`);
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -140,7 +164,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
     if (!form.name.trim()) {return 'Name is required';}
     if (form.name.length > 100) {return 'Name must be under 100 characters';}
     if (!form.contact.trim()) {return 'Contact is required';}
-    if (form.contact.length !== 10) {return 'Contact must be exactly 10 digits';}
+
+    // Contact should be 10 digits (slice will add +91 when submitting)
+    const cleanContact = stripCountryCode(form.contact);
+    if (cleanContact.length !== 10) {return 'Contact must be exactly 10 digits';}
+    if (!/^\d{10}$/.test(cleanContact)) {return 'Contact must contain only digits';}
+
     if (form.email && !/\S+@\S+\.\S+/.test(form.email)) {return 'Invalid email format';}
     if (form.email.length > 255) {return 'Email must be under 255 characters';}
     if (form.flat_house.length > 100) {return 'Flat/House must be under 100 characters';}
@@ -164,6 +193,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
       return;
     }
 
+    // Send as-is (10 digits only) - slice will add +91
     const submitData = {
       name: form.name,
       email: form.email || '',
@@ -186,7 +216,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
       cr: form.cr || '',
     };
 
-    console.log('📤 Sending data:', submitData);
+    console.log('📤 Sending data to slice:', submitData);
     dispatch(updateVendorProfileData({ id: user.userID, data: submitData }));
   };
 
@@ -204,7 +234,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             if (navigation) {
               navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
             }
-          } catch (error) {
+          } catch (err) {
             Alert.alert('Error', 'Failed to logout. Please try again.');
           }
         },
@@ -245,15 +275,22 @@ const VendorProfileScreen = ({ navigation }: any) => {
         </View>
         <View style={styles.inputContainer}>
           <Ionicons name="call-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Contact *"
-            value={form.contact}
-            onChangeText={(v) => handleChange('contact', v)}
-            maxLength={10}
-            keyboardType="phone-pad"
-            placeholderTextColor="#999"
-          />
+          <View style={styles.phoneInputWrapper}>
+            <Text style={styles.countryCode}>+91</Text>
+            <TextInput
+              style={styles.phoneInput}
+              placeholder="Contact * (10 digits)"
+              value={form.contact}
+              onChangeText={(v) => {
+                // Only allow digits and limit to 10
+                const cleaned = v.replace(/\D/g, '').slice(0, 10);
+                handleChange('contact', cleaned);
+              }}
+              maxLength={10}
+              keyboardType="phone-pad"
+              placeholderTextColor="#999"
+            />
+          </View>
         </View>
         <View style={styles.inputContainer}>
           <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
@@ -343,9 +380,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <Ionicons name="keypad-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Pincode"
+            placeholder="Pincode (6 digits)"
             value={form.pincode}
-            onChangeText={(v) => handleChange('pincode', v)}
+            onChangeText={(v) => {
+              // Only allow digits and limit to 6
+              const cleaned = v.replace(/\D/g, '').slice(0, 6);
+              handleChange('pincode', cleaned);
+            }}
             maxLength={6}
             keyboardType="numeric"
             placeholderTextColor="#999"
@@ -356,11 +397,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
       {/* Buffalo Milk Details */}
       <View style={styles.section}>
         <Text style={styles.title}>Buffalo Milk</Text>
+        <Text style={styles.sectionInfo}>Set daily supply capacity and rate per litre</Text>
         <View style={styles.inputContainer}>
           <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Buffalo Milk Litre"
+            placeholder="Daily Capacity (Litres)"
             value={form.buffalo_milk_litre}
             onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
             keyboardType="numeric"
@@ -371,9 +413,26 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Buffalo Rate (BR)"
+            placeholder="Rate per Litre (₹)"
             value={form.br}
             onChangeText={(v) => handleChange('br', v)}
+            keyboardType="decimal-pad"
+            placeholderTextColor="#999"
+          />
+        </View>
+      </View>
+
+      {/* Cow Milk Rate (CR) - General/Mixed */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Cow Milk</Text>
+        <Text style={styles.sectionInfo}>Standard rate per litre for regular/mixed cow milk</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Cow Milk Rate per Litre (₹)"
+            value={form.cr}
+            onChangeText={(v) => handleChange('cr', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
           />
@@ -383,11 +442,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
       {/* Gir Cow Milk Details */}
       <View style={styles.section}>
         <Text style={styles.title}>Gir Cow Milk</Text>
+        <Text style={styles.sectionInfo}>Premium breed - Set daily supply capacity and rate per litre</Text>
         <View style={styles.inputContainer}>
           <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Gir Cow Milk Litre"
+            placeholder="Daily Capacity (Litres)"
             value={form.gir_cow_milk_litre}
             onChangeText={(v) => handleChange('gir_cow_milk_litre', v)}
             keyboardType="numeric"
@@ -398,7 +458,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Gir Cow Rate"
+            placeholder="Rate per Litre (₹)"
             value={form.gir_cow_rate}
             onChangeText={(v) => handleChange('gir_cow_rate', v)}
             keyboardType="decimal-pad"
@@ -410,11 +470,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
       {/* Jarshi Cow Milk Details */}
       <View style={styles.section}>
         <Text style={styles.title}>Jarshi Cow Milk</Text>
+        <Text style={styles.sectionInfo}>Local breed - Set daily supply capacity and rate per litre</Text>
         <View style={styles.inputContainer}>
           <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Jarshi Cow Milk Litre"
+            placeholder="Daily Capacity (Litres)"
             value={form.jarshi_cow_milk_litre}
             onChangeText={(v) => handleChange('jarshi_cow_milk_litre', v)}
             keyboardType="numeric"
@@ -425,7 +486,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Jarshi Cow Rate"
+            placeholder="Rate per Litre (₹)"
             value={form.jarshi_cow_rate}
             onChangeText={(v) => handleChange('jarshi_cow_rate', v)}
             keyboardType="decimal-pad"
@@ -437,11 +498,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
       {/* Deshi Cow Milk Details */}
       <View style={styles.section}>
         <Text style={styles.title}>Deshi Cow Milk</Text>
+        <Text style={styles.sectionInfo}>Indigenous breed - Set daily supply capacity and rate per litre</Text>
         <View style={styles.inputContainer}>
           <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Deshi Milk Litre"
+            placeholder="Daily Capacity (Litres)"
             value={form.deshi_milk_litre}
             onChangeText={(v) => handleChange('deshi_milk_litre', v)}
             keyboardType="numeric"
@@ -452,25 +514,9 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Deshi Cow Rate"
+            placeholder="Rate per Litre (₹)"
             value={form.deshi_cow_rate}
             onChangeText={(v) => handleChange('deshi_cow_rate', v)}
-            keyboardType="decimal-pad"
-            placeholderTextColor="#999"
-          />
-        </View>
-      </View>
-
-      {/* Commission Rate */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Commission</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="trending-up-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Commission Rate (CR)"
-            value={form.cr}
-            onChangeText={(v) => handleChange('cr', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
           />
@@ -546,11 +592,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 15,
+    marginBottom: 4,
     color: '#333',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
     paddingBottom: 8,
+  },
+  sectionInfo: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 12,
+    marginTop: 4,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -567,6 +620,23 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 12,
+  },
+  phoneInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  countryCode: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  phoneInput: {
     flex: 1,
     fontSize: 16,
     color: '#333',
