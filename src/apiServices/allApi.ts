@@ -343,6 +343,11 @@ export const deassignDistributor = (data: {
   return apiClient.post('/consumer-calendar/vendor-calendar/deassign-milkman/', data);
 };
 
+// Send FCM token to backend
+export const sendFCMToken = (data: { token: string; id: string }) => {
+  return apiClient.post('/vendor-login/save-fcm-token/', data);
+};
+
 /* ========= API CLIENT EXPORTS ========= */
 
 //  Export both clients for specific use cases

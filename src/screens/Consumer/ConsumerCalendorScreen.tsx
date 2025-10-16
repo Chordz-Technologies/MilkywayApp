@@ -876,9 +876,7 @@ import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
-
 import { calendarScreenStyles, calendarTheme, colors } from '../../styles/CalendorScreenStyle';
-
 import {
   fetchCalendarData,
   setCurrentMonth,
@@ -889,9 +887,10 @@ import {
   submitExtraMilk,
   cancelLeave,
 } from '../../store/calendarSlice';
-
 import { selectConsumers } from '../../store/consumersSlice';
 import { checkStoredAuth } from '../../store/authSlice';
+import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
+import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 
 interface CalendarViewerProps {
   viewerRole?: 'consumer' | 'distributor' | 'vendor';
@@ -899,7 +898,6 @@ interface CalendarViewerProps {
   targetConsumerName?: string;
   showBackButton?: boolean;
 }
-
 type MarkedDates = Record<
   string,
   {
@@ -967,7 +965,7 @@ const ConsumerModals: React.FC<{
   onSubmitExtraMilk,
   viewerRole,
 }) => {
-  if (viewerRole !== 'consumer') {return null;}
+  if (viewerRole !== 'consumer') { return null; }
 
   const LazyLeaveRequestModal = React.lazy(() => import('../../components/LeaveRequestModal'));
   const LazyExtraMilkModal = React.lazy(() => import('../../components/ExtraMilkModal'));
@@ -1055,13 +1053,13 @@ const MonthlySummary: React.FC<{
 }> = React.memo(({ monthlySummary, currentMonth, currentYear, isDistributor, isVendor, leavesCount }) => {
   const formatMilkQuantity = (quantity: number | string) => {
     const num = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
-    if (isNaN(num)) {return '0L';}
+    if (isNaN(num)) { return '0L'; }
     return `${num}L`;
   };
 
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    if (isNaN(num)) {return '₹0';}
+    if (isNaN(num)) { return '₹0'; }
     return `₹${num}`;
   };
 
@@ -1148,11 +1146,11 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, [actualTargetConsumerId, user?.userID]);
 
   const consumerName = useMemo(() => {
-    if (actualTargetConsumerName) {return actualTargetConsumerName;}
+    if (actualTargetConsumerName) { return actualTargetConsumerName; }
 
     if (customerId && consumers?.length) {
       const consumer = consumers.find(c => c?.customer_id === customerId);
-      if (consumer?.customer_name) {return consumer.customer_name;}
+      if (consumer?.customer_name) { return consumer.customer_name; }
     }
 
     return user?.name || 'Consumer';
@@ -1180,10 +1178,10 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
 
   // Helper to normalize date strings
   const normalizeDate = useCallback((dateStr: string) => {
-    if (!dateStr) {return '';}
+    if (!dateStr) { return ''; }
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) {return '';}
+      if (isNaN(d.getTime())) { return ''; }
       return d.toISOString().split('T')[0];
     } catch (e) {
       console.error('Date normalization error:', e);
@@ -1192,7 +1190,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, []);
 
   const handleModalToggle = useCallback((modalType: 'leave' | 'extraMilk', isOpen: boolean) => {
-    if (isDistributor || isVendor) {return;}
+    if (isDistributor || isVendor) { return; }
 
     setModalState(prev => ({
       ...prev,
@@ -1226,16 +1224,59 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
     }, [customerId, isAuthenticated, dispatch])
   );
 
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  const loadNotificationCount = async () => {
+    try {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotificationCount();
+
+    // Listen for updates via emitter
+    const updateBadge = async () => {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    };
+    notificationEmitter.on('newNotification', updateBadge);
+
+    // Handle FCM foreground messages
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+        console.log("Foreground message:", remoteMessage);
+        const notificationRaw = remoteMessage.notification || {
+          title: remoteMessage.data?.title,
+          body: remoteMessage.data?.body,
+        };
+        const notification = {
+          title: typeof notificationRaw.title === "string" ? notificationRaw.title : JSON.stringify(notificationRaw.title),
+          body: typeof notificationRaw.body === "string" ? notificationRaw.body : JSON.stringify(notificationRaw.body),
+        };
+        await showLocalNotification(notification);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      notificationEmitter.removeListener('newNotification', updateBadge);
+    };
+  }, []);
+
   // Filter leaves - hide for vendors
   const leavesForCustomer = useMemo(() => {
-    if (!customerId || !upcomingLeaves || isVendor) {return [];}
+    if (!customerId || !upcomingLeaves || isVendor) { return []; }
     const value = upcomingLeaves[customerId];
     return Array.isArray(value) ? value : [];
   }, [upcomingLeaves, customerId, isVendor]);
 
   // Filter extra milk - hide for vendors
   const milkRequestsForCustomer = useMemo(() => {
-    if (!customerId || !upcomingMilkRequests || isVendor) {return [];}
+    if (!customerId || !upcomingMilkRequests || isVendor) { return []; }
     const value = upcomingMilkRequests[customerId];
     return Array.isArray(value) ? value : [];
   }, [upcomingMilkRequests, customerId, isVendor]);
@@ -1256,7 +1297,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       Object.entries(deliveryTypes).forEach(([dateRaw, status]) => {
         const date = normalizeDate(dateRaw);
         if (date && allowedStatuses.includes(status)) {
-          if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
+          if (!allStatusesPerDate[date]) { allStatusesPerDate[date] = []; }
           allStatusesPerDate[date].push(status);
         }
       });
@@ -1267,7 +1308,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       leavesForCustomer.forEach((leave: LeaveItem) => {
         const date = normalizeDate(leave?.date);
         if (date) {
-          if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
+          if (!allStatusesPerDate[date]) { allStatusesPerDate[date] = []; }
           if (!allStatusesPerDate[date].includes('leave')) {
             allStatusesPerDate[date].push('leave');
           }
@@ -1280,7 +1321,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       milkRequestsForCustomer.forEach((request: ExtraMilkItem) => {
         const date = normalizeDate(request?.date);
         if (date) {
-          if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
+          if (!allStatusesPerDate[date]) { allStatusesPerDate[date] = []; }
           if (!allStatusesPerDate[date].includes('extra_milk')) {
             allStatusesPerDate[date].push('extra_milk');
           }
@@ -1298,7 +1339,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
           const status = delivery?.status;
 
           if (date && status && allowedStatuses.includes(status)) {
-            if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
+            if (!allStatusesPerDate[date]) { allStatusesPerDate[date] = []; }
             if (!allStatusesPerDate[date].includes(status)) {
               allStatusesPerDate[date].push(status);
             }
@@ -1448,7 +1489,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   ]);
 
   const handleMonthChange = useCallback((month: any) => {
-    if (customerId === null) {return;}
+    if (customerId === null) { return; }
 
     const newMonth = month.month - 1;
     const newYear = month.year;
@@ -1460,7 +1501,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, [customerId, dispatch]);
 
   const onRefresh = useCallback(() => {
-    if (customerId === null) {return;}
+    if (customerId === null) { return; }
 
     setRefreshing(true);
     dispatch(clearError());
@@ -1471,7 +1512,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, [customerId, currentMonth, currentYear, dispatch]);
 
   const handleLeaveSubmit = useCallback(async (leaveData: LeaveRequestData) => {
-    if (isDistributor || isVendor || customerId === null) {return;}
+    if (isDistributor || isVendor || customerId === null) { return; }
 
     try {
       await dispatch(submitLeaveRequest({ customerId, leaveData }));
@@ -1485,7 +1526,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeLeaveModal]);
 
   const handleExtraMilkSubmit = useCallback(async (extraMilkData: ExtraMilkData) => {
-    if (isDistributor || isVendor || customerId === null) {return;}
+    if (isDistributor || isVendor || customerId === null) { return; }
 
     try {
       await dispatch(submitExtraMilk({ customerId, milkData: extraMilkData }));
@@ -1499,7 +1540,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeExtraMilkModal]);
 
   const handleCancelLeave = useCallback((leaveId: string, leaveDate: string) => {
-    if (isDistributor || isVendor || customerId === null) {return;}
+    if (isDistributor || isVendor || customerId === null) { return; }
 
     Alert.alert('Cancel Leave', `Cancel leave for ${leaveDate}?`, [
       { text: 'No', style: 'cancel' },
@@ -1558,15 +1599,36 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
 
         {/* Notification Icon - Placeholder for future implementation */}
         <TouchableOpacity
-          onPress={() => {
-            // TODO: Navigate to notifications screen
-            console.log('Notification icon pressed - Implement later');
-          }}
           style={styles.notificationButton}
-          accessibilityLabel="View notifications"
-          accessibilityRole="button"
+          onPress={async () => {
+            await markAllAsRead();
+            setNotificationCount(0);
+            (navigation as any).navigate('Notifications');
+          }}
         >
-          <Ionicons name="notifications-outline" size={24} color="#007AFF" />
+          <View>
+            <Ionicons name="notifications-outline" size={24} color="#333" />
+            {notificationCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  right: -6,
+                  top: -3,
+                  backgroundColor: 'red',
+                  borderRadius: 10,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  minWidth: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                  {notificationCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1738,25 +1800,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 12,
     position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#F0F8FF',
-  },
-  notificationBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-    paddingHorizontal: 4,
   },
 });
 

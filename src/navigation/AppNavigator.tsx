@@ -24,8 +24,11 @@ import ConsumerCalendarScreen from '../screens/Consumer/ConsumerCalendorScreen';
 import DistributorCalendar from '../screens/Distributor/DistributorCalendorScreen';
 import UserDetailsScreen from '../screens/Vendor/UserDetailsScreen';
 import TemporaryDistributorAssignmentScreen from '../screens/Vendor/TemporaryDistributorAssignmentScreen';
+import NotificationsScreen from '../notifications/NotificationsScreen';
+import { RootStackParamList } from './types';
+// import NotificationsScreen from '../notifications/NotificationsScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -52,6 +55,8 @@ const AppNavigator = () => {
         <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
         <Stack.Screen name="ConsumerHome" component={ConsumerTabs} />
         <Stack.Screen name="DistributorHome" component={DistributorTabs} />
+
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
 
         {/* Vendor Profile Screen */}
         <Stack.Screen

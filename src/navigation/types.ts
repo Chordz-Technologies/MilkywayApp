@@ -19,6 +19,7 @@ export type RootStackParamList = {
   VendorHome: undefined;
   ConsumerHome: undefined;
   DistributorHome: undefined;
+  Notifications: undefined;
   EditProfile: undefined;
   Splash: undefined;
   Slide: undefined;

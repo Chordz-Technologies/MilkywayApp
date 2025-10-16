@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import {
   getAcceptedMilkmen,
   getVendorPendingRequests,
 } from '../../apiServices/allApi';
+import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
+import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 
 // Navigation Types
 type RootStackParamList = {
@@ -56,6 +58,7 @@ type RootStackParamList = {
     isTemporary: boolean;
   };
   PendingRequests: undefined;
+  Notifications: undefined;
   Login: undefined;
 };
 
@@ -191,6 +194,48 @@ const VendorHomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'consumer' | 'distributor'>('consumer');
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  const loadNotificationCount = async () => {
+    try {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotificationCount();
+
+    // Listen for updates via emitter
+    const updateBadge = async () => {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    };
+    notificationEmitter.on('newNotification', updateBadge);
+
+    // Handle FCM foreground messages
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+        console.log("Foreground message:", remoteMessage);
+        const notificationRaw = remoteMessage.notification || {
+          title: remoteMessage.data?.title,
+          body: remoteMessage.data?.body,
+        };
+        const notification = {
+          title: typeof notificationRaw.title === "string" ? notificationRaw.title : JSON.stringify(notificationRaw.title),
+          body: typeof notificationRaw.body === "string" ? notificationRaw.body : JSON.stringify(notificationRaw.body),
+        };
+        await showLocalNotification(notification);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      notificationEmitter.removeListener('newNotification', updateBadge);
+    };
+  }, []);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -336,7 +381,7 @@ const VendorHomeScreen = () => {
   };
 
   const getInitials = (name: string) => {
-    if (!name) {return 'V';}
+    if (!name) { return 'V'; }
     const parts = name.trim().split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -349,8 +394,8 @@ const VendorHomeScreen = () => {
     try {
       const userName = item.user_type === 'customer'
         ? (item.customer
-            ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
-            : item.name || 'Unknown Consumer')
+          ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
+          : item.name || 'Unknown Consumer')
         : (item.milkman?.full_name || item.name || 'Unknown Distributor');
 
       navigation.navigate('UserDetails', {
@@ -450,38 +495,54 @@ const VendorHomeScreen = () => {
     >
       <View style={styles.container}>
         {/* HEADER WITH NOTIFICATION */}
-      {/* HEADER WITH NOTIFICATION */}
-<View style={styles.headerRow}>
-  <View>
-    <Text style={styles.headerTitle}>Vendor Home</Text>
-    <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
-  </View>
+        {/* HEADER WITH NOTIFICATION */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerTitle}>Vendor Home</Text>
+            <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
+          </View>
 
-  <View style={styles.headerActions}>
-    {/* Notification Button - Placeholder for future implementation */}
-    <TouchableOpacity
-      onPress={() => {
-        // TODO: Navigate to notifications screen
-        console.log('Notification icon pressed - Implement later');
-      }}
-      style={styles.notificationButton}
-    >
-      <Ionicons name="notifications-outline" size={24} color="#333" />
-      {pendingRequests.length > 0 && (
-        <View style={styles.notificationBadge}>
-          <Text style={styles.notificationBadgeText}>
-            {pendingRequests.length > 9 ? '9+' : pendingRequests.length}
-          </Text>
+          <View style={styles.headerActions}>
+            {/* Notification Button - Placeholder for future implementation */}
+            <TouchableOpacity
+              style={styles.notificationButton}
+              onPress={async () => {
+                await markAllAsRead();
+                setNotificationCount(0);
+                navigation.navigate('Notifications');
+              }}
+            >
+              <View>
+                <Ionicons name="notifications-outline" size={24} color="#333" />
+                {notificationCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: -6,
+                      top: -3,
+                      backgroundColor: 'red',
+                      borderRadius: 10,
+                      paddingHorizontal: 5,
+                      paddingVertical: 1,
+                      minWidth: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                      {notificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* Logout Button */}
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
-    </TouchableOpacity>
-
-    {/* Logout Button */}
-    <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-      <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
-    </TouchableOpacity>
-  </View>
-</View>
 
 
         {/* PROFILE CARD */}
@@ -885,25 +946,6 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  notificationBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-    paddingHorizontal: 4,
   },
   logoutButton: {
     padding: 8,

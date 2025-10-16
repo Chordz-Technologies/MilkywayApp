@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,8 @@ import {
   AssignedConsumer,
 } from '../../store/consumersSlice';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
+import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
+import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -72,6 +74,49 @@ const ConsumerListScreen = () => {
   const refreshing = useSelector(selectConsumersRefreshing);
   const stats = useSelector(selectConsumersStats);
   const lastActiveDate = useSelector(selectLastActiveDate);
+
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  const loadNotificationCount = async () => {
+    try {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotificationCount();
+
+    // Listen for updates via emitter
+    const updateBadge = async () => {
+      const count = await getUnreadCount();
+      setNotificationCount(count);
+    };
+    notificationEmitter.on('newNotification', updateBadge);
+
+    // Handle FCM foreground messages
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
+        console.log("Foreground message:", remoteMessage);
+        const notificationRaw = remoteMessage.notification || {
+          title: remoteMessage.data?.title,
+          body: remoteMessage.data?.body,
+        };
+        const notification = {
+          title: typeof notificationRaw.title === "string" ? notificationRaw.title : JSON.stringify(notificationRaw.title),
+          body: typeof notificationRaw.body === "string" ? notificationRaw.body : JSON.stringify(notificationRaw.body),
+        };
+        await showLocalNotification(notification);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      notificationEmitter.removeListener('newNotification', updateBadge);
+    };
+  }, []);
 
   const getMilkmanId = useCallback(() => {
     if (!user?.userID) { return 0; }
@@ -553,7 +598,7 @@ const ConsumerListScreen = () => {
         >
           <Ionicons name="arrow-back" size={24} color="#1C1C1E" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Daily Deliveries</Text>
           <Text style={styles.headerSubtitle}>
@@ -561,20 +606,39 @@ const ConsumerListScreen = () => {
             {lastActiveDate && lastActiveDate !== getTodayString() && ' • New Day!'}
           </Text>
         </View>
-        
+
         {/* Notification Icon - Placeholder for future implementation */}
         <TouchableOpacity
-          onPress={() => {
-            // TODO: Navigate to notifications screen
-            console.log('Notification icon pressed - Implement later');
+          style={styles.notificationButton}
+          onPress={async () => {
+            await markAllAsRead();
+            setNotificationCount(0);
+            (navigation as any).navigate('Notifications');
           }}
-          style={styles.headerNotificationButton}
         >
-          <Ionicons name="notifications-outline" size={24} color="#1C1C1E" />
-          {/* Optional: Add badge for notification count */}
-          {/* <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>5</Text>
-          </View> */}
+          <View>
+            <Ionicons name="notifications-outline" size={24} color="#333" />
+            {notificationCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  right: -6,
+                  top: -3,
+                  backgroundColor: 'red',
+                  borderRadius: 10,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  minWidth: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                  {notificationCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -725,33 +789,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
   },
-  headerNotificationButton: {
+  notificationButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderRadius: 22,
     backgroundColor: '#F0F8FF',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#F0F8FF',
-  },
-  notificationBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-    paddingHorizontal: 4,
+    marginLeft: 12,
+    position: 'relative',
   },
   modernStatsContainer: {
     flexDirection: 'row',
