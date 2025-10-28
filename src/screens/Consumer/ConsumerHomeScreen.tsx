@@ -15,7 +15,6 @@ import { RootState } from '../../store';
 import {
   getAllVendors,
   getConsumerDetailsById,
-  getJoinAssignmentStatus,
   createRequest,
 } from '../../apiServices/allApi';
 
@@ -48,86 +47,64 @@ const ConsumerHomeScreen = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [joinedVendor, setJoinedVendor] = useState<Vendor | null>(null);
-  const [joinStatus, setJoinStatus] = useState<string>('');
+  const [joinStatus, setJoinStatus] = useState<string>('accepted');
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user?.userID) { return; }
+    if (!user?.userID) {return;}
 
     setLoading(true);
     try {
-      // Get consumer profile to fetch pincode
       const profileRes = await getConsumerDetailsById(Number(user.userID));
-      const pincode = profileRes?.data?.data?.pincode || profileRes?.data?.pincode || '';
 
-      // Check if consumer is already joined to a vendor
-      const assignRes = await getJoinAssignmentStatus(Number(user.userID), 'customer');
+      const pincode =
+        profileRes?.data?.data?.pincode ??
+        profileRes?.data?.pincode ??
+        '';
+      // Fix: use undefined instead of null to satisfy id typing
+      const providerId: string | number | undefined =
+        profileRes?.data?.data?.provider ??
+        profileRes?.data?.provider ??
+        undefined;
 
-      if (assignRes?.data?.isJoined && assignRes?.data?.status === 'accepted') {
-        const vendorDetails = assignRes.data.vendorDetails;
-        setJoinedVendor(vendorDetails || null);
-        setJoinStatus(assignRes.data.status || '');
+      if (providerId !== undefined) {
+        const vendorRes = await getAllVendors(pincode || undefined);
 
-        if (vendorDetails) {
-          // Fetch full vendor list to get complete rate information
-          try {
-            const vendorRes = await getAllVendors(pincode || undefined);
-            let vList: any = null;
+        let vList: any = null;
+        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
+        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
+        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
+        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
+        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
 
-            if (vendorRes?.data?.data) {
-              vList = vendorRes.data.data;
-            } else if (vendorRes?.data?.vendors) {
-              vList = vendorRes.data.vendors;
-            } else if (vendorRes?.data?.results) {
-              vList = vendorRes.data.results;
-            } else if (Array.isArray(vendorRes?.data)) {
-              vList = vendorRes.data;
-            } else if (Array.isArray(vendorRes)) {
-              vList = vendorRes;
-            }
-
-            // Find the joined vendor in the full list to get complete data
-            if (Array.isArray(vList) && vList.length > 0) {
-              const fullVendorData = vList.find((v: any) => v.id === vendorDetails.id);
-              if (fullVendorData) {
-                // Merge assignment details with full vendor data
-                setVendors([{ ...fullVendorData, ...vendorDetails }]);
-              } else {
-                setVendors([vendorDetails]);
-              }
-            } else {
-              setVendors([vendorDetails]);
-            }
-          } catch (err) {
-            console.log('Could not fetch full vendor list, using assignment details only');
-            setVendors([vendorDetails]);
+        if (Array.isArray(vList) && vList.length > 0) {
+          const joinedVendorData = vList.find((v: any) => v.id === providerId);
+          if (joinedVendorData) {
+            setJoinedVendor(joinedVendorData);
+            setVendors([joinedVendorData]);
+            setJoinStatus('accepted');
+          } else {
+            setJoinedVendor(null);
+            setVendors(vList);
           }
+        } else {
+          setJoinedVendor(null);
+          setVendors([]);
         }
       } else {
         setJoinedVendor(null);
-        setJoinStatus('');
-
-        // Fetch all available vendors
         const vendorRes = await getAllVendors(pincode || undefined);
 
-        // Parse vendor list from different possible response structures
         let vList: any = null;
-        if (vendorRes?.data?.data) {
-          vList = vendorRes.data.data;
-        } else if (vendorRes?.data?.vendors) {
-          vList = vendorRes.data.vendors;
-        } else if (vendorRes?.data?.results) {
-          vList = vendorRes.data.results;
-        } else if (Array.isArray(vendorRes?.data)) {
-          vList = vendorRes.data;
-        } else if (Array.isArray(vendorRes)) {
-          vList = vendorRes;
-        }
+        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
+        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
+        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
+        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
+        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
 
-        setVendors(Array.isArray(vList) && vList.length > 0 ? vList : []);
+        setVendors(Array.isArray(vList) ? vList : []);
       }
     } catch (err: any) {
-      console.error('Error loading data:', err);
       setVendors([]);
       Alert.alert('Error', err?.message || 'Failed to load vendors');
     } finally {
@@ -162,31 +139,25 @@ const ConsumerHomeScreen = () => {
     }
   };
 
-  const getVillage = (vendor: Vendor): string => {
-    if (vendor.village) { return vendor.village; }
-    if (vendor.tal) { return vendor.tal; }
-    if (vendor.address?.village) { return vendor.address.village; }
-    if (vendor.address?.tal) { return vendor.address.tal; }
-    return 'N/A';
-  };
+  const getVillage = (vendor: Vendor): string =>
+    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || 'N/A';
 
   const getCowRate = (vendor: Vendor): string => {
-    // First check standard field names from vendor list
     let rate = vendor.cr || vendor.cow_rate;
 
-    // If not found, check individual cow rate types and use the first non-zero value
-    if (!rate || (typeof rate === 'number' && rate === 0) || (typeof rate === 'string' && parseFloat(rate) === 0)) {
-      const gir = vendor.gir_cow_rate;
-      const jarshi = vendor.jarshi_cow_rate;
-      const deshi = vendor.deshi_cow_rate;
-
-      if (gir && parseFloat(gir.toString()) > 0) {
-        rate = gir;
-      } else if (jarshi && parseFloat(jarshi.toString()) > 0) {
-        rate = jarshi;
-      } else if (deshi && parseFloat(deshi.toString()) > 0) {
-        rate = deshi;
-      }
+    if (
+      !rate ||
+      (typeof rate === 'number' && rate === 0) ||
+      (typeof rate === 'string' && parseFloat(rate) === 0)
+    ) {
+      rate =
+        vendor.gir_cow_rate && parseFloat(vendor.gir_cow_rate.toString()) > 0
+          ? vendor.gir_cow_rate
+          : vendor.jarshi_cow_rate && parseFloat(vendor.jarshi_cow_rate.toString()) > 0
+          ? vendor.jarshi_cow_rate
+          : vendor.deshi_cow_rate && parseFloat(vendor.deshi_cow_rate.toString()) > 0
+          ? vendor.deshi_cow_rate
+          : undefined;
     }
 
     if (rate) {
@@ -199,7 +170,6 @@ const ConsumerHomeScreen = () => {
   };
 
   const getBuffaloRate = (vendor: Vendor): string => {
-    // Check multiple possible field names for buffalo rate
     const rate = vendor.br || vendor.buffalo_rate;
 
     if (rate) {
@@ -222,19 +192,15 @@ const ConsumerHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>
-            {joinedVendor ? 'Your Vendor' : 'Available Vendors'}
-          </Text>
+          <Text style={styles.title}>{joinedVendor ? 'Your Vendor' : 'Available Vendors'}</Text>
           <Text style={styles.subtitle}>
             {joinedVendor ? 'Connected vendor details' : 'Find and connect with vendors'}
           </Text>
         </View>
       </View>
 
-      {/* Content */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1976D2" />
@@ -243,11 +209,10 @@ const ConsumerHomeScreen = () => {
       ) : (
         <FlatList
           data={vendors}
-          keyExtractor={(item, index) => item?.id?.toString() || `vendor-${index}`}
+          keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <View style={[styles.card, joinedVendor && styles.joinedCard]}>
-              {/* Card Header */}
               <View style={styles.cardHeader}>
                 <View style={styles.iconCircle}>
                   <Ionicons name="business" size={24} color="#1976D2" />
@@ -263,7 +228,6 @@ const ConsumerHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Vendor Info */}
               <View style={styles.infoSection}>
                 <View style={styles.infoRow}>
                   <Ionicons name="call-outline" size={18} color="#666" />
@@ -275,7 +239,6 @@ const ConsumerHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Milk Rates */}
               <View style={styles.ratesContainer}>
                 <View style={styles.rateBox}>
                   <Text style={styles.rateLabel}>Cow Milk</Text>
@@ -288,7 +251,6 @@ const ConsumerHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Join Button (only if not joined) */}
               {!joinedVendor && (
                 <TouchableOpacity
                   style={[
@@ -310,15 +272,13 @@ const ConsumerHomeScreen = () => {
               )}
             </View>
           )}
-          ListEmptyComponent={
+          ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={64} color="#ccc" />
               <Text style={styles.emptyText}>No vendors available</Text>
-              <Text style={styles.emptySubtext}>
-                Check your pincode or try again later
-              </Text>
+              <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
             </View>
-          }
+          )}
         />
       )}
     </View>
@@ -326,20 +286,9 @@ const ConsumerHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
+  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 16, color: '#666' },
   header: {
     backgroundColor: '#1976D2',
     paddingHorizontal: 20,
@@ -348,20 +297,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#E3F2FD',
-    marginTop: 4,
-  },
-  listContent: {
-    padding: 16,
-    flexGrow: 1,
-  },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  subtitle: { fontSize: 14, color: '#E3F2FD', marginTop: 4 },
+  listContent: { padding: 16, flexGrow: 1 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -373,16 +311,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  joinedCard: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-    backgroundColor: '#F1F8F4',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  joinedCard: { borderWidth: 2, borderColor: '#4CAF50', backgroundColor: '#F1F8F4' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   iconCircle: {
     width: 48,
     height: 48,
@@ -392,19 +322,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  cardTitleContainer: {
-    flex: 1,
-  },
-  vendorName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#212121',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  cardTitleContainer: { flex: 1 },
+  vendorName: { fontSize: 20, fontWeight: 'bold', color: '#212121' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   statusText: {
     fontSize: 14,
     color: '#4CAF50',
@@ -412,19 +332,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     textTransform: 'capitalize',
   },
-  infoSection: {
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#424242',
-    marginLeft: 8,
-  },
+  infoSection: { marginBottom: 16 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  infoText: { fontSize: 15, color: '#424242', marginLeft: 8 },
   ratesContainer: {
     flexDirection: 'row',
     backgroundColor: '#F5F7FA',
@@ -432,25 +342,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  rateBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  rateDivider: {
-    width: 1,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 16,
-  },
-  rateLabel: {
-    fontSize: 12,
-    color: '#757575',
-    marginBottom: 4,
-  },
-  rateValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1976D2',
-  },
+  rateBox: { flex: 1, alignItems: 'center' },
+  rateDivider: { width: 1, backgroundColor: '#E0E0E0', marginHorizontal: 16 },
+  rateLabel: { fontSize: 12, color: '#757575', marginBottom: 4 },
+  rateValue: { fontSize: 18, fontWeight: 'bold', color: '#1976D2' },
   button: {
     backgroundColor: '#1976D2',
     flexDirection: 'row',
@@ -460,32 +355,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#B0BEC5',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#999',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  buttonDisabled: { backgroundColor: '#B0BEC5' },
+  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 20 },
+  emptyText: { fontSize: 18, color: '#999', marginTop: 16, textAlign: 'center' },
+  emptySubtext: { fontSize: 14, color: '#bbb', marginTop: 8, textAlign: 'center' },
 });
 
 export default ConsumerHomeScreen;

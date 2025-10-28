@@ -354,3 +354,25 @@ export const sendFCMToken = (data: { token: string; id: string }) => {
 export { publicApiClient, apiClient };
 export default apiClient;
 
+/* ========= CONSUMER REQUEST MANAGEMENT (When Distributor on Leave) ========= */
+
+// Get list of consumer requests (extra milk when distributor on leave) - AUTHENTICATED
+export const getConsumerRequests = () =>
+  apiClient.get('/consumer-calendar/list-customer-requests/');
+
+// Manage consumer request (accept/reject by vendor) - AUTHENTICATED
+export const manageConsumerRequest = (data: {
+  request_id: number;
+  action: 'accept' | 'reject';
+}) => apiClient.post('/consumer-calendar/manage-customer-request/', data);
+
+// Get list of distributor leave requests for vendor - AUTHENTICATED
+export const getDistributorLeaveRequestsForVendor = () =>
+  apiClient.get('/consumer-calendar/list-milkman-leave-requests/');
+
+// Manage distributor leave status (mark leave) - AUTHENTICATED
+export const manageDistributorLeave = (data: {
+  milkman_id: number;
+  date: string; // Format: YYYY-MM-DD
+  status: 'on_leave' | 'available';
+}) => apiClient.post('/consumer-calendar/manage-milkman-leave/', data);

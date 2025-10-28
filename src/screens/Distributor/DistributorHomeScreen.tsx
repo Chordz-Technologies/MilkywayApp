@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -48,45 +47,60 @@ const DistributorHomeScreen = () => {
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user?.userID) { return; }
-    
+    if (!user?.userID) {return;}
+
     setLoading(true);
     try {
-      // Get distributor profile to fetch pincode
       const profileRes = await getDistributorDetailsById(Number(user.userID));
       const pincode = profileRes?.data?.data?.pincode || profileRes?.data?.pincode || '';
-      
-      // Check if distributor is already joined to a vendor
-      const assignRes = await getJoinAssignmentStatus(Number(user.userID), 'milkman');
-      
-      if (assignRes?.data?.isJoined && assignRes?.data?.status === 'accepted') {
-        const vendorDetails = assignRes.data.vendorDetails;
-        setJoinedVendor(vendorDetails || null);
-        setJoinStatus(assignRes.data.status || '');
-        if (vendorDetails) {
-          setVendors([vendorDetails]);
+      const providerId = profileRes?.data?.data?.provider ?? profileRes?.data?.provider ?? undefined;
+
+      let joinedVendorData: Vendor | null = null;
+      let joinStatusLocal = '';
+
+      try {
+        const assignRes = await getJoinAssignmentStatus(Number(user.userID), 'milkman');
+        if (assignRes?.data?.isJoined && assignRes?.data?.status === 'accepted') {
+          joinedVendorData = assignRes.data.vendorDetails
+            ? JSON.parse(JSON.stringify(assignRes.data.vendorDetails))
+            : null;
+          joinStatusLocal = assignRes.data.status || 'accepted';
         }
+      } catch (err: any) {
+        console.warn('Join assignment status API failed, falling back to provider field:', err.message);
+      }
+
+      if (joinedVendorData) {
+        setJoinedVendor(joinedVendorData);
+        setJoinStatus(joinStatusLocal);
+        setVendors([joinedVendorData]);
+      } else if (providerId !== undefined) {
+        const vendorRes = await getAllVendors(pincode || undefined);
+        let vList: Vendor[] = [];
+
+        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
+        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
+        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
+        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
+        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+
+        const vendor = vList.find((v) => v.id === providerId) || null;
+
+        setJoinedVendor(vendor);
+        setJoinStatus(vendor ? 'accepted' : '');
+        setVendors(vendor ? [vendor] : []);
       } else {
         setJoinedVendor(null);
         setJoinStatus('');
-        
-        // Fetch all available vendors
         const vendorRes = await getAllVendors(pincode || undefined);
-        
-        // Parse vendor list from different possible response structures
-        let vList: any = null;
-        if (vendorRes?.data?.data) {
-          vList = vendorRes.data.data;
-        } else if (vendorRes?.data?.vendors) {
-          vList = vendorRes.data.vendors;
-        } else if (vendorRes?.data?.results) {
-          vList = vendorRes.data.results;
-        } else if (Array.isArray(vendorRes?.data)) {
-          vList = vendorRes.data;
-        } else if (Array.isArray(vendorRes)) {
-          vList = vendorRes;
-        }
-        
+        let vList: Vendor[] = [];
+
+        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
+        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
+        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
+        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
+        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+
         setVendors(Array.isArray(vList) && vList.length > 0 ? vList : []);
       }
     } catch (err: any) {
@@ -114,9 +128,8 @@ const DistributorHomeScreen = () => {
         user_type: 'milkman',
         vendor: Number(vendorId),
       });
-      
       Alert.alert('Success', 'Join request sent successfully!');
-      loadData();
+      await loadData();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to send join request');
     } finally {
@@ -124,13 +137,8 @@ const DistributorHomeScreen = () => {
     }
   };
 
-  const getVillage = (vendor: Vendor): string => {
-    if (vendor.village) { return vendor.village; }
-    if (vendor.tal) { return vendor.tal; }
-    if (vendor.address?.village) { return vendor.address.village; }
-    if (vendor.address?.tal) { return vendor.address.tal; }
-    return 'N/A';
-  };
+  const getVillage = (vendor: Vendor): string =>
+    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || 'N/A';
 
   const getCowRate = (vendor: Vendor): string => {
     const rate = vendor.cr;
@@ -165,19 +173,19 @@ const DistributorHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>
-            {joinedVendor ? 'Your Vendor' : 'Available Vendors'}
+            {joinStatus === 'accepted' && joinedVendor ? 'Your Vendor' : 'Available Vendors'}
           </Text>
           <Text style={styles.subtitle}>
-            {joinedVendor ? 'Connected vendor details' : 'Find and connect with vendors'}
+            {joinStatus === 'accepted' && joinedVendor
+              ? 'Connected vendor details'
+              : 'Find and connect with vendors'}
           </Text>
         </View>
       </View>
 
-      {/* Content */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1976D2" />
@@ -190,14 +198,13 @@ const DistributorHomeScreen = () => {
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <View style={[styles.card, joinedVendor && styles.joinedCard]}>
-              {/* Card Header */}
               <View style={styles.cardHeader}>
                 <View style={styles.iconCircle}>
                   <Ionicons name="business" size={24} color="#1976D2" />
                 </View>
                 <View style={styles.cardTitleContainer}>
                   <Text style={styles.vendorName}>{item.name || 'Vendor'}</Text>
-                  {joinedVendor && (
+                  {joinStatus === 'accepted' && joinedVendor && (
                     <View style={styles.statusBadge}>
                       <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
                       <Text style={styles.statusText}>{joinStatus}</Text>
@@ -206,7 +213,6 @@ const DistributorHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Vendor Info */}
               <View style={styles.infoSection}>
                 <View style={styles.infoRow}>
                   <Ionicons name="call-outline" size={18} color="#666" />
@@ -218,7 +224,6 @@ const DistributorHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Milk Rates */}
               <View style={styles.ratesContainer}>
                 <View style={styles.rateBox}>
                   <Text style={styles.rateLabel}>Cow Milk</Text>
@@ -231,8 +236,9 @@ const DistributorHomeScreen = () => {
                 </View>
               </View>
 
-              {/* Join Button (only if not joined) */}
-              {!joinedVendor && (
+              {!(
+                joinStatus === 'accepted' && joinedVendor
+              ) && (
                 <TouchableOpacity
                   style={[
                     styles.button,
@@ -257,9 +263,7 @@ const DistributorHomeScreen = () => {
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={64} color="#ccc" />
               <Text style={styles.emptyText}>No vendors available</Text>
-              <Text style={styles.emptySubtext}>
-                Check your pincode or try again later
-              </Text>
+              <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
             </View>
           }
         />
@@ -269,20 +273,9 @@ const DistributorHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
+  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 16, color: '#666' },
   header: {
     backgroundColor: '#1976D2',
     paddingHorizontal: 20,
@@ -291,20 +284,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#E3F2FD',
-    marginTop: 4,
-  },
-  listContent: {
-    padding: 16,
-    flexGrow: 1,
-  },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  subtitle: { fontSize: 14, color: '#E3F2FD', marginTop: 4 },
+  listContent: { padding: 16, flexGrow: 1 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -316,16 +298,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  joinedCard: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-    backgroundColor: '#F1F8F4',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  joinedCard: { borderWidth: 2, borderColor: '#4CAF50', backgroundColor: '#F1F8F4' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   iconCircle: {
     width: 48,
     height: 48,
@@ -335,19 +309,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  cardTitleContainer: {
-    flex: 1,
-  },
-  vendorName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#212121',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  cardTitleContainer: { flex: 1 },
+  vendorName: { fontSize: 20, fontWeight: 'bold', color: '#212121' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   statusText: {
     fontSize: 14,
     color: '#4CAF50',
@@ -355,19 +319,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     textTransform: 'capitalize',
   },
-  infoSection: {
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#424242',
-    marginLeft: 8,
-  },
+  infoSection: { marginBottom: 16 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  infoText: { fontSize: 15, color: '#424242', marginLeft: 8 },
   ratesContainer: {
     flexDirection: 'row',
     backgroundColor: '#F5F7FA',
@@ -375,25 +329,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  rateBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  rateDivider: {
-    width: 1,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 16,
-  },
-  rateLabel: {
-    fontSize: 12,
-    color: '#757575',
-    marginBottom: 4,
-  },
-  rateValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1976D2',
-  },
+  rateBox: { flex: 1, alignItems: 'center' },
+  rateDivider: { width: 1, backgroundColor: '#E0E0E0', marginHorizontal: 16 },
+  rateLabel: { fontSize: 12, color: '#757575', marginBottom: 4 },
+  rateValue: { fontSize: 18, fontWeight: 'bold', color: '#1976D2' },
   button: {
     backgroundColor: '#1976D2',
     flexDirection: 'row',
@@ -403,32 +342,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#B0BEC5',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#999',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  buttonDisabled: { backgroundColor: '#B0BEC5' },
+  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 20 },
+  emptyText: { fontSize: 18, color: '#999', marginTop: 16, textAlign: 'center' },
+  emptySubtext: { fontSize: 14, color: '#bbb', marginTop: 8, textAlign: 'center' },
 });
 
 export default DistributorHomeScreen;
