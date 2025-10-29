@@ -38,6 +38,8 @@ type ConsumerRequest = {
 };
 
 const VendorConsumerRequestsScreen = () => {
+  const vendorId = 7;
+
   const navigation = useNavigation<NavigationProp>();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,27 +49,27 @@ const VendorConsumerRequestsScreen = () => {
   const fetchRequests = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await getConsumerRequests();
-      const data = response?.data?.data || response?.data || [];
-      
+      const response = await getConsumerRequests(vendorId);
+      const data = response?.data?.data?.extra_milk_requests || [];
+
       // Map and format the data
       const formattedRequests = Array.isArray(data) ? data.map((item: any, index: number) => ({
         id: item.id || item.request_id || index,
         request_id: item.request_id || item.id || index,
         customer_id: item.customer_id || item.consumer_id || 0,
-        customer_name: item.customer_name || item.consumer_name || 'Unknown Consumer',
+        customer_name: item.customer.first_name + ' ' + item.customer.last_name || 'Unknown Consumer',
         customer_contact: item.customer_contact || item.contact,
         date: item.date || item.request_date || new Date().toISOString().split('T')[0],
-        cow_milk_quantity: item.cow_milk_quantity || 0,
-        buffalo_milk_quantity: item.buffalo_milk_quantity || 0,
-        total_quantity: (item.cow_milk_quantity || 0) + (item.buffalo_milk_quantity || 0),
+        cow_milk_quantity: item.customer.cow_milk_litre || 0,
+        buffalo_milk_quantity: item.customer.buffalo_milk_litre || 0,
+        total_quantity: (item.customer.cow_milk_litre || 0) + (item.customer.buffalo_milk_litre || 0),
         status: item.status || 'pending',
         created_at: item.created_at || new Date().toISOString(),
         distributor_name: item.distributor_name || item.milkman_name,
       })) : [];
 
       // Filter only pending requests
-      const pendingRequests = formattedRequests.filter((req: ConsumerRequest) => 
+      const pendingRequests = formattedRequests.filter((req: ConsumerRequest) =>
         req.status === 'pending'
       );
 
@@ -94,7 +96,7 @@ const VendorConsumerRequestsScreen = () => {
 
   const handleManageRequest = async (requestId: number, action: 'accept' | 'reject') => {
     const actionText = action === 'accept' ? 'Accept' : 'Reject';
-    
+
     Alert.alert(
       `${actionText} Request`,
       `Are you sure you want to ${action} this extra milk request?`,
@@ -107,7 +109,7 @@ const VendorConsumerRequestsScreen = () => {
             try {
               setProcessingId(requestId);
               await manageConsumerRequest({ request_id: requestId, action });
-              
+
               Alert.alert(
                 'Success',
                 `Request ${action}ed successfully!`,
@@ -178,13 +180,13 @@ const VendorConsumerRequestsScreen = () => {
           </View>
 
           <View style={styles.milkQuantities}>
-            {item.cow_milk_quantity > 0 && (
+            {item.total_quantity > 0 && (
               <View style={styles.milkItem}>
                 <Ionicons name="water-outline" size={16} color="#007AFF" />
                 <Text style={styles.milkText}>Cow: {item.cow_milk_quantity}L</Text>
               </View>
             )}
-            {item.buffalo_milk_quantity > 0 && (
+            {item.total_quantity > 0 && (
               <View style={styles.milkItem}>
                 <Ionicons name="water-outline" size={16} color="#34C759" />
                 <Text style={styles.milkText}>Buffalo: {item.buffalo_milk_quantity}L</Text>
@@ -193,8 +195,13 @@ const VendorConsumerRequestsScreen = () => {
           </View>
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Quantity:</Text>
-            <Text style={styles.totalValue}>{item.total_quantity}L</Text>
+            <Text style={styles.totalLabel}>Cow Milk:</Text>
+            <Text style={styles.totalValue}>{item.cow_milk_quantity}L</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Buffalo Milk:</Text>
+            <Text style={styles.totalValue}>{item.buffalo_milk_quantity}L</Text>
           </View>
         </View>
 

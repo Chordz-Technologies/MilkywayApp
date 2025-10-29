@@ -344,9 +344,9 @@ export const deassignDistributor = (data: {
 };
 
 // Send FCM token to backend
-export const sendFCMToken = (data: { token: string; id: string }) => {
-  return apiClient.post('/vendor-login/save-fcm-token/', data);
-};
+// export const sendFCMToken = (data: { token: string; id: string }) => {
+//   return apiClient.post('/vendor-login/save-fcm-token/', data);
+// };
 
 /* ========= API CLIENT EXPORTS ========= */
 
@@ -357,8 +357,10 @@ export default apiClient;
 /* ========= CONSUMER REQUEST MANAGEMENT (When Distributor on Leave) ========= */
 
 // Get list of consumer requests (extra milk when distributor on leave) - AUTHENTICATED
-export const getConsumerRequests = () =>
-  apiClient.get('/consumer-calendar/list-customer-requests/');
+export const getConsumerRequests = (vendorId: string | number) =>
+  apiClient.get('/consumer-calendar/distributor-calendar/list-customer-requests/', {
+    params: { vendor_id: vendorId },
+  });
 
 // Manage consumer request (accept/reject by vendor) - AUTHENTICATED
 export const manageConsumerRequest = (data: {
@@ -367,12 +369,14 @@ export const manageConsumerRequest = (data: {
 }) => apiClient.post('/consumer-calendar/manage-customer-request/', data);
 
 // Get list of distributor leave requests for vendor - AUTHENTICATED
-export const getDistributorLeaveRequestsForVendor = () =>
-  apiClient.get('/consumer-calendar/list-milkman-leave-requests/');
+export const getDistributorLeaveRequestsForVendor = (vendorId: string | number) =>
+  apiClient.get('/consumer-calendar/distributor-calendar/list-milkman-leave-requests/', {
+    params: { vendor_id: vendorId },
+  });
 
 // Manage distributor leave status (mark leave) - AUTHENTICATED
 export const manageDistributorLeave = (data: {
   milkman_id: number;
-  date: string; // Format: YYYY-MM-DD
-  status: 'on_leave' | 'available';
-}) => apiClient.post('/consumer-calendar/manage-milkman-leave/', data);
+  leave_request_id: number;
+  action: 'accept' | 'reject';
+}) => apiClient.post('/consumer-calendar/distributor-calendar/manage-milkman-leave/', data);

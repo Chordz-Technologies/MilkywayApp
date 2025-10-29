@@ -3050,8 +3050,8 @@ const VendorHomeScreen = () => {
 
       // <-- NEW: Fetch Consumer Extra Milk Requests (when distributor on leave)
       try {
-        const consumerReqRes = await getConsumerRequests();
-        const consumerReqData = consumerReqRes?.data?.data || consumerReqRes?.data || [];
+        const consumerReqRes = await getConsumerRequests(vendorId);
+        const consumerReqData = consumerReqRes?.data?.data?.extra_milk_requests || [];
         setConsumerExtraMilkRequests(Array.isArray(consumerReqData) ? consumerReqData : []);
         console.log('✅ Consumer extra milk requests fetched:', consumerReqData.length);
       } catch (consumerReqError) {
@@ -3061,7 +3061,7 @@ const VendorHomeScreen = () => {
 
       // <-- NEW: Fetch Distributor Leave Requests
       try {
-        const distributorLeaveRes = await getDistributorLeaveRequestsForVendor();
+        const distributorLeaveRes = await getDistributorLeaveRequestsForVendor(vendorId);
         const distributorLeaveData = distributorLeaveRes?.data?.data || distributorLeaveRes?.data || [];
         setDistributorLeaveRequests(Array.isArray(distributorLeaveData) ? distributorLeaveData : []);
         console.log('✅ Distributor leave requests fetched:', distributorLeaveData.length);

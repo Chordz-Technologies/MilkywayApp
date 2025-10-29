@@ -1,4 +1,4 @@
-import React, {  useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -36,6 +36,8 @@ type LeaveRequest = {
 
 const VendorDistributorLeaveScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  // TODO: replace the fallback 0 with the actual vendor id from your auth/user context or route params
+  const vendorId = 7;
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,9 +46,9 @@ const VendorDistributorLeaveScreen = () => {
   const fetchRequests = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await getDistributorLeaveRequestsForVendor();
+      const response = await getDistributorLeaveRequestsForVendor(vendorId);
       const data = response?.data?.data || response?.data || [];
-      
+
       // Map and format the data
       const formattedRequests = Array.isArray(data) ? data.map((item: any, index: number) => ({
         id: item.id || item.request_id || index,
@@ -54,14 +56,14 @@ const VendorDistributorLeaveScreen = () => {
         milkman_id: item.milkman_id || item.distributor_id || 0,
         milkman_name: item.milkman_name || item.distributor_name || 'Unknown Distributor',
         milkman_contact: item.milkman_contact || item.contact,
-        date: item.date || item.leave_date || new Date().toISOString().split('T')[0],
+        date: item.start_date || item.start_date || new Date().toISOString().split('T')[0],
         remarks: item.remarks || item.reason || 'No reason provided',
         status: item.status || 'pending',
         created_at: item.created_at || new Date().toISOString(),
       })) : [];
 
       // Filter only pending requests
-      const pendingRequests = formattedRequests.filter((req: LeaveRequest) => 
+      const pendingRequests = formattedRequests.filter((req: LeaveRequest) =>
         req.status === 'pending'
       );
 
@@ -86,10 +88,10 @@ const VendorDistributorLeaveScreen = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleManageLeave = async (milkman_id: number, date: string, action: 'approve' | 'reject') => {
+  const handleManageLeave = async (milkman_id: number, request_id: number, action: 'approve' | 'reject') => {
     const actionText = action === 'approve' ? 'Approve' : 'Reject';
-    const status = action === 'approve' ? 'on_leave' : 'available';
-    
+    const apiAction = action === 'approve' ? 'accept' : 'reject';
+
     Alert.alert(
       `${actionText} Leave`,
       `Are you sure you want to ${action} this leave request?`,
@@ -101,8 +103,8 @@ const VendorDistributorLeaveScreen = () => {
           onPress: async () => {
             try {
               setProcessingId(milkman_id);
-              await manageDistributorLeave({ milkman_id, date, status });
-              
+              await manageDistributorLeave({ milkman_id, leave_request_id: request_id, action: apiAction });
+
               Alert.alert(
                 'Success',
                 `Leave request ${action}d successfully!`,
@@ -176,7 +178,7 @@ const VendorDistributorLeaveScreen = () => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
-            onPress={() => handleManageLeave(item.milkman_id, item.date, 'reject')}
+            onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'reject')}
             disabled={isProcessing}
             activeOpacity={0.7}
           >
@@ -192,7 +194,7 @@ const VendorDistributorLeaveScreen = () => {
 
           <TouchableOpacity
             style={[styles.button, styles.acceptButton]}
-            onPress={() => handleManageLeave(item.milkman_id, item.date, 'approve')}
+            onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'approve')}
             disabled={isProcessing}
             activeOpacity={0.7}
           >
