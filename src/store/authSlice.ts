@@ -37,7 +37,7 @@ const initialState: AuthState = {
 //  LOGIN - Reads from backend's role-based login response
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (credentials: { contact: string; password: string }, { rejectWithValue }) => {
+  async (credentials: { contact: string; password: string; fcm_token: string }, { rejectWithValue }) => {
     try {
       const response = await loginVendor(credentials);
 

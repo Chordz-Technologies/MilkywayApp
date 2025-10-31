@@ -14,6 +14,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getDistributorLeaveRequestsForVendor, manageDistributorLeave } from '../../apiServices/allApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 type RootStackParamList = {
   VendorDistributorLeave: undefined;
@@ -36,15 +38,23 @@ type LeaveRequest = {
 
 const VendorDistributorLeaveScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  // TODO: replace the fallback 0 with the actual vendor id from your auth/user context or route params
-  const vendorId = 7;
+  const { user } = useSelector((state: RootState) => state.auth);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingState, setProcessingState] = useState<{ id: number | null; action: 'approve' | 'reject' | null }>({
+    id: null,
+    action: null,
+  });
 
   const fetchRequests = useCallback(async () => {
     try {
+      const vendorId = user?.userID;
+      if (!vendorId) {
+        throw new Error('Vendor ID not found');
+      }
+
       setIsLoading(true);
       const response = await getDistributorLeaveRequestsForVendor(vendorId);
       const data = response?.data?.data || response?.data || [];
@@ -88,9 +98,12 @@ const VendorDistributorLeaveScreen = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleManageLeave = async (milkman_id: number, request_id: number, action: 'approve' | 'reject') => {
+  const handleManageLeave = async (
+    milkman_id: number,
+    request_id: number,
+    action: 'approve' | 'reject'
+  ) => {
     const actionText = action === 'approve' ? 'Approve' : 'Reject';
-    const apiAction = action === 'approve' ? 'accept' : 'reject';
 
     Alert.alert(
       `${actionText} Leave`,
@@ -102,8 +115,13 @@ const VendorDistributorLeaveScreen = () => {
           style: action === 'reject' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              setProcessingId(milkman_id);
-              await manageDistributorLeave({ milkman_id, leave_request_id: request_id, action: apiAction });
+              // ✅ Track both ID & action type
+              setProcessingState({ id: milkman_id, action });
+
+              const payload = { milkman_id, leave_request_id: request_id, action };
+              console.log("📦 Sending manage leave payload:", JSON.stringify(payload, null, 2));
+
+              await manageDistributorLeave(payload);
 
               Alert.alert(
                 'Success',
@@ -112,12 +130,10 @@ const VendorDistributorLeaveScreen = () => {
               );
             } catch (error: any) {
               console.error(`Error ${action}ing leave:`, error);
-              Alert.alert(
-                'Error',
-                error?.response?.data?.message || `Failed to ${action} leave request`
-              );
+              Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} leave request`);
             } finally {
-              setProcessingId(null);
+              // ✅ Reset loader state
+              setProcessingState({ id: null, action: null });
             }
           },
         },
@@ -139,7 +155,8 @@ const VendorDistributorLeaveScreen = () => {
   };
 
   const renderLeaveRequest = ({ item }: { item: LeaveRequest }) => {
-    const isProcessing = processingId === item.milkman_id;
+    const isApproving = processingState.id === item.milkman_id && processingState.action === 'approve';
+    const isRejecting = processingState.id === item.milkman_id && processingState.action === 'reject';
 
     return (
       <View style={styles.requestCard}>
@@ -179,10 +196,10 @@ const VendorDistributorLeaveScreen = () => {
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
             onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'reject')}
-            disabled={isProcessing}
+            disabled={isApproving || isRejecting}
             activeOpacity={0.7}
           >
-            {isProcessing ? (
+            {isRejecting ? (
               <ActivityIndicator size="small" color="#FF3B30" />
             ) : (
               <>
@@ -195,10 +212,10 @@ const VendorDistributorLeaveScreen = () => {
           <TouchableOpacity
             style={[styles.button, styles.acceptButton]}
             onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'approve')}
-            disabled={isProcessing}
+            disabled={isApproving || isRejecting}
             activeOpacity={0.7}
           >
-            {isProcessing ? (
+            {isApproving ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>

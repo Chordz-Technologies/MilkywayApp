@@ -172,6 +172,7 @@ import TemporaryDistributorAssignmentScreen from '../screens/Vendor/TemporaryDis
 import NotificationsScreen from '../notifications/NotificationsScreen';
 import VendorConsumerRequestsScreen from '../screens/Vendor/VendorConsumerRequestsScreen'; // <-- ADD THIS
 import VendorDistributorLeaveScreen from '../screens/Vendor/VendorDistributorLeaveScreen'; // <-- ADD THIS
+import VendorSubscriptionScreen from '../screens/Vendor/VendorSubscriptionScreen';
 import { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -234,6 +235,16 @@ const AppNavigator = () => {
         <Stack.Screen
           name="VendorDistributorLeave"
           component={VendorDistributorLeaveScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
+
+        <Stack.Screen
+          name="VendorSubscription"
+          component={VendorSubscriptionScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,

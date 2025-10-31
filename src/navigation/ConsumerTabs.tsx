@@ -8,10 +8,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ConsumerCalendarScreen from '../screens/Consumer/ConsumerCalendorScreen';
 import CustomerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
 import ConsumerProfileScreen from '../screens/Consumer/ConsumerProfileScreen';
+import ConsumerSubscriptionScreen from '../screens/Consumer/ConsumerSubscriptionScreen';
 
 export type ConsumerTabParamList = {
   Calendar: undefined;
   Vendors: undefined;
+  Payment: undefined;
   Profile: undefined;
 };
 
@@ -26,6 +28,9 @@ const getTabBarIcon = (routeName: keyof ConsumerTabParamList, focused: boolean, 
       break;
     case 'Vendors':
       iconName = focused ? 'storefront' : 'storefront-outline';
+      break;
+    case 'Payment':
+      iconName = focused ? 'card' : 'card-outline';
       break;
     case 'Profile':
       iconName = focused ? 'person' : 'person-outline';
@@ -73,6 +78,11 @@ export default function ConsumerTabs() {
         name="Vendors"
         component={CustomerHomeScreen}
         options={{ tabBarLabel: 'Vendors' }}
+      />
+      <Tab.Screen
+        name="Payment"
+        component={ConsumerSubscriptionScreen}
+        options={{ tabBarLabel: 'Payment' }}
       />
       <Tab.Screen
         name="Profile"

@@ -14,6 +14,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getConsumerRequests, manageConsumerRequest } from '../../apiServices/allApi';
+import { RootState } from '../../store';
+import { useSelector } from 'react-redux';
 
 type RootStackParamList = {
   VendorConsumerRequests: undefined;
@@ -38,16 +40,23 @@ type ConsumerRequest = {
 };
 
 const VendorConsumerRequestsScreen = () => {
-  const vendorId = 7;
-
   const navigation = useNavigation<NavigationProp>();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingState, setProcessingState] = useState<{ id: number | null; action: 'approve' | 'reject' | null }>({
+    id: null,
+    action: null,
+  });
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const fetchRequests = useCallback(async () => {
     try {
+      const vendorId = user?.userID;
+      if (!vendorId) {
+        throw new Error('Vendor ID not found');
+      }
       setIsLoading(true);
       const response = await getConsumerRequests(vendorId);
       const data = response?.data?.data?.extra_milk_requests || [];
@@ -94,8 +103,8 @@ const VendorConsumerRequestsScreen = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleManageRequest = async (requestId: number, action: 'accept' | 'reject') => {
-    const actionText = action === 'accept' ? 'Accept' : 'Reject';
+  const handleManageRequest = async (requestId: number, action: 'approve' | 'reject') => {
+    const actionText = action === 'approve' ? 'Approve' : 'Reject';
 
     Alert.alert(
       `${actionText} Request`,
@@ -107,8 +116,13 @@ const VendorConsumerRequestsScreen = () => {
           style: action === 'reject' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              setProcessingId(requestId);
-              await manageConsumerRequest({ request_id: requestId, action });
+              // 👇 Track both ID and action
+              setProcessingState({ id: requestId, action });
+
+              const payload = { customer_request_id: requestId, action };
+              console.log("📦 Sending manage request payload:", JSON.stringify(payload, null, 2));
+
+              await manageConsumerRequest(payload);
 
               Alert.alert(
                 'Success',
@@ -117,12 +131,10 @@ const VendorConsumerRequestsScreen = () => {
               );
             } catch (error: any) {
               console.error(`Error ${action}ing request:`, error);
-              Alert.alert(
-                'Error',
-                error?.response?.data?.message || `Failed to ${action} request`
-              );
+              Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} request`);
             } finally {
-              setProcessingId(null);
+              // ✅ Reset loader state
+              setProcessingState({ id: null, action: null });
             }
           },
         },
@@ -144,7 +156,8 @@ const VendorConsumerRequestsScreen = () => {
   };
 
   const renderRequestItem = ({ item }: { item: ConsumerRequest }) => {
-    const isProcessing = processingId === item.request_id;
+    const isAccepting = processingState.id === item.request_id && processingState.action === 'approve';
+    const isRejecting = processingState.id === item.request_id && processingState.action === 'reject';
 
     return (
       <View style={styles.requestCard}>
@@ -209,10 +222,10 @@ const VendorConsumerRequestsScreen = () => {
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
             onPress={() => handleManageRequest(item.request_id, 'reject')}
-            disabled={isProcessing}
+            disabled={isRejecting || isAccepting}
             activeOpacity={0.7}
           >
-            {isProcessing ? (
+            {isRejecting ? (
               <ActivityIndicator size="small" color="#FF3B30" />
             ) : (
               <>
@@ -224,11 +237,11 @@ const VendorConsumerRequestsScreen = () => {
 
           <TouchableOpacity
             style={[styles.button, styles.acceptButton]}
-            onPress={() => handleManageRequest(item.request_id, 'accept')}
-            disabled={isProcessing}
+            onPress={() => handleManageRequest(item.request_id, 'approve')}
+            disabled={isAccepting || isRejecting}
             activeOpacity={0.7}
           >
-            {isProcessing ? (
+            {isAccepting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>

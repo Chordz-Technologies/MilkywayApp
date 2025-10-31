@@ -76,7 +76,7 @@ apiClient.interceptors.response.use(
 /* ========= AUTHENTICATION APIS (Public - No auth required) ========= */
 
 //  Role-based login endpoint - PUBLIC
-export const loginVendor = (payload: { contact: string; password: string }) =>
+export const loginVendor = (payload: { contact: string; password: string; fcm_token: string }) =>
   publicApiClient.post('/vendor-login/vendor_login/', payload);
 
 //  Refresh token API - PUBLIC
@@ -344,9 +344,9 @@ export const deassignDistributor = (data: {
 };
 
 // Send FCM token to backend
-// export const sendFCMToken = (data: { token: string; id: string }) => {
-//   return apiClient.post('/vendor-login/save-fcm-token/', data);
-// };
+export const sendFCMToken = (data: { token: string; id: string }) => {
+  return apiClient.post('/vendor-login/save-fcm-token/', data);
+};
 
 /* ========= API CLIENT EXPORTS ========= */
 
@@ -364,9 +364,9 @@ export const getConsumerRequests = (vendorId: string | number) =>
 
 // Manage consumer request (accept/reject by vendor) - AUTHENTICATED
 export const manageConsumerRequest = (data: {
-  request_id: number;
-  action: 'accept' | 'reject';
-}) => apiClient.post('/consumer-calendar/manage-customer-request/', data);
+  customer_request_id: number;
+  action: 'approve' | 'reject';
+}) => apiClient.post('/consumer-calendar/distributor-calendar/manage-customer-request/', data);
 
 // Get list of distributor leave requests for vendor - AUTHENTICATED
 export const getDistributorLeaveRequestsForVendor = (vendorId: string | number) =>
@@ -378,5 +378,35 @@ export const getDistributorLeaveRequestsForVendor = (vendorId: string | number) 
 export const manageDistributorLeave = (data: {
   milkman_id: number;
   leave_request_id: number;
-  action: 'accept' | 'reject';
+  action: 'approve' | 'reject';
 }) => apiClient.post('/consumer-calendar/distributor-calendar/manage-milkman-leave/', data);
+
+// Vendor Subscription APIs
+export const getVendorSubscriptions = () =>
+  apiClient.get('/dashboard/subscription-plans/');
+
+// Create Razorpay order
+export const createOrder = (data: { subscription_plan_id: number }) =>
+  apiClient.post('/subscription/subscription/create-order/', data);
+
+// Verify Razorpay payment
+export const verifyPayment = (data: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) => apiClient.post('/subscription/subscription/verify-payment/', data);
+
+// Consumer Bill APIs
+export const getCustomerBills = () =>
+  apiClient.get('/customer/customers/bills/');
+
+// Create Razorpay order for consumer
+export const createConsumerOrder = (data: { amount: number; payment_type: string }) =>
+  apiClient.post('/subscription/payment/create-order/', data);
+
+// Verify Razorpay payment for consumer
+export const verifyConsumerPayment = (data: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) => apiClient.post('/subscription/payment/verify/', data);

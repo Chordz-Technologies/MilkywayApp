@@ -18,6 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, checkStoredAuth, clearError } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store';
+import messaging from '@react-native-firebase/messaging';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -111,9 +112,12 @@ const LoginScreen = () => {
       return;
     }
 
+    const fcmToken = await messaging().getToken();
+
     const payload = {
       contact: `+91${trimmedContact}`,
       password: trimmedPassword,
+      fcm_token: fcmToken
     };
     console.log('Dispatching loginUser with payload:', payload);
 

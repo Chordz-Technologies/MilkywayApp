@@ -2779,6 +2779,7 @@ type RootStackParamList = {
   PendingRequests: undefined;
   VendorConsumerRequests: undefined; // <-- NEW
   VendorDistributorLeave: undefined; // <-- NEW
+  VendorSubscription: undefined; // <-- NEW
   Notifications: undefined;
   Login: undefined;
 };
@@ -3382,6 +3383,25 @@ const VendorHomeScreen = () => {
             <Text style={[styles.pendingCount, { color: '#FF9500' }]}>
               {distributorLeaveRequests.length}
             </Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.pendingCard}
+          onPress={() => navigation.navigate('VendorSubscription')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.pendingLeft}>
+            <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
+              <Ionicons name="cash-outline" size={24} color="#007AFF" />
+            </View>
+            <View>
+              <Text style={styles.pendingTitle}>Subscriptions</Text>
+              <Text style={styles.pendingSubtitle}>Choose your preferred plan here</Text>
+            </View>
+          </View>
+          <View style={styles.pendingRight}>
             <Ionicons name="chevron-forward" size={20} color="#666" />
           </View>
         </TouchableOpacity>

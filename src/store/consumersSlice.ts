@@ -177,7 +177,7 @@ export const markDelivery = createAsyncThunk(
   async (payload: DeliveryPayload, { rejectWithValue }) => {
     try {
       const response = await markDeliveryAsSuccessful(payload);
-
+      console.log(response);
       return {
         ...payload,
         timestamp: new Date().toISOString(),
