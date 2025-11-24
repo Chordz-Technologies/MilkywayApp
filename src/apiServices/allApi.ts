@@ -366,6 +366,7 @@ export const getConsumerRequests = (vendorId: string | number) =>
 export const manageConsumerRequest = (data: {
   customer_request_id: number;
   action: 'approve' | 'reject';
+  rejection_reason?: string;
 }) => apiClient.post('/consumer-calendar/distributor-calendar/manage-customer-request/', data);
 
 // Get list of distributor leave requests for vendor - AUTHENTICATED
@@ -376,9 +377,10 @@ export const getDistributorLeaveRequestsForVendor = (vendorId: string | number) 
 
 // Manage distributor leave status (mark leave) - AUTHENTICATED
 export const manageDistributorLeave = (data: {
-  milkman_id: number;
+  // milkman_id: number;
   leave_request_id: number;
   action: 'approve' | 'reject';
+  rejection_reason?: string;
 }) => apiClient.post('/consumer-calendar/distributor-calendar/manage-milkman-leave/', data);
 
 // Vendor Subscription APIs
@@ -410,3 +412,19 @@ export const verifyConsumerPayment = (data: {
   razorpay_payment_id: string;
   razorpay_signature: string;
 }) => apiClient.post('/subscription/payment/verify/', data);
+
+// Post and fetch dashboard summary data
+export const postDashboardSummaryAPI = (payload: any) =>
+  apiClient.post('/dashboard/vendor-dashboard-summary/', payload);
+
+// Delete distributor account permanently
+export const deleteDistributorAccountPermanently = (distributorId: string | number) =>
+  apiClient.delete(`/milkman/milkmen/${distributorId}/`);
+
+// Delete vendor account permanently
+export const deleteVendorAccountPermanently = (vendorId: string | number) =>
+  apiClient.delete(`/registration/vendor-business-registration/${vendorId}/`);
+
+// Delete consumer account permanently
+export const deleteConsumerAccountPermanently = (consumerId: string | number) =>
+  apiClient.delete(`/customer/customers/${consumerId}/`);

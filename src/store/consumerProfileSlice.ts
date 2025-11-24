@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getConsumerDetailsById, updateCustomerProfile } from '../apiServices/allApi';
+import { deleteConsumerAccountPermanently, getConsumerDetailsById, updateCustomerProfile } from '../apiServices/allApi';
 
 interface ConsumerProfileData {
   first_name?: string;
@@ -28,6 +28,8 @@ interface ConsumerProfileState {
   error: string | null;
   success: boolean;
   lastUpdated: number | null;
+  deleting: boolean;
+  deleteSuccess: boolean;
 }
 
 const initialState: ConsumerProfileState = {
@@ -37,6 +39,8 @@ const initialState: ConsumerProfileState = {
   error: null,
   success: false,
   lastUpdated: null,
+  deleting: false,
+  deleteSuccess: false,
 };
 
 // Fetch Consumer Profile
@@ -47,7 +51,7 @@ export const fetchConsumerProfile = createAsyncThunk<
 >(
   'consumerProfile/fetchConsumerProfile',
   async (userID, { rejectWithValue }) => {
-    if (!userID) {return rejectWithValue('User ID is required');}
+    if (!userID) { return rejectWithValue('User ID is required'); }
     try {
       console.log('🔍 Fetching consumer profile for ID:', userID);
       const response = await getConsumerDetailsById(userID);
@@ -89,7 +93,7 @@ export const updateConsumerProfile = createAsyncThunk<
 >(
   'consumerProfile/updateConsumerProfile',
   async ({ id, data }, { rejectWithValue }) => {
-    if (!id) {return rejectWithValue('User ID is required');}
+    if (!id) { return rejectWithValue('User ID is required'); }
     try {
       // Clean the data - remove empty values
       const cleanData: ConsumerProfileData = {};
@@ -150,6 +154,18 @@ export const updateConsumerProfile = createAsyncThunk<
       }
 
       return rejectWithValue(message);
+    }
+  }
+);
+
+export const deleteConsumerAccount = createAsyncThunk(
+  "profile/deleteConsumerAccount",
+  async (consumerId: string | number, { rejectWithValue }) => {
+    try {
+      const response = await deleteConsumerAccountPermanently(consumerId);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to delete account");
     }
   }
 );

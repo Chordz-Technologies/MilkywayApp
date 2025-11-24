@@ -65,6 +65,12 @@ interface ConsumersState {
   refreshing: boolean;
   lastFetchTime: number | null;
   lastActiveDate: string | null;
+
+  extraMilkRequirement?: {
+    cow_milk_litres: number;
+    buffalo_milk_litres: number;
+    total_litres: number;
+  } | null;
 }
 
 const initialState: ConsumersState = {
@@ -76,6 +82,7 @@ const initialState: ConsumersState = {
   refreshing: false,
   lastFetchTime: null,
   lastActiveDate: null,
+  extraMilkRequirement: null,
 };
 
 const safeParseMilkQuantity = (value: number | string | null | undefined): number => {
@@ -147,25 +154,25 @@ export const fetchAssignedConsumers = createAsyncThunk(
     try {
       const response = await getDistributorAssignedConsumers(milkmanId);
 
-      const data = response.data?.data || response.data?.customers || response.data || [];
+      const customers = response.data?.data?.customers;
+      const extraMilk = response.data?.data?.daily_milk_requirement;
 
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid response format');
+      if (!Array.isArray(customers)) {
+        throw new Error("Invalid response format: customers must be an array");
       }
 
-      const enhancedData = data.map((consumer: any) => {
-        const milk_requirement = parseMilkRequirement(consumer);
+      const enhancedData = customers.map((consumer: any) => ({
+        ...consumer,
+        assigned_distributor_id: milkmanId,
+        deliveryHistory: consumer.deliveryHistory || [],
+        milk_requirement: parseMilkRequirement(consumer),
+        id: consumer.customer_id,
+      }));
 
-        return {
-          ...consumer,
-          assigned_distributor_id: milkmanId,
-          deliveryHistory: consumer.deliveryHistory || [],
-          milk_requirement,
-          id: consumer.customer_id,
-        };
-      });
-
-      return enhancedData as AssignedConsumer[];
+      return {
+        consumers: enhancedData,
+        extraMilkRequirement: extraMilk,
+      };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch consumers');
     }
@@ -255,37 +262,28 @@ const consumersSlice = createSlice({
       .addCase(fetchAssignedConsumers.fulfilled, (state, action) => {
         state.loading = false;
 
-        if (state.consumers.length > 0) {
-          const mergedConsumers = action.payload.map((apiConsumer: any) => {
-            const existingConsumer = state.consumers.find(
-              c => c.customer_id === apiConsumer.customer_id
-            );
+        const { consumers, extraMilkRequirement } = action.payload;
 
-            if (existingConsumer) {
+        state.extraMilkRequirement = extraMilkRequirement;
+
+        // 🔥 Same merging logic you already use
+        if (state.consumers.length > 0) {
+          state.consumers = consumers.map(apiConsumer => {
+            const existing = state.consumers.find(c => c.customer_id === apiConsumer.customer_id);
+
+            if (existing) {
               return {
                 ...apiConsumer,
-                deliveryStatus: existingConsumer.deliveryStatus,
-                lastDeliveryDate: existingConsumer.lastDeliveryDate,
-                lastDeliveryRemarks: existingConsumer.lastDeliveryRemarks,
-                deliveryHistory: existingConsumer.deliveryHistory || [],
-                assigned_distributor_id: apiConsumer.assigned_distributor_id || existingConsumer.assigned_distributor_id,
-              };
-            } else {
-              return {
-                ...apiConsumer,
-                assigned_distributor_id: apiConsumer.assigned_distributor_id,
-                deliveryHistory: apiConsumer.deliveryHistory || [],
+                deliveryStatus: existing.deliveryStatus,
+                lastDeliveryDate: existing.lastDeliveryDate,
+                lastDeliveryRemarks: existing.lastDeliveryRemarks,
+                deliveryHistory: existing.deliveryHistory || [],
               };
             }
+            return apiConsumer;
           });
-
-          state.consumers = mergedConsumers;
         } else {
-          state.consumers = action.payload.map((consumer: any) => ({
-            ...consumer,
-            assigned_distributor_id: consumer.assigned_distributor_id,
-            deliveryHistory: consumer.deliveryHistory || [],
-          }));
+          state.consumers = consumers;
         }
 
         state.lastFetchTime = Date.now();

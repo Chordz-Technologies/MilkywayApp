@@ -19,18 +19,21 @@ import {
   clearError,
   clearSuccess,
   resetDistributorProfileState,
+  deleteDistributorAccount,
 } from '../../store/distributorProfileSlice';
 import { logout } from '../../store/authSlice';
 
 const DistributorProfileScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  const { profile, loading, updating, error, success } = useSelector(
+  const { profile, loading, updating, deleting, error, success } = useSelector(
     (state: RootState) => state.profile || {
       profile: null,
       loading: false,
       updating: false,
+      deleting: false,
       error: null,
       success: false,
     }
@@ -38,10 +41,10 @@ const DistributorProfileScreen = ({ navigation }: any) => {
 
   // Safely cast any value to string
   const toStringSafe = (val: any): string => {
-  if (typeof val === 'string') {return val;}
-  if (typeof val === 'number') {return val.toString();}
-  return '';
-};
+    if (typeof val === 'string') { return val; }
+    if (typeof val === 'number') { return val.toString(); }
+    return '';
+  };
 
   const [form, setForm] = useState({
     full_name: '',
@@ -60,6 +63,14 @@ const DistributorProfileScreen = ({ navigation }: any) => {
       dispatch(fetchDistributorProfile(user.userID));
     }
   }, [dispatch, user]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setIsEditMode(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (profile) {
@@ -81,6 +92,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
   useEffect(() => {
     if (success) {
       Alert.alert('Success', 'Profile updated successfully!');
+      setIsEditMode(false);
       dispatch(clearSuccess());
     }
   }, [success, dispatch]);
@@ -97,15 +109,15 @@ const DistributorProfileScreen = ({ navigation }: any) => {
   };
 
   const validateForm = () => {
-    if (!form.full_name.trim()) {return 'Full name is required';}
-    if (form.full_name.length > 100) {return 'Full name must be under 100 characters';}
-    if (form.flat_house.length > 100) {return 'Flat House must be under 100 characters';}
-    if (form.society_name.length > 255) {return 'Society Name must be under 255 characters';}
-    if (form.village.length > 100) {return 'Village must be under 100 characters';}
-    if (form.tal.length > 100) {return 'Tal must be under 100 characters';}
-    if (form.dist.length > 100) {return 'District must be under 100 characters';}
-    if (form.state.length > 100) {return 'State must be under 100 characters';}
-    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
+    if (!form.full_name.trim()) { return 'Full name is required'; }
+    if (form.full_name.length > 100) { return 'Full name must be under 100 characters'; }
+    if (form.flat_house.length > 100) { return 'Flat House must be under 100 characters'; }
+    if (form.society_name.length > 255) { return 'Society Name must be under 255 characters'; }
+    if (form.village.length > 100) { return 'Village must be under 100 characters'; }
+    if (form.tal.length > 100) { return 'Tal must be under 100 characters'; }
+    if (form.dist.length > 100) { return 'District must be under 100 characters'; }
+    if (form.state.length > 100) { return 'State must be under 100 characters'; }
+    if (form.pincode.trim() && form.pincode.length !== 6) { return 'Pincode must be exactly 6 digits'; }
     return null;
   };
 
@@ -170,6 +182,56 @@ const DistributorProfileScreen = ({ navigation }: any) => {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!user?.userID) {
+              Alert.alert("Error", "User not found.");
+              return;
+            }
+
+            try {
+              await dispatch(deleteDistributorAccount(user.userID)).unwrap();
+
+              Alert.alert("Deleted", "Your account has been permanently deleted.");
+
+              // Clear local storage
+              await AsyncStorage.multiRemove([
+                "userToken",
+                "userID",
+                "userRole",
+                "userData",
+              ]);
+
+              // Reset redux
+              dispatch(resetDistributorProfileState());
+              dispatch(logout());
+
+              // Go to Login
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+
+            } catch (err: any) {
+              Alert.alert("Error", err || "Failed to delete account.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading && !form.full_name) {
     return (
       <View style={styles.center}>
@@ -187,6 +249,21 @@ const DistributorProfileScreen = ({ navigation }: any) => {
         <Text style={styles.subheading}>Update your information</Text>
       </View>
 
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => setIsEditMode(!isEditMode)}
+      >
+        <Ionicons
+          name={isEditMode ? "close-outline" : "pencil-outline"}
+          size={20}
+          color="#007AFF"
+          style={{ marginRight: 8 }}
+        />
+        <Text style={styles.editButtonText}>
+          {isEditMode ? "Cancel" : "Edit Profile"}
+        </Text>
+      </TouchableOpacity>
+
       {/* Personal Info */}
       <View style={styles.section}>
         <Text style={styles.title}>Personal Information</Text>
@@ -198,6 +275,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.full_name}
             onChangeText={(v) => handleChange('full_name', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -214,6 +292,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.flat_house}
             onChangeText={(v) => handleChange('flat_house', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -225,6 +304,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.society_name}
             onChangeText={(v) => handleChange('society_name', v)}
             maxLength={255}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -236,6 +316,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.village}
             onChangeText={(v) => handleChange('village', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -247,6 +328,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.tal}
             onChangeText={(v) => handleChange('tal', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -258,6 +340,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.dist}
             onChangeText={(v) => handleChange('dist', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -269,6 +352,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.state}
             onChangeText={(v) => handleChange('state', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -280,31 +364,49 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             value={form.pincode}
             onChangeText={(v) => handleChange('pincode', v)}
             maxLength={6}
+            editable={isEditMode}
             keyboardType="numeric"
             placeholderTextColor="#999"
           />
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.button, updating && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={updating}
-      >
-        {updating ? (
-          <View style={styles.buttonContent}>
-            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-            <Text style={styles.buttonText}>Updating...</Text>
-          </View>
-        ) : (
-          <Text style={styles.buttonText}>Save Changes</Text>
-        )}
-      </TouchableOpacity>
+      {isEditMode && (
+        <TouchableOpacity
+          style={[styles.button, updating && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={updating}
+        >
+          {updating ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+              <Text style={styles.buttonText}>Updating...</Text>
+            </View>
+          ) : (
+            <Text style={styles.buttonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* Bottom Logout Button */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
         <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleDeleteAccount}
+        disabled={deleting}   // ⬅ disable when deleting
+      >
+        {deleting ? (
+          <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />
+        ) : (
+          <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+        )}
+        <Text style={styles.logoutButtonText}>
+          {deleting ? "Deleting..." : "Delete Account"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -352,6 +454,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#E9F2FF',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  editButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   title: {
     fontSize: 18,

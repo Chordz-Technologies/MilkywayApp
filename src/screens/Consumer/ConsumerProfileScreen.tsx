@@ -19,25 +19,28 @@ import {
   clearError,
   clearSuccess,
   resetConsumerProfileState,
+  deleteConsumerAccount
 } from '../../store/consumerProfileSlice';
 import { logout } from '../../store/authSlice';
 
 const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Fixed selectors - each selector returns only what it needs
   const profile = useSelector((state: RootState) => state.consumerProfile?.profile);
   const loading = useSelector((state: RootState) => state.consumerProfile?.loading || false);
   const updating = useSelector((state: RootState) => state.consumerProfile?.updating || false);
+  const deleting = useSelector((state: RootState) => state.consumerProfile?.deleting || false);
   const error = useSelector((state: RootState) => state.consumerProfile?.error);
   const success = useSelector((state: RootState) => state.consumerProfile?.success || false);
 
-const toStringSafe = (val: any): string => {
-  if (typeof val === 'string') {return val;}
-  if (typeof val === 'number') {return val.toString();}
-  return '';
-};  const toNumberSafe = (val: any): number => (typeof val === 'number' ? val : 0);
+  const toStringSafe = (val: any): string => {
+    if (typeof val === 'string') { return val; }
+    if (typeof val === 'number') { return val.toString(); }
+    return '';
+  }; const toNumberSafe = (val: any): number => (typeof val === 'number' ? val : 0);
 
   const [form, setForm] = useState({
     first_name: '',
@@ -61,6 +64,14 @@ const toStringSafe = (val: any): string => {
       dispatch(fetchConsumerProfile(user.userID));
     }
   }, [dispatch, user]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setIsEditMode(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (profile) {
@@ -87,6 +98,7 @@ const toStringSafe = (val: any): string => {
   useEffect(() => {
     if (success) {
       Alert.alert('Success', 'Profile updated successfully!');
+      setIsEditMode(false);
       dispatch(clearSuccess());
     }
   }, [success, dispatch]);
@@ -103,22 +115,22 @@ const toStringSafe = (val: any): string => {
   };
 
   const validateForm = () => {
-    if (!form.first_name.trim()) {return 'First name is required';}
-    if (!form.last_name.trim()) {return 'Last name is required';}
-    if (form.first_name.length > 100) {return 'First name must be under 100 characters';}
-    if (form.last_name.length > 100) {return 'Last name must be under 100 characters';}
-    if (form.email && !form.email.includes('@')) {return 'Please enter a valid email';}
-    if (form.flat_no.length > 50) {return 'Flat no must be under 50 characters';}
-    if (form.society_name.length > 200) {return 'Society name must be under 200 characters';}
-    if (form.village.length > 100) {return 'Village must be under 100 characters';}
-    if (form.tal.length > 100) {return 'Tal must be under 100 characters';}
-    if (form.dist.length > 100) {return 'District must be under 100 characters';}
-    if (form.state.length > 100) {return 'State must be under 100 characters';}
-    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
+    if (!form.first_name.trim()) { return 'First name is required'; }
+    if (!form.last_name.trim()) { return 'Last name is required'; }
+    if (form.first_name.length > 100) { return 'First name must be under 100 characters'; }
+    if (form.last_name.length > 100) { return 'Last name must be under 100 characters'; }
+    if (form.email && !form.email.includes('@')) { return 'Please enter a valid email'; }
+    if (form.flat_no.length > 50) { return 'Flat no must be under 50 characters'; }
+    if (form.society_name.length > 200) { return 'Society name must be under 200 characters'; }
+    if (form.village.length > 100) { return 'Village must be under 100 characters'; }
+    if (form.tal.length > 100) { return 'Tal must be under 100 characters'; }
+    if (form.dist.length > 100) { return 'District must be under 100 characters'; }
+    if (form.state.length > 100) { return 'State must be under 100 characters'; }
+    if (form.pincode.trim() && form.pincode.length !== 6) { return 'Pincode must be exactly 6 digits'; }
 
     // Validate milk quantities
-    if (form.cow_milk_litre && isNaN(Number(form.cow_milk_litre))) {return 'Cow milk quantity must be a number';}
-    if (form.buffalo_milk_litre && isNaN(Number(form.buffalo_milk_litre))) {return 'Buffalo milk quantity must be a number';}
+    if (form.cow_milk_litre && isNaN(Number(form.cow_milk_litre))) { return 'Cow milk quantity must be a number'; }
+    if (form.buffalo_milk_litre && isNaN(Number(form.buffalo_milk_litre))) { return 'Buffalo milk quantity must be a number'; }
 
     return null;
   };
@@ -183,6 +195,56 @@ const toStringSafe = (val: any): string => {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!user?.userID) {
+              Alert.alert("Error", "User not found.");
+              return;
+            }
+
+            try {
+              await dispatch(deleteConsumerAccount(user.userID)).unwrap();
+
+              Alert.alert("Deleted", "Your account has been permanently deleted.");
+
+              // Clear local storage
+              await AsyncStorage.multiRemove([
+                "userToken",
+                "userID",
+                "userRole",
+                "userData",
+              ]);
+
+              // Reset redux
+              dispatch(resetConsumerProfileState());
+              dispatch(logout());
+
+              // Go to Login
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+
+            } catch (err: any) {
+              Alert.alert("Error", err || "Failed to delete account.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading && !form.first_name && !form.last_name) {
     return (
       <View style={styles.center}>
@@ -201,6 +263,21 @@ const toStringSafe = (val: any): string => {
         <Text style={styles.subheading}>Update your information</Text>
       </View>
 
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => setIsEditMode(!isEditMode)}
+      >
+        <Ionicons
+          name={isEditMode ? "close-outline" : "pencil-outline"}
+          size={20}
+          color="#007AFF"
+          style={{ marginRight: 8 }}
+        />
+        <Text style={styles.editButtonText}>
+          {isEditMode ? "Cancel" : "Edit Profile"}
+        </Text>
+      </TouchableOpacity>
+
       {/* Personal Information */}
       <View style={styles.section}>
         <Text style={styles.title}>Personal Information</Text>
@@ -213,6 +290,7 @@ const toStringSafe = (val: any): string => {
             value={form.first_name}
             onChangeText={(v) => handleChange('first_name', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -225,6 +303,7 @@ const toStringSafe = (val: any): string => {
             value={form.last_name}
             onChangeText={(v) => handleChange('last_name', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -239,6 +318,7 @@ const toStringSafe = (val: any): string => {
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
@@ -255,6 +335,7 @@ const toStringSafe = (val: any): string => {
             value={form.flat_no}
             onChangeText={(v) => handleChange('flat_no', v)}
             maxLength={50}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -267,6 +348,7 @@ const toStringSafe = (val: any): string => {
             value={form.society_name}
             onChangeText={(v) => handleChange('society_name', v)}
             maxLength={200}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -279,6 +361,7 @@ const toStringSafe = (val: any): string => {
             value={form.village}
             onChangeText={(v) => handleChange('village', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -291,6 +374,7 @@ const toStringSafe = (val: any): string => {
             value={form.tal}
             onChangeText={(v) => handleChange('tal', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -303,6 +387,7 @@ const toStringSafe = (val: any): string => {
             value={form.dist}
             onChangeText={(v) => handleChange('dist', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -315,6 +400,7 @@ const toStringSafe = (val: any): string => {
             value={form.state}
             onChangeText={(v) => handleChange('state', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -328,6 +414,7 @@ const toStringSafe = (val: any): string => {
             onChangeText={(v) => handleChange('pincode', v)}
             keyboardType="numeric"
             maxLength={6}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -351,6 +438,7 @@ const toStringSafe = (val: any): string => {
                 onChangeText={(v) => handleChange('cow_milk_litre', v)}
                 keyboardType="decimal-pad"
                 placeholderTextColor="#999"
+                editable={isEditMode}
               />
               <Text style={styles.unitText}>Litres</Text>
             </View>
@@ -369,6 +457,7 @@ const toStringSafe = (val: any): string => {
                 onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
                 keyboardType="decimal-pad"
                 placeholderTextColor="#999"
+                editable={isEditMode}
               />
               <Text style={styles.unitText}>Litres</Text>
             </View>
@@ -377,25 +466,41 @@ const toStringSafe = (val: any): string => {
       </View>
 
       {/* Save Button */}
-      <TouchableOpacity
-        style={[styles.button, (updating || loading) && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={updating || loading}
-      >
-        {updating ? (
-          <View style={styles.buttonContent}>
-            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-            <Text style={styles.buttonText}>Updating...</Text>
-          </View>
-        ) : (
-          <Text style={styles.buttonText}>Save Changes</Text>
-        )}
-      </TouchableOpacity>
+      {isEditMode && (
+        <TouchableOpacity
+          style={[styles.button, updating && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={updating}
+        >
+          {updating ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+              <Text style={styles.buttonText}>Updating...</Text>
+            </View>
+          ) : (
+            <Text style={styles.buttonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* Bottom Logout Button */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
         <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleDeleteAccount}
+        disabled={deleting}   // ⬅ disable when deleting
+      >
+        {deleting ? (
+          <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />
+        ) : (
+          <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+        )}
+        <Text style={styles.logoutButtonText}>
+          {deleting ? "Deleting..." : "Delete Account"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -453,6 +558,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
     paddingBottom: 8,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#E9F2FF',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  editButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',

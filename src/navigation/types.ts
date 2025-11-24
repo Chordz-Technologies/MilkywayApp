@@ -183,4 +183,8 @@ export type RootStackParamList = {
   // Vendor Distributor Leave - Manage distributor leave requests
   VendorDistributorLeave: undefined;
   VendorSubscription: undefined;
+
+  // Consumer and Distributor lists
+  AllConsumersList: undefined;
+  DistributorsList: undefined;
 };

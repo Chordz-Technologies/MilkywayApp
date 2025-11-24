@@ -74,6 +74,7 @@ const ConsumerListScreen = () => {
   const refreshing = useSelector(selectConsumersRefreshing);
   const stats = useSelector(selectConsumersStats);
   const lastActiveDate = useSelector(selectLastActiveDate);
+  const extraMilk = useSelector((state: RootState) => state.consumers.extraMilkRequirement);
 
   const [notificationCount, setNotificationCount] = useState(0);
 
@@ -439,6 +440,45 @@ const ConsumerListScreen = () => {
                     <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
                     <Text style={styles.milkTypeText}>
                       Buffalo: {buffaloMilk}L
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={styles.noMilkContainer}>
+                <Text style={styles.noMilkText}>
+                  No milk requirement specified
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.milkSection}>
+          <View style={styles.milkHeader}>
+            <Ionicons name="water" size={16} color="#007AFF" />
+            <Text style={styles.milkHeaderText}>Extra Milk Requirement</Text>
+            <View style={styles.totalMilkBadge}>
+              <Text style={styles.totalMilkBadgeText}>{extraMilk?.total_litres ?? 0}L</Text>
+            </View>
+          </View>
+          <View style={styles.milkDetails}>
+            {hasAnyMilk ? (
+              <>
+                {hasCow && (
+                  <View style={styles.milkType}>
+                    <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
+                    <Text style={styles.milkTypeText}>
+                      Cow: {extraMilk?.cow_milk_litres ?? 0}L
+                    </Text>
+                  </View>
+                )}
+
+                {hasBuffalo && (
+                  <View style={styles.milkType}>
+                    <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
+                    <Text style={styles.milkTypeText}>
+                      Buffalo: {extraMilk?.buffalo_milk_litres ?? 0}L
                     </Text>
                   </View>
                 )}

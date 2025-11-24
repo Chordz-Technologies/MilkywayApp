@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  TextInput
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -44,11 +45,15 @@ const VendorConsumerRequestsScreen = () => {
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  // const [processingId, setProcessingId] = useState<number | null>(null);
   const [processingState, setProcessingState] = useState<{ id: number | null; action: 'approve' | 'reject' | null }>({
     id: null,
     action: null,
   });
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [selectedRejectId, setSelectedRejectId] = useState<number | null>(null);
+
   const { user } = useSelector((state: RootState) => state.auth);
 
   const fetchRequests = useCallback(async () => {
@@ -142,6 +147,44 @@ const VendorConsumerRequestsScreen = () => {
     );
   };
 
+  const submitRejectReason = async () => {
+    if (!rejectReason.trim()) {
+      Alert.alert("Reason Required", "Please enter a reason for rejecting the request.");
+      return;
+    }
+
+    // Ensure we have a valid selected ID before proceeding
+    if (selectedRejectId == null) {
+      Alert.alert("Error", "No request selected to reject.");
+      return;
+    }
+
+    try {
+      setProcessingState({ id: selectedRejectId, action: "reject" });
+
+      const payload = {
+        customer_request_id: selectedRejectId,
+        action: "reject" as const,
+        rejection_reason: rejectReason,
+      };
+
+      console.log("📦 Reject Payload:", payload);
+
+      await manageConsumerRequest(payload);
+
+      Alert.alert("Success", "Request rejected successfully!");
+
+      setShowRejectModal(false);
+      setRejectReason("");
+      fetchRequests();
+    } catch (error: any) {
+      console.error("Reject error:", error);
+      Alert.alert("Error", error?.response?.data?.message || "Failed to reject request");
+    } finally {
+      setProcessingState({ id: null, action: null });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -221,7 +264,10 @@ const VendorConsumerRequestsScreen = () => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
-            onPress={() => handleManageRequest(item.request_id, 'reject')}
+            onPress={() => {
+              setSelectedRejectId(item.request_id);
+              setShowRejectModal(true);
+            }}
             disabled={isRejecting || isAccepting}
             activeOpacity={0.7}
           >
@@ -266,6 +312,50 @@ const VendorConsumerRequestsScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Reject Reason Modal */}
+      {
+        showRejectModal && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Reject Request</Text>
+              <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Write reason here..."
+                placeholderTextColor="#999"
+                multiline
+                value={rejectReason}
+                onChangeText={setRejectReason}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelBtn]}
+                  onPress={() => {
+                    setShowRejectModal(false);
+                    setRejectReason("");
+                  }}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitBtn]}
+                  onPress={submitRejectReason}
+                >
+                  {processingState.action === "reject" ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.submitText}>Submit</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )
+      }
+
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -276,7 +366,7 @@ const VendorConsumerRequestsScreen = () => {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Consumer Requests</Text>
           <Text style={styles.headerSubtitle}>
-            Extra milk when distributor on leave
+            Extra milk requests from consumers
           </Text>
         </View>
       </View>
@@ -286,7 +376,7 @@ const VendorConsumerRequestsScreen = () => {
           <Ionicons name="water-outline" size={64} color="#ccc" />
           <Text style={styles.emptyTitle}>No Pending Requests</Text>
           <Text style={styles.emptySubtitle}>
-            Consumer extra milk requests will appear here when their distributor is on leave
+            There are currently no pending extra milk requests from consumers.
           </Text>
         </View>
       ) : (
@@ -541,5 +631,82 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 9999,     // iOS + Android
+    elevation: 10,    // Android
+  },
+
+  modalContainer: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 20,
+    zIndex: 10000,
+    elevation: 15,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1a1a1a",
+    marginBottom: 8,
+  },
+
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 12,
+  },
+
+  reasonInput: {
+    height: 120,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    textAlignVertical: "top",
+    padding: 12,
+    fontSize: 14,
+    color: "#1a1a1a",
+    marginBottom: 20,
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+
+  modalButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+
+  cancelBtn: {
+    backgroundColor: "#eee",
+  },
+
+  cancelText: {
+    color: "#333",
+    fontWeight: "600",
+  },
+
+  submitBtn: {
+    backgroundColor: "#FF3B30",
+  },
+
+  submitText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

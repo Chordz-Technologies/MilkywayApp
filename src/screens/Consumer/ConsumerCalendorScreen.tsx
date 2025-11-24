@@ -1005,20 +1005,20 @@ const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = Re
         <Text style={calendarScreenStyles.legendText}>Delivered</Text>
       </View>
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.vendor_unavailable }]} />
         <Text style={calendarScreenStyles.legendText}>Unavailable</Text>
-      </View>
+      </View> */}
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
         <Text style={calendarScreenStyles.legendText}>Cancelled</Text>
-      </View>
+      </View> */}
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.missed }]} />
         <Text style={calendarScreenStyles.legendText}>Missed</Text>
-      </View>
+      </View> */}
 
       {/* Hide leave and extra milk for vendors */}
       {!isVendor && (
@@ -1682,10 +1682,10 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                     <View style={calendarScreenStyles.leaveItemContent}>
                       <Text style={calendarScreenStyles.leaveDate}>{leave?.date ?? 'N/A'}</Text>
                       <Text style={calendarScreenStyles.leaveReason}>
-                        {leave?.reason ?? 'No reason'} • {leave?.status ?? 'Unknown'}
+                        {leave?.reason ?? 'No reason'} 
                       </Text>
                     </View>
-                    {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
+                    {/* {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
                       <TouchableOpacity
                         style={calendarScreenStyles.leaveButton}
                         onPress={() => handleCancelLeave(leave.id, leave.date)}
@@ -1693,7 +1693,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                       >
                         <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
                       </TouchableOpacity>
-                    )}
+                    )} */}
                   </View>
                 ))}
               </View>
@@ -1707,7 +1707,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                     <View style={calendarScreenStyles.leaveItemContent}>
                       <Text style={calendarScreenStyles.leaveDate}>{request?.date ?? 'N/A'}</Text>
                       <Text style={calendarScreenStyles.leaveReason}>
-                        {request?.quantity ?? 0}L - {request?.reason ?? 'No reason'} • {request?.status ?? 'Unknown'}
+                        {request?.quantity ?? 0}L - {request?.reason ?? 'No reason'}
                       </Text>
                     </View>
                   </View>

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  TextInput
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -31,53 +32,88 @@ type LeaveRequest = {
   milkman_name: string;
   milkman_contact?: string;
   date: string;
-  remarks: string;
+  reason: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+};
+
+type GroupedLeaveRequest = {
+  milkman_id: number;
+  milkman_name: string;
+  milkman_contact?: string;
+  leaves: { date: string; request_id: number }[]; // store both
+  reason: string;
 };
 
 const VendorDistributorLeaveScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [groupedRequests, setGroupedRequests] = useState<GroupedLeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [processingId, setProcessingId] = useState<number | null>(null);
-  const [processingState, setProcessingState] = useState<{ id: number | null; action: 'approve' | 'reject' | null }>({
-    id: null,
+  const [processingState, setProcessingState] = useState<{ key: string | null; action: 'approve' | 'reject' | null }>({
+    key: null,
     action: null,
   });
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [selectedRejectId, setSelectedRejectId] = useState<number | null>(null);
+
+  // Group consecutive leaves per milkman
+  const groupConsecutiveLeaves = (leaves: LeaveRequest[]): GroupedLeaveRequest[] => {
+    const grouped: GroupedLeaveRequest[] = [];
+    const sortedLeaves = leaves.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    sortedLeaves.forEach((leave) => {
+      const lastGroup = grouped.length ? grouped[grouped.length - 1] : null;
+      const lastDate = lastGroup?.leaves[lastGroup.leaves.length - 1].date;
+
+      if (
+        lastGroup &&
+        lastGroup.milkman_id === leave.milkman_id &&
+        new Date(leave.date).getTime() - new Date(lastDate!).getTime() === 24 * 60 * 60 * 1000
+      ) {
+        // Consecutive day
+        lastGroup.leaves.push({ date: leave.date, request_id: leave.request_id });
+      } else {
+        grouped.push({
+          milkman_id: leave.milkman_id,
+          milkman_name: leave.milkman_name,
+          milkman_contact: leave.milkman_contact,
+          leaves: [{ date: leave.date, request_id: leave.request_id }],
+          reason: leave.reason,
+        });
+      }
+    });
+
+    return grouped;
+  };
 
   const fetchRequests = useCallback(async () => {
     try {
       const vendorId = user?.userID;
-      if (!vendorId) {
-        throw new Error('Vendor ID not found');
-      }
+      if (!vendorId) throw new Error('Vendor ID not found');
 
       setIsLoading(true);
       const response = await getDistributorLeaveRequestsForVendor(vendorId);
       const data = response?.data?.data || response?.data || [];
 
-      // Map and format the data
-      const formattedRequests = Array.isArray(data) ? data.map((item: any, index: number) => ({
-        id: item.id || item.request_id || index,
-        request_id: item.request_id || item.id || index,
-        milkman_id: item.milkman_id || item.distributor_id || 0,
-        milkman_name: item.milkman_name || item.distributor_name || 'Unknown Distributor',
-        milkman_contact: item.milkman_contact || item.contact,
-        date: item.start_date || item.start_date || new Date().toISOString().split('T')[0],
-        remarks: item.remarks || item.reason || 'No reason provided',
-        status: item.status || 'pending',
-        created_at: item.created_at || new Date().toISOString(),
-      })) : [];
+      const formattedRequests: LeaveRequest[] = Array.isArray(data)
+        ? data.map((item: any, index: number) => ({
+          id: item.id || item.request_id || index,
+          request_id: item.request_id || item.id || index,
+          milkman_id: item.milkman_id || item.distributor_id || 0,
+          milkman_name: item.milkman_name || item.distributor_name || 'Unknown Distributor',
+          milkman_contact: item.milkman_contact || item.contact,
+          date: item.start_date || new Date().toISOString().split('T')[0],
+          reason: item.reason || 'No reason provided',
+          status: item.status || 'pending',
+          created_at: item.created_at || new Date().toISOString(),
+        }))
+        : [];
 
-      // Filter only pending requests
-      const pendingRequests = formattedRequests.filter((req: LeaveRequest) =>
-        req.status === 'pending'
-      );
-
-      setRequests(pendingRequests);
+      const pendingLeaves = formattedRequests.filter((req) => req.status === 'pending');
+      setGroupedRequests(groupConsecutiveLeaves(pendingLeaves));
     } catch (error: any) {
       console.error('Error fetching distributor leave requests:', error);
       Alert.alert('Error', error?.response?.data?.message || 'Failed to load leave requests');
@@ -85,7 +121,7 @@ const VendorDistributorLeaveScreen = () => {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.userID]);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,16 +134,12 @@ const VendorDistributorLeaveScreen = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleManageLeave = async (
-    milkman_id: number,
-    request_id: number,
-    action: 'approve' | 'reject'
-  ) => {
+  const handleManageLeave = async (milkman_id: number, leaves: { date: string; request_id: number }[], action: 'approve' | 'reject') => {
     const actionText = action === 'approve' ? 'Approve' : 'Reject';
 
     Alert.alert(
       `${actionText} Leave`,
-      `Are you sure you want to ${action} this leave request?`,
+      `Are you sure you want to ${action} leave for ${leaves.length} day(s)?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -115,25 +147,27 @@ const VendorDistributorLeaveScreen = () => {
           style: action === 'reject' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              // ✅ Track both ID & action type
-              setProcessingState({ id: milkman_id, action });
+              const cardKey = `${milkman_id}_${leaves.map(l => l.date).join('-')}`;
+              setProcessingState({ key: cardKey, action });
 
-              const payload = { milkman_id, leave_request_id: request_id, action };
-              console.log("📦 Sending manage leave payload:", JSON.stringify(payload, null, 2));
+              for (const leave of leaves) {
+                const payload = {
+                  milkman_id,
+                  leave_request_id: leave.request_id, // ✅ dynamic now
+                  action,
+                };
+                console.log('📦 Sending payload:', payload);
+                await manageDistributorLeave(payload);
+              }
 
-              await manageDistributorLeave(payload);
-
-              Alert.alert(
-                'Success',
-                `Leave request ${action}d successfully!`,
-                [{ text: 'OK', onPress: () => fetchRequests() }]
-              );
+              Alert.alert('Success', `Leave request ${action}d successfully!`, [
+                { text: 'OK', onPress: () => fetchRequests() },
+              ]);
             } catch (error: any) {
               console.error(`Error ${action}ing leave:`, error);
               Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} leave request`);
             } finally {
-              // ✅ Reset loader state
-              setProcessingState({ id: null, action: null });
+              setProcessingState({ key: null, action: null });
             }
           },
         },
@@ -141,37 +175,70 @@ const VendorDistributorLeaveScreen = () => {
     );
   };
 
+  const submitRejectReason = async () => {
+    if (!rejectReason.trim()) {
+      Alert.alert("Reason Required", "Please enter a reason for rejecting the request.");
+      return;
+    }
+
+    if (selectedRejectId == null) {
+      Alert.alert("Error", "No request selected to reject.");
+      return;
+    }
+
+    try {
+      setProcessingState({ key: selectedRejectId.toString(), action: "reject" });
+
+      const payload = {
+        leave_request_id: selectedRejectId,   // ⭐ FIXED
+        action: "reject" as const,
+        rejection_reason: rejectReason,
+      };
+
+      console.log("📦 Reject Payload:", payload);
+
+      await manageDistributorLeave(payload);
+
+      Alert.alert("Success", "Request rejected successfully!");
+
+      setShowRejectModal(false);
+      setRejectReason("");
+      fetchRequests();
+    } catch (error: any) {
+      console.error("Reject error:", error);
+      Alert.alert("Error", error?.response?.data?.message || "Failed to reject request");
+    } finally {
+      setProcessingState({ key: null, action: null });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
+      return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch {
       return dateString;
     }
   };
 
-  const renderLeaveRequest = ({ item }: { item: LeaveRequest }) => {
-    const isApproving = processingState.id === item.milkman_id && processingState.action === 'approve';
-    const isRejecting = processingState.id === item.milkman_id && processingState.action === 'reject';
+  const renderLeaveRequest = ({ item }: { item: GroupedLeaveRequest }) => {
+    const cardKey = `${item.milkman_id}_${item.leaves.map(l => l.date).join('-')}`;
+    const isProcessing = processingState.key === cardKey;
+    const singleDay = item.leaves.length === 1;
+    const dateText = singleDay
+      ? `Leave Date: ${formatDate(item.leaves[0].date)}`
+      : `Leave Date: ${formatDate(item.leaves[0].date)} To ${formatDate(item.leaves[item.leaves.length - 1].date)}`;
 
     return (
       <View style={styles.requestCard}>
         <View style={styles.requestHeader}>
           <View style={styles.distributorInfo}>
             <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>
-                {item.milkman_name.substring(0, 2).toUpperCase()}
-              </Text>
+              <Text style={styles.avatarText}>{item.milkman_name.substring(0, 2).toUpperCase()}</Text>
             </View>
             <View style={styles.distributorDetails}>
               <Text style={styles.distributorName}>{item.milkman_name}</Text>
-              {item.milkman_contact && (
-                <Text style={styles.distributorContact}>{item.milkman_contact}</Text>
-              )}
+              {item.milkman_contact && <Text style={styles.distributorContact}>{item.milkman_contact}</Text>}
             </View>
           </View>
           <View style={styles.statusBadge}>
@@ -183,23 +250,25 @@ const VendorDistributorLeaveScreen = () => {
         <View style={styles.requestBody}>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>Leave Date: {formatDate(item.date)}</Text>
+            <Text style={styles.infoText}>{dateText}</Text>
           </View>
 
           <View style={styles.remarksContainer}>
             <Ionicons name="document-text-outline" size={16} color="#666" />
-            <Text style={styles.remarksText}>{item.remarks}</Text>
+            <Text style={styles.remarksText}>{item.reason}</Text>
           </View>
         </View>
 
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
-            onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'reject')}
-            disabled={isApproving || isRejecting}
+            onPress={() => {
+              setSelectedRejectId(item.leaves[0].request_id);   // ✅ FIXED
+              setShowRejectModal(true);
+            }} disabled={isProcessing}
             activeOpacity={0.7}
           >
-            {isRejecting ? (
+            {isProcessing && processingState.action === 'reject' ? (
               <ActivityIndicator size="small" color="#FF3B30" />
             ) : (
               <>
@@ -211,11 +280,11 @@ const VendorDistributorLeaveScreen = () => {
 
           <TouchableOpacity
             style={[styles.button, styles.acceptButton]}
-            onPress={() => handleManageLeave(item.milkman_id, item.request_id, 'approve')}
-            disabled={isApproving || isRejecting}
+            onPress={() => handleManageLeave(item.milkman_id, item.leaves, 'approve')}
+            disabled={isProcessing}
             activeOpacity={0.7}
           >
-            {isApproving ? (
+            {isProcessing && processingState.action === 'approve' ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
@@ -240,38 +309,72 @@ const VendorDistributorLeaveScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Reject Reason Modal */}
+      {
+        showRejectModal && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Reject Request</Text>
+              <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Write reason here..."
+                placeholderTextColor="#999"
+                multiline
+                value={rejectReason}
+                onChangeText={setRejectReason}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelBtn]}
+                  onPress={() => {
+                    setShowRejectModal(false);
+                    setRejectReason("");
+                  }}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitBtn]}
+                  onPress={submitRejectReason}
+                >
+                  {processingState.action === "reject" ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.submitText}>Submit</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )
+      }
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Distributor Leave</Text>
-          <Text style={styles.headerSubtitle}>
-            Manage distributor leave requests
-          </Text>
+          <Text style={styles.headerSubtitle}>Manage distributor leave requests</Text>
         </View>
       </View>
 
-      {requests.length === 0 ? (
+      {groupedRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={64} color="#ccc" />
           <Text style={styles.emptyTitle}>No Pending Leave Requests</Text>
-          <Text style={styles.emptySubtitle}>
-            Distributor leave requests will appear here
-          </Text>
+          <Text style={styles.emptySubtitle}>Distributor leave requests will appear here</Text>
         </View>
       ) : (
         <FlatList
-          data={requests}
-          keyExtractor={(item) => `leave_${item.request_id}`}
+          data={groupedRequests}
+          keyExtractor={(item) => `leave_${item.milkman_id}_${item.leaves.map(leave => leave.date).join('-')}`}
           renderItem={renderLeaveRequest}
           contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -486,5 +589,82 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 9999,     // iOS + Android
+    elevation: 10,    // Android
+  },
+
+  modalContainer: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 20,
+    zIndex: 10000,
+    elevation: 15,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1a1a1a",
+    marginBottom: 8,
+  },
+
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 12,
+  },
+
+  reasonInput: {
+    height: 120,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    textAlignVertical: "top",
+    padding: 12,
+    fontSize: 14,
+    color: "#1a1a1a",
+    marginBottom: 20,
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+
+  modalButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+
+  cancelBtn: {
+    backgroundColor: "#eee",
+  },
+
+  cancelText: {
+    color: "#333",
+    fontWeight: "600",
+  },
+
+  submitBtn: {
+    backgroundColor: "#FF3B30",
+  },
+
+  submitText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

@@ -1,6 +1,6 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getVendorDetailsById, updateVendorProfile } from '../apiServices/allApi';
+import { deleteVendorAccountPermanently, getVendorDetailsById, updateVendorProfile } from '../apiServices/allApi';
 
 interface VendorProfileData {
   name?: string;
@@ -32,6 +32,8 @@ interface VendorProfileState {
   error: string | null;
   success: boolean;
   lastUpdated: number | null;
+  deleting: boolean;
+  deleteSuccess: boolean;
 }
 
 const initialState: VendorProfileState = {
@@ -41,6 +43,8 @@ const initialState: VendorProfileState = {
   error: null,
   success: false,
   lastUpdated: null,
+  deleting: false,
+  deleteSuccess: false,
 };
 
 export const fetchVendorProfile = createAsyncThunk<
@@ -139,25 +143,25 @@ export const updateVendorProfileData = createAsyncThunk<
       const submitData: any = {};
 
       // Only include fields that are explicitly provided in the update
-      if (data.name !== undefined) {submitData.name = data.name;}
-      if (data.email !== undefined) {submitData.email = data.email;}
-      if (formattedContact !== undefined) {submitData.contact = formattedContact;}
-      if (data.flat_house !== undefined) {submitData.flat_house = data.flat_house;}
-      if (data.society_area !== undefined) {submitData.society_area = data.society_area;}
-      if (data.village !== undefined) {submitData.village = data.village;}
-      if (data.tal !== undefined) {submitData.tal = data.tal;}
-      if (data.dist !== undefined) {submitData.dist = data.dist;}
-      if (data.state !== undefined) {submitData.state = data.state;}
-      if (data.pincode !== undefined) {submitData.pincode = data.pincode;}
-      if (data.buffalo_milk_litre !== undefined) {submitData.buffalo_milk_litre = data.buffalo_milk_litre;}
-      if (data.br !== undefined) {submitData.br = data.br;}
-      if (data.gir_cow_milk_litre !== undefined) {submitData.gir_cow_milk_litre = data.gir_cow_milk_litre;}
-      if (data.gir_cow_rate !== undefined) {submitData.gir_cow_rate = data.gir_cow_rate;}
-      if (data.jarshi_cow_milk_litre !== undefined) {submitData.jarshi_cow_milk_litre = data.jarshi_cow_milk_litre;}
-      if (data.jarshi_cow_rate !== undefined) {submitData.jarshi_cow_rate = data.jarshi_cow_rate;}
-      if (data.deshi_milk_litre !== undefined) {submitData.deshi_milk_litre = data.deshi_milk_litre;}
-      if (data.deshi_cow_rate !== undefined) {submitData.deshi_cow_rate = data.deshi_cow_rate;}
-      if (data.cr !== undefined) {submitData.cr = data.cr;}
+      if (data.name !== undefined) { submitData.name = data.name; }
+      if (data.email !== undefined) { submitData.email = data.email; }
+      if (formattedContact !== undefined) { submitData.contact = formattedContact; }
+      if (data.flat_house !== undefined) { submitData.flat_house = data.flat_house; }
+      if (data.society_area !== undefined) { submitData.society_area = data.society_area; }
+      if (data.village !== undefined) { submitData.village = data.village; }
+      if (data.tal !== undefined) { submitData.tal = data.tal; }
+      if (data.dist !== undefined) { submitData.dist = data.dist; }
+      if (data.state !== undefined) { submitData.state = data.state; }
+      if (data.pincode !== undefined) { submitData.pincode = data.pincode; }
+      if (data.buffalo_milk_litre !== undefined) { submitData.buffalo_milk_litre = data.buffalo_milk_litre; }
+      if (data.br !== undefined) { submitData.br = data.br; }
+      if (data.gir_cow_milk_litre !== undefined) { submitData.gir_cow_milk_litre = data.gir_cow_milk_litre; }
+      if (data.gir_cow_rate !== undefined) { submitData.gir_cow_rate = data.gir_cow_rate; }
+      if (data.jarshi_cow_milk_litre !== undefined) { submitData.jarshi_cow_milk_litre = data.jarshi_cow_milk_litre; }
+      if (data.jarshi_cow_rate !== undefined) { submitData.jarshi_cow_rate = data.jarshi_cow_rate; }
+      if (data.deshi_milk_litre !== undefined) { submitData.deshi_milk_litre = data.deshi_milk_litre; }
+      if (data.deshi_cow_rate !== undefined) { submitData.deshi_cow_rate = data.deshi_cow_rate; }
+      if (data.cr !== undefined) { submitData.cr = data.cr; }
 
       console.log('📦 PATCH data (only updated fields):', submitData);
 
@@ -213,6 +217,18 @@ export const updateVendorProfileData = createAsyncThunk<
         message = error.message;
       }
       return rejectWithValue(message);
+    }
+  }
+);
+
+export const deleteVendorAccount = createAsyncThunk(
+  "profile/deleteVendorAccount",
+  async (vendorId: string | number, { rejectWithValue }) => {
+    try {
+      const response = await deleteVendorAccountPermanently(vendorId);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to delete account");
     }
   }
 );

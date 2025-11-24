@@ -123,8 +123,8 @@ const getStatusColor = (status: string): string => {
   switch (status) {
     case 'approved':
       return '#4CAF50';
-    case 'pending':
-      return '#FF9800';
+    // case 'pending':
+    //   return '#FF9800';
     case 'leave':
       return '#9C27B0';
     default:
@@ -222,13 +222,13 @@ const distributorCalendarSlice = createSlice({
         const { dates, reason, milkmanId } = action.payload;
         state.loading = false;
 
-        if (milkmanId == null) {return;}
+        if (milkmanId == null) { return; }
 
         const leaves = state.upcomingLeaves[milkmanId] || [];
 
         dates.forEach((date) => {
           const uniqueId = `${milkmanId}_${date}_${Date.now()}`;
-          state.calendarData[date] = { marked: true, dotColor: '#FF9800' };
+          state.calendarData[date] = { marked: true, dotColor: '#9C27B0' };
           state.leaveTypes[date] = 'pending';
 
           if (!leaves.some((leave) => leave.id === uniqueId)) {

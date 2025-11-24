@@ -174,6 +174,8 @@ import VendorConsumerRequestsScreen from '../screens/Vendor/VendorConsumerReques
 import VendorDistributorLeaveScreen from '../screens/Vendor/VendorDistributorLeaveScreen'; // <-- ADD THIS
 import VendorSubscriptionScreen from '../screens/Vendor/VendorSubscriptionScreen';
 import { RootStackParamList } from './types';
+import ConsumerListScreen from '../screens/Vendor/ConsumersListScreen';
+import DistributorsListScreen from '../screens/Vendor/DistributorsListScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -219,6 +221,25 @@ const AppNavigator = () => {
         {/* Other screens */}
         <Stack.Screen name="PendingRequests" component={PendingRequestsScreen} />
         <Stack.Screen name="AssignDistributor" component={AssignDistributorScreen} />
+        <Stack.Screen
+          name="AllConsumersList"
+          component={ConsumerListScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
+
+        <Stack.Screen
+          name="DistributorsList"
+          component={DistributorsListScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
 
         {/* NEW: Vendor Consumer Requests Screen - Extra milk when distributor on leave */}
         <Stack.Screen
@@ -318,7 +339,7 @@ const AppNavigator = () => {
           }}
         />
       </Stack.Navigator>
-    </NavigationContainer>
+    </NavigationContainer >
   );
 };
 

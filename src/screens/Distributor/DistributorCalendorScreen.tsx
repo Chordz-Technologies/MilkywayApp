@@ -69,7 +69,7 @@ interface LeaveItem {
 const statusColors: Record<string, string> = {
   leave: '#9C27B0',
   distributed: '#4CAF50',
-  pending: '#FF9800',
+  // pending: '#FF9800',
   approved: '#4CAF50',
   missed: '#2196F3',
   cancelled: '#FF5722',
@@ -127,15 +127,15 @@ const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) 
         <Text style={calendarScreenStyles.legendText}>Distributed</Text>
       </View>
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.missed }]} />
         <Text style={calendarScreenStyles.legendText}>Missed</Text>
-      </View>
+      </View> */}
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
         <Text style={calendarScreenStyles.legendText}>Cancelled</Text>
-      </View>
+      </View> */}
 
       {/* Hide leave for vendors */}
       {!isVendor && (
@@ -145,10 +145,10 @@ const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) 
             <Text style={calendarScreenStyles.legendText}>Leave</Text>
           </View>
 
-          <View style={calendarScreenStyles.legendItem}>
+          {/* <View style={calendarScreenStyles.legendItem}>
             <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending }]} />
             <Text style={calendarScreenStyles.legendText}>Pending</Text>
-          </View>
+          </View> */}
         </>
       )}
     </View>
@@ -172,7 +172,7 @@ const MonthlySummary: React.FC<{
     <View style={calendarScreenStyles.summaryGrid}>
       <View style={calendarScreenStyles.summaryItem}>
         <Ionicons name="calendar-outline" size={24} color={colors.primary} />
-        <Text style={calendarScreenStyles.summaryValue}>{monthlySummary?.totalLeaves || 0}</Text>
+        <Text style={calendarScreenStyles.summaryValue}>{leavesCount || 0}</Text>
         <Text style={calendarScreenStyles.summaryLabel}>Total Days</Text>
       </View>
 
@@ -549,17 +549,17 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
                     <View style={calendarScreenStyles.leaveItemContent}>
                       <Text style={calendarScreenStyles.leaveDate}>{leave.date}</Text>
                       <Text style={calendarScreenStyles.leaveReason}>
-                        {leave.reason} • {leave.status}
+                        {leave.reason}
                       </Text>
                     </View>
-                    {leave.status !== 'leave' && (
+                    {/* {leave.status !== 'leave' && (
                       <TouchableOpacity
                         style={calendarScreenStyles.leaveButton}
                         onPress={() => handleCancelLeave(leave.id, leave.date)}
                       >
                         <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
                       </TouchableOpacity>
-                    )}
+                    )} */}
                   </View>
                 ))
               )}

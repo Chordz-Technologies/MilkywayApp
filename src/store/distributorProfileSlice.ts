@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getDistributorDetailsById, updateMilkmanProfile } from '../apiServices/allApi';
+import { deleteDistributorAccountPermanently, getDistributorDetailsById, updateMilkmanProfile } from '../apiServices/allApi';
 
 interface DistributorProfileData {
   full_name?: string;
@@ -21,6 +21,8 @@ interface DistributorProfileState {
   error: string | null;
   success: boolean;
   lastUpdated: number | null;
+  deleting: boolean;
+  deleteSuccess: boolean;
 }
 
 const initialState: DistributorProfileState = {
@@ -30,6 +32,8 @@ const initialState: DistributorProfileState = {
   error: null,
   success: false,
   lastUpdated: null,
+  deleting: false,
+  deleteSuccess: false,
 };
 
 export const fetchDistributorProfile = createAsyncThunk<
@@ -39,10 +43,10 @@ export const fetchDistributorProfile = createAsyncThunk<
 >(
   'distributorProfile/fetchDistributorProfile',
   async (userID, { rejectWithValue }) => {
-    if (!userID) {return rejectWithValue('User ID is required');}
+    if (!userID) { return rejectWithValue('User ID is required'); }
     try {
       const response = await getDistributorDetailsById(userID);
-      if (!response?.data) {throw new Error('No profile data received');}
+      if (!response?.data) { throw new Error('No profile data received'); }
       return response.data;
     } catch (error: any) {
       if (error?.response?.status === 404) {
@@ -68,7 +72,7 @@ export const updateDistributorProfile = createAsyncThunk<
 >(
   'distributorProfile/updateDistributorProfile',
   async ({ id, data }, { rejectWithValue }) => {
-    if (!id) {return rejectWithValue('User ID is required');}
+    if (!id) { return rejectWithValue('User ID is required'); }
     try {
       const cleanData: DistributorProfileData = {};
       Object.entries(data).forEach(([key, value]) => {
@@ -82,7 +86,7 @@ export const updateDistributorProfile = createAsyncThunk<
       }
 
       const response = await updateMilkmanProfile(id, cleanData);
-      if (!response?.data) {throw new Error('Update failed');}
+      if (!response?.data) { throw new Error('Update failed'); }
       return response.data;
     } catch (error: any) {
       let message = 'Failed to update profile';
@@ -107,6 +111,19 @@ export const updateDistributorProfile = createAsyncThunk<
     }
   }
 );
+
+export const deleteDistributorAccount = createAsyncThunk(
+  "profile/deleteDistributorAccount",
+  async (distributorId: string | number, { rejectWithValue }) => {
+    try {
+      const response = await deleteDistributorAccountPermanently(distributorId);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to delete account");
+    }
+  }
+);
+
 
 const distributorProfileSlice = createSlice({
   name: 'distributorProfile',
@@ -156,6 +173,17 @@ const distributorProfileSlice = createSlice({
       .addCase(updateDistributorProfile.rejected, (state, action) => {
         state.updating = false;
         state.success = false;
+        state.error = action.payload as string;
+      })
+      .addCase(deleteDistributorAccount.pending, (state) => {
+        state.deleting = true;
+      })
+      .addCase(deleteDistributorAccount.fulfilled, (state) => {
+        state.deleting = false;
+        state.deleteSuccess = true;
+      })
+      .addCase(deleteDistributorAccount.rejected, (state, action) => {
+        state.deleting = false;
         state.error = action.payload as string;
       });
   },

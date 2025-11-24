@@ -20,18 +20,21 @@ import {
   clearError,
   clearSuccess,
   resetVendorProfileState,
+  deleteVendorAccount
 } from '../../store/vendorProfileSlice';
 import { logout } from '../../store/authSlice';
 
 const VendorProfileScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  const { profile, loading, updating, error, success } = useSelector(
+  const { profile, loading, updating, deleting, error, success } = useSelector(
     (state: RootState) => state.vendorProfile || {
       profile: null,
       loading: false,
       updating: false,
+      deleting: false,
       error: null,
       success: false,
     }
@@ -39,15 +42,15 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
   // Enhanced toStringSafe to handle numbers properly
   const toStringSafe = (val: any): string => {
-    if (val === null || val === undefined) {return '';}
-    if (typeof val === 'string') {return val;}
-    if (typeof val === 'number') {return val.toString();}
+    if (val === null || val === undefined) { return ''; }
+    if (typeof val === 'string') { return val; }
+    if (typeof val === 'number') { return val.toString(); }
     return '';
   };
 
   // ✅ FIXED: Helper to strip country code from phone
   const stripCountryCode = (phone: string): string => {
-    if (!phone) {return '';}
+    if (!phone) { return ''; }
     let cleaned = phone.trim();
 
     // Remove +91 prefix if exists
@@ -90,6 +93,14 @@ const VendorProfileScreen = ({ navigation }: any) => {
       dispatch(fetchVendorProfile(user.userID));
     }
   }, [dispatch, user]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setIsEditMode(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (profile) {
@@ -141,6 +152,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
   useEffect(() => {
     if (success) {
       Alert.alert('Success', 'Profile updated successfully!');
+      setIsEditMode(false);
       dispatch(clearSuccess());
       if (user?.userID) {
         dispatch(fetchVendorProfile(user.userID));
@@ -161,24 +173,24 @@ const VendorProfileScreen = ({ navigation }: any) => {
   };
 
   const validateForm = () => {
-    if (!form.name.trim()) {return 'Name is required';}
-    if (form.name.length > 100) {return 'Name must be under 100 characters';}
-    if (!form.contact.trim()) {return 'Contact is required';}
+    if (!form.name.trim()) { return 'Name is required'; }
+    if (form.name.length > 100) { return 'Name must be under 100 characters'; }
+    if (!form.contact.trim()) { return 'Contact is required'; }
 
     // Contact should be 10 digits (slice will add +91 when submitting)
     const cleanContact = stripCountryCode(form.contact);
-    if (cleanContact.length !== 10) {return 'Contact must be exactly 10 digits';}
-    if (!/^\d{10}$/.test(cleanContact)) {return 'Contact must contain only digits';}
+    if (cleanContact.length !== 10) { return 'Contact must be exactly 10 digits'; }
+    if (!/^\d{10}$/.test(cleanContact)) { return 'Contact must contain only digits'; }
 
-    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) {return 'Invalid email format';}
-    if (form.email.length > 255) {return 'Email must be under 255 characters';}
-    if (form.flat_house.length > 100) {return 'Flat/House must be under 100 characters';}
-    if (form.society_area.length > 100) {return 'Society area must be under 100 characters';}
-    if (form.village.length > 100) {return 'Village must be under 100 characters';}
-    if (form.tal.length > 100) {return 'Taluka must be under 100 characters';}
-    if (form.dist.length > 100) {return 'District must be under 100 characters';}
-    if (form.state.length > 100) {return 'State must be under 100 characters';}
-    if (form.pincode.trim() && form.pincode.length !== 6) {return 'Pincode must be exactly 6 digits';}
+    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) { return 'Invalid email format'; }
+    if (form.email.length > 255) { return 'Email must be under 255 characters'; }
+    if (form.flat_house.length > 100) { return 'Flat/House must be under 100 characters'; }
+    if (form.society_area.length > 100) { return 'Society area must be under 100 characters'; }
+    if (form.village.length > 100) { return 'Village must be under 100 characters'; }
+    if (form.tal.length > 100) { return 'Taluka must be under 100 characters'; }
+    if (form.dist.length > 100) { return 'District must be under 100 characters'; }
+    if (form.state.length > 100) { return 'State must be under 100 characters'; }
+    if (form.pincode.trim() && form.pincode.length !== 6) { return 'Pincode must be exactly 6 digits'; }
     return null;
   };
 
@@ -242,6 +254,56 @@ const VendorProfileScreen = ({ navigation }: any) => {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!user?.userID) {
+              Alert.alert("Error", "User not found.");
+              return;
+            }
+
+            try {
+              await dispatch(deleteVendorAccount(user.userID)).unwrap();
+
+              Alert.alert("Deleted", "Your account has been permanently deleted.");
+
+              // Clear local storage
+              await AsyncStorage.multiRemove([
+                "userToken",
+                "userID",
+                "userRole",
+                "userData",
+              ]);
+
+              // Reset redux
+              dispatch(resetVendorProfileState());
+              dispatch(logout());
+
+              // Go to Login
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+
+            } catch (err: any) {
+              Alert.alert("Error", err || "Failed to delete account.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading && !form.name) {
     return (
       <View style={styles.center}>
@@ -259,6 +321,21 @@ const VendorProfileScreen = ({ navigation }: any) => {
         <Text style={styles.subheading}>Update your business information</Text>
       </View>
 
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => setIsEditMode(!isEditMode)}
+      >
+        <Ionicons
+          name={isEditMode ? "close-outline" : "pencil-outline"}
+          size={20}
+          color="#007AFF"
+          style={{ marginRight: 8 }}
+        />
+        <Text style={styles.editButtonText}>
+          {isEditMode ? "Cancel" : "Edit Profile"}
+        </Text>
+      </TouchableOpacity>
+
       {/* Personal Information */}
       <View style={styles.section}>
         <Text style={styles.title}>Personal Information</Text>
@@ -270,6 +347,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.name}
             onChangeText={(v) => handleChange('name', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -287,6 +365,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 handleChange('contact', cleaned);
               }}
               maxLength={10}
+              editable={isEditMode}
               keyboardType="phone-pad"
               placeholderTextColor="#999"
             />
@@ -302,6 +381,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             keyboardType="email-address"
             autoCapitalize="none"
             maxLength={255}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -318,6 +398,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.flat_house}
             onChangeText={(v) => handleChange('flat_house', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -329,6 +410,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.society_area}
             onChangeText={(v) => handleChange('society_area', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -340,6 +422,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.village}
             onChangeText={(v) => handleChange('village', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -351,6 +434,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.tal}
             onChangeText={(v) => handleChange('tal', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -362,6 +446,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.dist}
             onChangeText={(v) => handleChange('dist', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -373,6 +458,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.state}
             onChangeText={(v) => handleChange('state', v)}
             maxLength={100}
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -388,6 +474,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
               handleChange('pincode', cleaned);
             }}
             maxLength={6}
+            editable={isEditMode}
             keyboardType="numeric"
             placeholderTextColor="#999"
           />
@@ -406,6 +493,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             value={form.buffalo_milk_litre}
             onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
             keyboardType="numeric"
+            editable={isEditMode}
             placeholderTextColor="#999"
           />
         </View>
@@ -418,6 +506,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('br', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
@@ -435,6 +524,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('cr', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
@@ -452,6 +542,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('gir_cow_milk_litre', v)}
             keyboardType="numeric"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
         <View style={styles.inputContainer}>
@@ -463,6 +554,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('gir_cow_rate', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
@@ -480,6 +572,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('jarshi_cow_milk_litre', v)}
             keyboardType="numeric"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
         <View style={styles.inputContainer}>
@@ -491,6 +584,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('jarshi_cow_rate', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
@@ -508,6 +602,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('deshi_milk_litre', v)}
             keyboardType="numeric"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
         <View style={styles.inputContainer}>
@@ -519,28 +614,46 @@ const VendorProfileScreen = ({ navigation }: any) => {
             onChangeText={(v) => handleChange('deshi_cow_rate', v)}
             keyboardType="decimal-pad"
             placeholderTextColor="#999"
+            editable={isEditMode}
           />
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.button, updating && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={updating}
-      >
-        {updating ? (
-          <View style={styles.buttonContent}>
-            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-            <Text style={styles.buttonText}>Updating...</Text>
-          </View>
-        ) : (
-          <Text style={styles.buttonText}>Save Changes</Text>
-        )}
-      </TouchableOpacity>
+      {isEditMode && (
+        <TouchableOpacity
+          style={[styles.button, updating && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={updating}
+        >
+          {updating ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+              <Text style={styles.buttonText}>Updating...</Text>
+            </View>
+          ) : (
+            <Text style={styles.buttonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
         <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleDeleteAccount}
+        disabled={deleting}   // ⬅ disable when deleting
+      >
+        {deleting ? (
+          <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />
+        ) : (
+          <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+        )}
+        <Text style={styles.logoutButtonText}>
+          {deleting ? "Deleting..." : "Delete Account"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -597,6 +710,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
     paddingBottom: 8,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#E9F2FF',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  editButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   sectionInfo: {
     fontSize: 13,
