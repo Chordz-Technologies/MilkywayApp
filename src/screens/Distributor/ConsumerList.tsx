@@ -31,6 +31,7 @@ import {
   checkDailyReset,
   AssignedConsumer,
 } from '../../store/consumersSlice';
+import { getMilkmanExtraMilkRequests, markExtraMilkDelivery } from '../../apiServices/allApi';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
@@ -77,6 +78,8 @@ const ConsumerListScreen = () => {
   const extraMilk = useSelector((state: RootState) => state.consumers.extraMilkRequirement);
 
   const [notificationCount, setNotificationCount] = useState(0);
+  const [extraRequests, setExtraRequests] = useState<any[]>([]);
+  const [extraLoading, setExtraLoading] = useState(false);
 
   const loadNotificationCount = async () => {
     try {
@@ -127,6 +130,38 @@ const ConsumerListScreen = () => {
   const getTodayString = useCallback(() => {
     return new Date().toISOString().split('T')[0];
   }, []);
+
+  const fetchExtraMilkRequests = useCallback(async () => {
+    const milkmanId = getMilkmanId();
+    if (!milkmanId) return;
+    setExtraLoading(true);
+    try {
+      const resp = await getMilkmanExtraMilkRequests(milkmanId, getTodayString());
+      const data = resp?.data?.data || resp?.data || [];
+
+      // Normalize items to have customer_id and request_id
+      const normalized = Array.isArray(data)
+        ? data.map((r: any) => ({
+          id: r.id || r.request_id,
+          request_id: r.request_id || r.id,
+          customer_id: r.customer_id || r.customer?.id || r.consumer_id || r.consumer?.customer_id,
+          customer_name: r.customer_name || r.customer?.first_name + ' ' + r.customer?.last_name || r.consumer?.name || r.customer?.name,
+          customer_address: r.customer_address || r.customer?.address || r.consumer?.address,
+          date: r.date || r.request_date || getTodayString(),
+          cow_milk_extra: r.cow_milk_extra ?? r.cow_milk_extra_litres ?? 0,
+          buffalo_milk_extra: r.buffalo_milk_extra ?? r.buffalo_milk_extra_litres ?? 0,
+          total_extra_milk: (r.cow_milk_extra ?? r.cow_milk_extra_litres ?? 0) + (r.buffalo_milk_extra ?? r.buffalo_milk_extra_litres ?? 0),
+          raw: r,
+        }))
+        : [];
+
+      setExtraRequests(normalized);
+    } catch (err) {
+      console.error('Error fetching extra milk requests:', err);
+    } finally {
+      setExtraLoading(false);
+    }
+  }, [getMilkmanId, getTodayString]);
 
   const getTodayDeliveryStatus = useCallback((consumer: AssignedConsumer) => {
     const today = getTodayString();
@@ -193,6 +228,8 @@ const ConsumerListScreen = () => {
     if (isAuthenticated && user?.userID) {
       dispatch(checkDailyReset()).then(() => {
         dispatch(fetchAssignedConsumers(getMilkmanId()));
+        // fetch extra milk requests for this milkman for today
+        fetchExtraMilkRequests();
       });
     }
   }, [dispatch, isAuthenticated, user?.userID, getMilkmanId]);
@@ -206,6 +243,8 @@ const ConsumerListScreen = () => {
 
           if (!consumers.length || (lastFetch - fiveMinutes > lastFetch)) {
             dispatch(fetchAssignedConsumers(getMilkmanId()));
+            // refresh extra-milk requests as well
+            fetchExtraMilkRequests();
           }
         });
       }
@@ -322,6 +361,124 @@ const ConsumerListScreen = () => {
     }
   }, [dispatch, getMilkmanId, getTodayString, getTodayDeliveryStatus]);
 
+  const handleMarkExtraDelivered = useCallback(async (request: any) => {
+    Alert.alert(
+      'Mark Extra Milk Delivered',
+      `Mark extra milk request for ${request.customer_name} as delivered?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Delivered',
+          onPress: async () => {
+            try {
+              await markExtraMilkDelivery({
+                request_id: request.id || request.request_id,
+                status: 'delivered',
+              });
+              // remove locally
+              setExtraRequests(prev => prev.filter(r => (r.id || r.request_id) !== (request.id || request.request_id)));
+              // refresh consumers to remove extra milk indicator
+              dispatch(refreshConsumers(getMilkmanId()));
+              Alert.alert('Success', 'Extra milk request marked as delivered');
+            } catch (err: any) {
+              console.error('Error marking extra delivered:', JSON.stringify(err?.response?.data, null, 2));
+              Alert.alert('Error', err?.response?.data?.message || 'Failed to mark extra milk delivered');
+            }
+          },
+        },
+      ]
+    );
+  }, [dispatch, getMilkmanId]);
+
+  const renderExtraRequests = useCallback(() => {
+    if (extraLoading) {
+      return (
+        <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+          <ActivityIndicator size="small" color="#007AFF" />
+        </View>
+      );
+    }
+
+    if (!extraRequests || extraRequests.length === 0) return null;
+
+    return (
+      <View style={{ paddingBottom: 12 }}>
+        {extraRequests.map((req) => (
+          <View key={req.id || req.request_id} style={styles.modernCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.customerInfo}>
+                <View style={styles.modernAvatar}>
+                  <Text style={styles.avatarText}>
+                    {req.customer_name?.[0]?.toUpperCase() || 'C'}
+                  </Text>
+                </View>
+                <View style={styles.customerDetails}>
+                  <Text>Extra Milk Request For</Text>
+                  <Text style={styles.customerName} numberOfLines={1}>{req.customer_name || 'Unknown'}</Text>
+                  <View style={styles.contactContainer}>
+                    <Ionicons name="calendar" size={12} color="#007AFF" />
+                    <Text style={styles.contactText} numberOfLines={1}>{req.date || 'No date'}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.statusBadge, { backgroundColor: '#FFF9F0' }]}>
+                <Text style={[styles.statusText, { color: '#FF9500' }]}>EXTRA</Text>
+              </View>
+            </View>
+
+            <View style={styles.addressSection}>
+              <Ionicons name="location" size={14} color="#FF9500" />
+              <Text style={styles.addressText} numberOfLines={2}>
+                {req.customer_address}
+              </Text>
+            </View>
+
+            <View style={styles.milkSection}>
+              <View style={styles.milkHeader}>
+                <Ionicons name="water" size={16} color="#007AFF" />
+                <Text style={styles.milkHeaderText}>Extra Milk Request</Text>
+                <View style={styles.totalMilkBadge}>
+                  <Text style={styles.totalMilkBadgeText}>{(() => {
+                    const cow = parseFloat(req.cow_milk_extra) || 0;
+                    const buff = parseFloat(req.buffalo_milk_extra) || 0;
+                    const total = (cow + buff) || (parseFloat(req.total_extra_milk) || 0);
+                    if (cow > 0 && buff > 0) return `${total}L`;
+                    if (cow > 0) return `${cow}L`;
+                    return `${buff}L`;
+                  })()}</Text>
+                </View>
+              </View>
+              <View style={styles.milkDetails}>
+                <View style={styles.milkType}>
+                  <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
+                  <Text style={styles.milkTypeText}>Cow: {req.cow_milk_extra ?? 0}L</Text>
+                </View>
+                <View style={styles.milkType}>
+                  <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
+                  <Text style={styles.milkTypeText}>Buffalo: {req.buffalo_milk_extra ?? 0}L</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deliverButton]}
+                onPress={() => handleMarkExtraDelivered(req)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.buttonContent}>
+                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                  <Text style={[styles.actionButtonText, { color: '#fff' }]}>Delivered Extra Milk</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }, [extraRequests, extraLoading, handleMarkExtraDelivered]);
+
   const handleViewCalendar = useCallback((consumer: AssignedConsumer) => {
     dispatch(setSelectedConsumer(consumer));
 
@@ -344,6 +501,7 @@ const ConsumerListScreen = () => {
   const renderConsumerItem = ({ item }: { item: AssignedConsumer }) => {
     const address = formatAddress(item.customer_address);
     const isMarkingThisDelivery = markingDelivery === item.customer_id;
+    const extraForConsumer = extraRequests.find(r => (r.customer_id || r.customer?.id || r.customer_id) === item.customer_id);
 
     console.log(`[Debug] Consumer: ${item.customer_name} Vendor info: `, item.provider);
 
@@ -373,12 +531,12 @@ const ConsumerListScreen = () => {
               <Text style={styles.customerName} numberOfLines={1}>
                 {item.customer_name || 'Unknown Customer'}
               </Text>
-              <View style={styles.contactContainer}>
+              {/* <View style={styles.contactContainer}>
                 <Ionicons name="call" size={12} color="#007AFF" />
                 <Text style={styles.contactText} numberOfLines={1}>
-                  {item.customer_contact || 'No contact'}
+                  {item.customer_address || 'Unknown Address'}
                 </Text>
-              </View>
+              </View> */}
             </View>
           </View>
 
@@ -415,46 +573,48 @@ const ConsumerListScreen = () => {
           </View>
         )}
 
-        <View style={styles.milkSection}>
-          <View style={styles.milkHeader}>
-            <Ionicons name="water" size={16} color="#007AFF" />
-            <Text style={styles.milkHeaderText}>Daily Requirement</Text>
-            <View style={styles.totalMilkBadge}>
-              <Text style={styles.totalMilkBadgeText}>{totalMilk}L</Text>
+        {!extraForConsumer && (
+          <View style={styles.milkSection}>
+            <View style={styles.milkHeader}>
+              <Ionicons name="water" size={16} color="#007AFF" />
+              <Text style={styles.milkHeaderText}>Daily Requirement</Text>
+              <View style={styles.totalMilkBadge}>
+                <Text style={styles.totalMilkBadgeText}>{totalMilk}L</Text>
+              </View>
+            </View>
+            <View style={styles.milkDetails}>
+              {hasAnyMilk ? (
+                <>
+                  {hasCow && (
+                    <View style={styles.milkType}>
+                      <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
+                      <Text style={styles.milkTypeText}>
+                        Cow: {cowMilk}L
+                      </Text>
+                    </View>
+                  )}
+
+                  {hasBuffalo && (
+                    <View style={styles.milkType}>
+                      <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
+                      <Text style={styles.milkTypeText}>
+                        Buffalo: {buffaloMilk}L
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <View style={styles.noMilkContainer}>
+                  <Text style={styles.noMilkText}>
+                    No milk requirement specified
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
-          <View style={styles.milkDetails}>
-            {hasAnyMilk ? (
-              <>
-                {hasCow && (
-                  <View style={styles.milkType}>
-                    <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
-                    <Text style={styles.milkTypeText}>
-                      Cow: {cowMilk}L
-                    </Text>
-                  </View>
-                )}
+        )}
 
-                {hasBuffalo && (
-                  <View style={styles.milkType}>
-                    <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
-                    <Text style={styles.milkTypeText}>
-                      Buffalo: {buffaloMilk}L
-                    </Text>
-                  </View>
-                )}
-              </>
-            ) : (
-              <View style={styles.noMilkContainer}>
-                <Text style={styles.noMilkText}>
-                  No milk requirement specified
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.milkSection}>
+        {/* <View style={styles.milkSection}>
           <View style={styles.milkHeader}>
             <Ionicons name="water" size={16} color="#007AFF" />
             <Text style={styles.milkHeaderText}>Extra Milk Requirement</Text>
@@ -491,7 +651,7 @@ const ConsumerListScreen = () => {
               </View>
             )}
           </View>
-        </View>
+        </View> */}
 
         {todayStatus.isLocked && (
           <View style={styles.lockIndicator}>
@@ -746,6 +906,7 @@ const ConsumerListScreen = () => {
       ) : (
         <FlatList
           data={consumers}
+          ListHeaderComponent={() => renderExtraRequests()}
           keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
           renderItem={renderConsumerItem}
           contentContainerStyle={styles.modernListContainer}
@@ -897,6 +1058,23 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 4,
+      },
+    }),
+  },
+  extraCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+      },
+      android: {
+        elevation: 2,
       },
     }),
   },

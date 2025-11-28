@@ -176,6 +176,7 @@ import VendorSubscriptionScreen from '../screens/Vendor/VendorSubscriptionScreen
 import { RootStackParamList } from './types';
 import ConsumerListScreen from '../screens/Vendor/ConsumersListScreen';
 import DistributorsListScreen from '../screens/Vendor/DistributorsListScreen';
+import MilkRequestDistributorAssignScreen from '../screens/Vendor/MilkRequestDistributorAssignScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -332,6 +333,17 @@ const AppNavigator = () => {
         <Stack.Screen
           name="TemporaryDistributorAssignment"
           component={TemporaryDistributorAssignmentScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
+
+        {/* Assign distributor for extra milk request screen */}
+        <Stack.Screen
+          name="MilkRequestDistributorAssign"
+          component={MilkRequestDistributorAssignScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,

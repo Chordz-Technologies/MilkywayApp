@@ -220,9 +220,9 @@ export const applyForLeave = (payload: {
 //  Consumer Request Extra Milk - AUTHENTICATED
 export const requestExtraMilk = (payload: {
   customer_id: number;
-  date: string; // Format: YYYY-MM-DD
-  quantity: number;
-  remarks?: string;
+  date: string; // YYYY-MM-DD
+  cow_milk_extra: number;
+  buffalo_milk_extra: number;
 }) => apiClient.post('/consumer-calendar/vendor-calendar/extra-milk-request/', payload);
 
 //  Report Vendor/Milkman Unavailability - AUTHENTICATED
@@ -336,12 +336,32 @@ export const assignTemporaryDistributor = (data: {
   return apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', data);
 };
 
+export const assignDistributorForExtraMilk = (data: {
+  request_id: number;
+  milkman_id: number;
+}) => {
+  return apiClient.patch('/consumer-calendar/vendor-calendar/assign-milkman/', data);
+};
+
 //  Remove temporary distributor assignment
 export const deassignDistributor = (data: {
   customer_id: number;
 }) => {
   return apiClient.post('/consumer-calendar/vendor-calendar/deassign-milkman/', data);
 };
+
+// Get extra milk requests assigned to a milkman for a given date
+export const getMilkmanExtraMilkRequests = (milkmanId: number, date: string) =>
+  apiClient.get('/consumer-calendar/vendor-calendar/milkman-extra-milk-requests/', {
+    params: { milkman_id: milkmanId, date },
+  });
+
+// Mark an extra milk request as delivered by the milkman
+export const markExtraMilkDelivery = (data: {
+  request_id: number;
+  status: string;
+}) =>
+  apiClient.patch(`/consumer-calendar/vendor-calendar/mark-extra-milk-delivery/`, data);
 
 // Send FCM token to backend
 export const sendFCMToken = (data: { token: string; id: string }) => {

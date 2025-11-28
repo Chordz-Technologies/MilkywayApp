@@ -150,7 +150,7 @@ const TemporaryDistributorAssignmentScreen = () => {
   };
 
   const getInitials = (name: string) => {
-    if (!name) {return 'D';}
+    if (!name) { return 'D'; }
     const parts = name.split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -273,7 +273,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                         style={[
                           styles.distributorAvatar,
                           selectedDistributorId === distributor.milkman_id &&
-                            styles.selectedAvatar,
+                          styles.selectedAvatar,
                         ]}
                       >
                         <Text style={styles.distributorAvatarText}>

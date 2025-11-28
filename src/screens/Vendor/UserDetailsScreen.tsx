@@ -51,7 +51,7 @@ const UserDetailsScreen = () => {
       const response = await getDistributorAssignedConsumers(params.userId);
       console.log('Assigned consumers response:', JSON.stringify(response.data, null, 2));
 
-      const consumers = response?.data?.data || response?.data || [];
+      const consumers = response?.data?.data?.customers || [];
       setAssignedConsumers(Array.isArray(consumers) ? consumers : []);
     } catch (err: any) {
       console.error('Error fetching assigned consumers:', err);
@@ -118,7 +118,7 @@ const UserDetailsScreen = () => {
   }, [params.userType, params.userId, params.userName, navigation]);
 
   const getInitials = (name: string) => {
-    if (!name) {return 'U';}
+    if (!name) { return 'U'; }
     const parts = name.split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -127,7 +127,7 @@ const UserDetailsScreen = () => {
   };
 
   const formatAddress = () => {
-    if (!userData) {return 'No address provided';}
+    if (!userData) { return 'No address provided'; }
 
     const parts = [
       userData.flat_house,
@@ -164,22 +164,22 @@ const UserDetailsScreen = () => {
   }
 
   const phoneNumber = userData?.phone_number ||
-                     userData?.contact ||
-                     userData?.phone ||
-                     userData?.mobile ||
-                     'Not provided';
+    userData?.contact ||
+    userData?.phone ||
+    userData?.mobile ||
+    'Not provided';
 
   const email = userData?.email ||
-                userData?.email_address ||
-                userData?.user_email ||
-                'Not provided';
+    userData?.email_address ||
+    userData?.user_email ||
+    'Not provided';
 
   const fullName = params.userName ||
-                   userData?.full_name ||
-                   userData?.name ||
-                   (userData?.first_name && userData?.last_name
-                     ? `${userData.first_name} ${userData.last_name}`
-                     : 'Unknown User');
+    userData?.full_name ||
+    userData?.name ||
+    (userData?.first_name && userData?.last_name
+      ? `${userData.first_name} ${userData.last_name}`
+      : 'Unknown User');
 
   const hasEmail = userData?.email || userData?.email_address || userData?.user_email;
 

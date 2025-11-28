@@ -77,7 +77,7 @@ const initialState: CalendarState = {
 
 // ✅ Date normalization utility
 const normalizeDateFormat = (dateStr: string): string => {
-  if (!dateStr) {return '';}
+  if (!dateStr) { return ''; }
 
   // Already in YYYY-MM-DD format
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
@@ -241,23 +241,37 @@ interface MilkRequestInput {
   id?: string;
   date: string;
   quantity: number;
-  reason: string;
+  // reason: string;
 }
 
 export const submitExtraMilk = createAsyncThunk(
   'calendar/submitExtraMilk',
   async (
-    params: { customerId: number; milkData: MilkRequestInput },
+    params: { customerId: number; milkData: MilkRequestInput & { milkType: 'cow' | 'buffalo' | 'mixed' } },
     thunkAPI
   ) => {
     try {
       const { customerId, milkData } = params;
+
+      let cow_milk_extra = 0;
+      let buffalo_milk_extra = 0;
+
+      if (milkData.milkType === 'cow') {
+        cow_milk_extra = milkData.quantity;
+      } else if (milkData.milkType === 'buffalo') {
+        buffalo_milk_extra = milkData.quantity;
+      } else if (milkData.milkType === 'mixed') {
+        cow_milk_extra = milkData.quantity;
+        buffalo_milk_extra = milkData.quantity;
+      }
+
       await requestExtraMilk({
         customer_id: customerId,
         date: milkData.date,
-        quantity: milkData.quantity,
-        remarks: milkData.reason,
+        cow_milk_extra,
+        buffalo_milk_extra,
       });
+
       return { ...milkData, customerId };
     } catch (error: any) {
       return thunkAPI.rejectWithValue('Failed to request extra milk');
@@ -390,8 +404,8 @@ const calendarSlice = createSlice({
             newDeliveryTypes[normalizedDate] = item.status;
 
             // Count deliveries and leaves from calendar data
-            if (item.status === 'delivered') {deliveredCount++;}
-            if (item.status === 'customer_paused' || item.status === 'leave') {leaveCount++;}
+            if (item.status === 'delivered') { deliveredCount++; }
+            if (item.status === 'customer_paused' || item.status === 'leave') { leaveCount++; }
           });
 
           console.log('✅ Processed data:', {
@@ -441,8 +455,8 @@ const calendarSlice = createSlice({
 
           // Check if backend values are valid (not zero/empty)
           const hasValidMilk = action.payload.summary.totalMilk &&
-                              action.payload.summary.totalMilk !== '0L' &&
-                              action.payload.summary.totalMilk !== '0';
+            action.payload.summary.totalMilk !== '0L' &&
+            action.payload.summary.totalMilk !== '0';
           const hasValidLeaves = action.payload.summary.totalLeaves > 0;
           const hasValidDeliveries = action.payload.summary.totalDeliveries > 0;
 
@@ -530,7 +544,7 @@ const calendarSlice = createSlice({
       .addCase(submitExtraMilk.fulfilled, (state, action) => {
         state.loading = false;
 
-        const { date, quantity, reason, customerId } = action.payload;
+        const { date, quantity, customerId } = action.payload;
 
         const milkRequests = state.upcomingMilkRequests[customerId] || [];
 
@@ -549,7 +563,7 @@ const calendarSlice = createSlice({
             id: uniqueId,
             date,
             quantity,
-            reason,
+            reason: 'Extra milk request',
             status: 'approved',
           });
         }

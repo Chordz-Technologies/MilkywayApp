@@ -179,6 +179,7 @@ export type RootStackParamList = {
 
   // Vendor Consumer Requests - Extra milk when distributor on leave
   VendorConsumerRequests: undefined;
+  MilkRequestDistributorAssign: undefined;
 
   // Vendor Distributor Leave - Manage distributor leave requests
   VendorDistributorLeave: undefined;

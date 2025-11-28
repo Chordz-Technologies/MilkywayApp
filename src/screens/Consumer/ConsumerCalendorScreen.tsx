@@ -924,7 +924,7 @@ interface ExtraMilkData {
   date: string;
   quantity: number;
   milkType: 'cow' | 'buffalo' | 'mixed';
-  reason: string;
+  // reason: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -1674,7 +1674,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
         {/* Only show action buttons and lists for actual consumer, not distributor or vendor viewing */}
         {!isDistributor && !isVendor && (
           <>
-            {leavesForCustomer.length > 0 && (
+            {/* {leavesForCustomer.length > 0 && (
               <View style={calendarScreenStyles.leavesContainer}>
                 <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
                 {leavesForCustomer.map((leave, index) => (
@@ -1682,10 +1682,10 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                     <View style={calendarScreenStyles.leaveItemContent}>
                       <Text style={calendarScreenStyles.leaveDate}>{leave?.date ?? 'N/A'}</Text>
                       <Text style={calendarScreenStyles.leaveReason}>
-                        {leave?.reason ?? 'No reason'} 
+                        {leave?.reason ?? 'No reason'}
                       </Text>
                     </View>
-                    {/* {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
+                    {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
                       <TouchableOpacity
                         style={calendarScreenStyles.leaveButton}
                         onPress={() => handleCancelLeave(leave.id, leave.date)}
@@ -1693,7 +1693,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                       >
                         <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
                       </TouchableOpacity>
-                    )} */}
+                    )}
                   </View>
                 ))}
               </View>
@@ -1713,7 +1713,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
                   </View>
                 ))}
               </View>
-            )}
+            )} */}
 
             <View style={calendarScreenStyles.actionsContainer}>
               <TouchableOpacity

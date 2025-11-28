@@ -127,15 +127,15 @@ const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) 
         <Text style={calendarScreenStyles.legendText}>Distributed</Text>
       </View>
 
-      {/* <View style={calendarScreenStyles.legendItem}>
+      <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.missed }]} />
         <Text style={calendarScreenStyles.legendText}>Missed</Text>
-      </View> */}
+      </View>
 
-      {/* <View style={calendarScreenStyles.legendItem}>
+      <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
         <Text style={calendarScreenStyles.legendText}>Cancelled</Text>
-      </View> */}
+      </View>
 
       {/* Hide leave for vendors */}
       {!isVendor && (
@@ -539,7 +539,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
         {/* Only show leave requests and actions for distributors, not vendors */}
         {!isVendor && (
           <>
-            <View style={calendarScreenStyles.leavesContainer}>
+            {/* <View style={calendarScreenStyles.leavesContainer}>
               <Text style={calendarScreenStyles.leavesTitle}>Leave Requests</Text>
               {leavesForDistributor.length === 0 ? (
                 <Text style={calendarScreenStyles.noLeavesText}>No leave requests</Text>
@@ -552,18 +552,18 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
                         {leave.reason}
                       </Text>
                     </View>
-                    {/* {leave.status !== 'leave' && (
+                    {leave.status !== 'leave' && (
                       <TouchableOpacity
                         style={calendarScreenStyles.leaveButton}
                         onPress={() => handleCancelLeave(leave.id, leave.date)}
                       >
                         <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
                       </TouchableOpacity>
-                    )} */}
+                    )}
                   </View>
                 ))
               )}
-            </View>
+            </View> */}
 
             <View style={calendarScreenStyles.actionsContainer}>
               <Text style={calendarScreenStyles.actionsTitle}>Quick Actions</Text>

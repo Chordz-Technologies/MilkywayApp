@@ -21,6 +21,7 @@ import { useSelector } from 'react-redux';
 type RootStackParamList = {
   VendorConsumerRequests: undefined;
   VendorHome: undefined;
+  MilkRequestDistributorAssign: { consumerId: number, consumerName: string, requestId: number };
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'VendorConsumerRequests'>;
@@ -53,6 +54,7 @@ const VendorConsumerRequestsScreen = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRejectId, setSelectedRejectId] = useState<number | null>(null);
+  const [acceptedRequestIds, setAcceptedRequestIds] = useState<Set<number>>(new Set());
 
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -74,20 +76,20 @@ const VendorConsumerRequestsScreen = () => {
         customer_name: item.customer.first_name + ' ' + item.customer.last_name || 'Unknown Consumer',
         customer_contact: item.customer_contact || item.contact,
         date: item.date || item.request_date || new Date().toISOString().split('T')[0],
-        cow_milk_quantity: item.customer.cow_milk_litre || 0,
-        buffalo_milk_quantity: item.customer.buffalo_milk_litre || 0,
-        total_quantity: (item.customer.cow_milk_litre || 0) + (item.customer.buffalo_milk_litre || 0),
+        cow_milk_quantity: item.cow_milk_extra || 0,
+        buffalo_milk_quantity: item.buffalo_milk_extra || 0,
+        total_quantity: (item.cow_milk_extra || 0) + (item.buffalo_milk_extra || 0),
         status: item.status || 'pending',
         created_at: item.created_at || new Date().toISOString(),
         distributor_name: item.distributor_name || item.milkman_name,
       })) : [];
 
-      // Filter only pending requests
-      const pendingRequests = formattedRequests.filter((req: ConsumerRequest) =>
-        req.status === 'pending'
+      // Show pending and accepted requests (not rejected)
+      const activeRequests = formattedRequests.filter((req: ConsumerRequest) =>
+        req.status === 'pending' || req.status === 'accepted'
       );
 
-      setRequests(pendingRequests);
+      setRequests(activeRequests);
     } catch (error: any) {
       console.error('Error fetching consumer requests:', error);
       Alert.alert('Error', error?.response?.data?.message || 'Failed to load consumer requests');
@@ -99,9 +101,21 @@ const VendorConsumerRequestsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchRequests();
-    }, [fetchRequests])
+      // Only fetch on initial load (isLoading is true) or on manual refresh
+      if (isLoading) {
+        fetchRequests();
+      }
+    }, [fetchRequests, isLoading])
   );
+
+  // Listen for when returning from assignment screen - clear acceptedRequestIds if assignment succeeded
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // When leaving this screen, preserve acceptedRequestIds for when returning
+    });
+
+    return () => unsubscribe();
+  }, [navigation]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -129,11 +143,22 @@ const VendorConsumerRequestsScreen = () => {
 
               await manageConsumerRequest(payload);
 
-              Alert.alert(
-                'Success',
-                `Request ${action}ed successfully!`,
-                [{ text: 'OK', onPress: () => fetchRequests() }]
-              );
+              if (action === 'approve') {
+                // Mark request as accepted locally
+                setAcceptedRequestIds(prev => new Set([...prev, requestId]));
+                Alert.alert(
+                  'Request Accepted',
+                  'Now assign a distributor for this extra milk request.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                // For reject, refresh to remove the card
+                Alert.alert(
+                  'Success',
+                  `Request ${action}ed successfully!`,
+                  [{ text: 'OK', onPress: () => fetchRequests() }]
+                );
+              }
             } catch (error: any) {
               console.error(`Error ${action}ing request:`, error);
               Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} request`);
@@ -201,6 +226,7 @@ const VendorConsumerRequestsScreen = () => {
   const renderRequestItem = ({ item }: { item: ConsumerRequest }) => {
     const isAccepting = processingState.id === item.request_id && processingState.action === 'approve';
     const isRejecting = processingState.id === item.request_id && processingState.action === 'reject';
+    const isAccepted = acceptedRequestIds.has(item.request_id) || item.status === 'accepted';
 
     return (
       <View style={styles.requestCard}>
@@ -223,9 +249,11 @@ const VendorConsumerRequestsScreen = () => {
               )}
             </View>
           </View>
-          <View style={styles.statusBadge}>
-            <Ionicons name="time-outline" size={14} color="#FF9500" />
-            <Text style={styles.statusText}>PENDING</Text>
+          <View style={[styles.statusBadge, isAccepted && styles.statusBadgeAccepted]}>
+            <Ionicons name={isAccepted ? "checkmark-circle" : "time-outline"} size={14} color={isAccepted ? "#34C759" : "#FF9500"} />
+            <Text style={[styles.statusText, isAccepted && styles.statusTextAccepted]}>
+              {isAccepted ? 'ACCEPTED' : 'PENDING'}
+            </Text>
           </View>
         </View>
 
@@ -235,7 +263,7 @@ const VendorConsumerRequestsScreen = () => {
             <Text style={styles.infoText}>{formatDate(item.date)}</Text>
           </View>
 
-          <View style={styles.milkQuantities}>
+          {/* <View style={styles.milkQuantities}>
             {item.total_quantity > 0 && (
               <View style={styles.milkItem}>
                 <Ionicons name="water-outline" size={16} color="#007AFF" />
@@ -248,7 +276,7 @@ const VendorConsumerRequestsScreen = () => {
                 <Text style={styles.milkText}>Buffalo: {item.buffalo_milk_quantity}L</Text>
               </View>
             )}
-          </View>
+          </View> */}
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Cow Milk:</Text>
@@ -268,7 +296,7 @@ const VendorConsumerRequestsScreen = () => {
               setSelectedRejectId(item.request_id);
               setShowRejectModal(true);
             }}
-            disabled={isRejecting || isAccepting}
+            disabled={isRejecting || isAccepting || isAccepted}
             activeOpacity={0.7}
           >
             {isRejecting ? (
@@ -282,9 +310,9 @@ const VendorConsumerRequestsScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.acceptButton]}
+            style={[styles.button, styles.acceptButton, isAccepted && styles.acceptButtonDisabled]}
             onPress={() => handleManageRequest(item.request_id, 'approve')}
-            disabled={isAccepting || isRejecting}
+            disabled={isAccepting || isRejecting || isAccepted}
             activeOpacity={0.7}
           >
             {isAccepting ? (
@@ -292,11 +320,28 @@ const VendorConsumerRequestsScreen = () => {
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.acceptButtonText}>Accept</Text>
+                <Text style={styles.acceptButtonText}>{isAccepted ? 'Accepted' : 'Accept'}</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
+
+        {isAccepted && (
+          <>
+            <View style={styles.pendingAssignmentBar}>
+              <Ionicons name="alert-circle-outline" size={18} color="#FF9500" />
+              <Text style={styles.pendingAssignmentText}>Awaiting Distributor Assignment</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.assignDistributorBtn}
+              onPress={() => navigation.navigate("MilkRequestDistributorAssign", { consumerId: item.customer_id, consumerName: item.customer_name, requestId: item.request_id })}
+            >
+              <Ionicons name="person-add-outline" size={18} color="#fff" />
+              <Text style={styles.assignDistributorText}>Assign Distributor</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     );
   };
@@ -527,10 +572,35 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
+  statusBadgeAccepted: {
+    backgroundColor: '#E8F5E9',
+  },
   statusText: {
     fontSize: 11,
     fontWeight: 'bold',
     color: '#FF9500',
+  },
+  statusTextAccepted: {
+    color: '#34C759',
+  },
+  pendingAssignmentBar: {
+    backgroundColor: '#FFF4E6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pendingAssignmentText: {
+    fontSize: 14,
+    color: '#FF9500',
+    fontWeight: '500',
+    flex: 1,
+  },
+  acceptButtonDisabled: {
+    opacity: 0.6,
   },
   requestBody: {
     marginBottom: 16,
@@ -613,6 +683,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  assignDistributorBtn: {
+    marginTop: 15,
+    backgroundColor: "#34C759",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: 'row',
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#34C759',
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  assignDistributorText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -645,7 +742,6 @@ const styles = StyleSheet.create({
     zIndex: 9999,     // iOS + Android
     elevation: 10,    // Android
   },
-
   modalContainer: {
     width: "100%",
     backgroundColor: "#fff",
@@ -654,20 +750,17 @@ const styles = StyleSheet.create({
     zIndex: 10000,
     elevation: 15,
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#1a1a1a",
     marginBottom: 8,
   },
-
   modalSubtitle: {
     fontSize: 14,
     color: "#555",
     marginBottom: 12,
   },
-
   reasonInput: {
     height: 120,
     borderWidth: 1,
@@ -679,32 +772,26 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     marginBottom: 20,
   },
-
   modalButtons: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 10,
   },
-
   modalButton: {
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 8,
   },
-
   cancelBtn: {
     backgroundColor: "#eee",
   },
-
   cancelText: {
     color: "#333",
     fontWeight: "600",
   },
-
   submitBtn: {
     backgroundColor: "#FF3B30",
   },
-
   submitText: {
     color: "#fff",
     fontWeight: "600",

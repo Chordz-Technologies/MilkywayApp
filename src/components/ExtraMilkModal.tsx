@@ -23,7 +23,7 @@ interface ExtraMilkData {
   date: string;
   quantity: number;
   milkType: 'cow' | 'buffalo' | 'mixed';
-  reason: string;
+  // reason: string;
 }
 
 export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMilkModalProps) {
@@ -80,7 +80,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
       date: selectedDate,
       quantity: parseFloat(quantity),
       milkType,
-      reason: reason.trim() || 'Extra milk request',
+      // reason: reason.trim() || 'Extra milk request',
     };
 
     onSubmit(extraMilkData);
