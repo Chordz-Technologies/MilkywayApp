@@ -202,6 +202,24 @@ export const getConsumerCalendar = (payload: {
 }) =>
   apiClient.get(`/consumer-calendar/vendor-calendar/?customer_id=${payload.customer_id}&month=${payload.month}`);
 
+//  Get Consumer Monthly Summary - AUTHENTICATED
+//  Payload expects month in MM and year in YYYY (per backend contract)
+//  Get Consumer Monthly Summary (dashboard endpoint) - AUTHENTICATED
+//  Example: /dashboard/customer-month-summary/?customer_id=18&month=12&year=2025
+export const getCustomerMonthSummary = (payload: {
+  customer_id: number;
+  month: number | string; // Format: 1..12
+  year: number | string; // Format: YYYY
+}) =>
+  apiClient.get(`/dashboard/customer-month-summary/?customer_id=${payload.customer_id}&month=${payload.month}&year=${payload.year}`);
+
+// Backwards-compatible alias for older code (if needed)
+export const getConsumerSummary = (payload: { customer_id: number; month: string; year: string }) => {
+  // Try the dashboard endpoint if available: convert month string to number
+  const monthNum = parseInt(payload.month, 10);
+  return getCustomerMonthSummary({ customer_id: payload.customer_id, month: monthNum, year: parseInt(payload.year, 10) });
+};
+
 // Mark Delivery Status by Vendor - AUTHENTICATED
 export const markDeliveryStatus = (payload: {
   customer_id: number;
@@ -247,16 +265,8 @@ export const getDistributorLeaveRequests = () =>
 export const getDistributorCalendar = (payload: {
   milkman_id?: number; // Optional - for specific milkman
   month: string; // Required - Format: YYYY-MM
-}) => {
-  const params = new URLSearchParams();
-  params.append('month', payload.month);
-
-  if (payload.milkman_id) {
-    params.append('milkman_id', payload.milkman_id.toString());
-  }
-
-  return apiClient.get(`/consumer-calendar/distributor-calendar/check-leave-allocation/?${params.toString()}`);
-};
+}) =>
+  apiClient.get(`/consumer-calendar/distributor-calendar/check-leave-allocation/?milkman_id=${payload.milkman_id}&month=${payload.month}`);
 
 export const applyForDistributorLeave = (payload: {
   milkman_id?: number; // Optional - for requesting on behalf of another milkman
@@ -296,7 +306,7 @@ export const getAllVendors = (pincode?: string | number) => {
 export const assignConsumerToDistributor = (data: {
   customer_id: number;
   milkman_id: number;
-}) => apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', data);
+}) => apiClient.post('/consumer-calendar/vendor-calendar/assign-milkman-to-customer/', data);
 
 //  Get Distributor Assigned Consumers - AUTHENTICATED
 export const getDistributorAssignedConsumers = (milkmanId?: number) => {
@@ -310,7 +320,10 @@ export const markDeliveryAsSuccessful = (payload: {
   date: string; // Format: YYYY-MM-DD
   milkman_id: number; // Required - Milkman ID who handled the delivery
   status: 'delivered' | 'cancelled'; // Required - Delivery status
-  remarks?: string; // Optional - Remarks or reason for delivery status
+  cow_milk: number; // Required - Quantity of cow milk delivered
+  buffalo_milk: number; // Required - Quantity of buffalo milk delivered
+  reason: string; // Optional - Remarks or reason for delivery status
+  remarks?: string; // Optional - Additional remarks
 }) => apiClient.post('/consumer-calendar/distributor-calendar/mark-delivery/', payload);
 
 //  Returns vendor-join status, vendor id/name if assigned
@@ -333,7 +346,7 @@ export const assignTemporaryDistributor = (data: {
   customer_id: number;
   milkman_id: number;
 }) => {
-  return apiClient.post('/consumer-calendar/distributor-calendar/assign-customer/', data);
+  return apiClient.post('/consumer-calendar/vendor-calendar/assign-milkman-to-customer/', data);
 };
 
 export const assignDistributorForExtraMilk = (data: {
@@ -448,3 +461,4 @@ export const deleteVendorAccountPermanently = (vendorId: string | number) =>
 // Delete consumer account permanently
 export const deleteConsumerAccountPermanently = (consumerId: string | number) =>
   apiClient.delete(`/customer/customers/${consumerId}/`);
+

@@ -188,4 +188,7 @@ export type RootStackParamList = {
   // Consumer and Distributor lists
   AllConsumersList: undefined;
   DistributorsList: undefined;
+
+  // Extra Milk List for Distributor
+  ExtraMilkList: { milkmanId: number, today: string }
 };

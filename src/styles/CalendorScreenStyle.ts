@@ -2,7 +2,7 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { Theme } from 'react-native-calendars/src/types';
 
-const { width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export const calendarScreenStyles = StyleSheet.create({
   // ===================
@@ -105,13 +105,13 @@ export const calendarScreenStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    minWidth: width * 0.25,
+    minWidth: width * 0.21,
   },
   legendDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginRight: 8,
+    marginRight: 4,
   },
   legendText: {
     fontSize: 12,
@@ -183,7 +183,7 @@ export const calendarScreenStyles = StyleSheet.create({
     borderColor: '#eee',
   },
   summaryValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#007AFF',
     marginBottom: 6,

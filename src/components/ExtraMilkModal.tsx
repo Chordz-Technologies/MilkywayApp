@@ -9,8 +9,10 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
+  Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 // import { colors } from '../styles/CalendorScreenStyle';
 
 interface ExtraMilkModalProps {
@@ -31,6 +33,8 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
   const [quantity, setQuantity] = useState('');
   const [milkType, setMilkType] = useState<'cow' | 'buffalo' | 'mixed'>('cow');
   const [reason, setReason] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDateObj, setSelectedDateObj] = useState<Date | null>(null);
 
   const quantities = [0.5, 1, 1.5, 2, 2.5, 3];
 
@@ -41,22 +45,31 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
     setReason('');
   };
 
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+  const onDateChange = (_: any, date?: Date) => {
+    setShowDatePicker(false);
+
+    if (date) {
+      setSelectedDateObj(date);
+      setSelectedDate(date.toISOString().split('T')[0]); // YYYY-MM-DD
+    }
   };
 
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
+  // const getTodayDate = () => {
+  //   const today = new Date();
+  //   return today.toISOString().split('T')[0];
+  // };
 
-  const getNextWeekDate = () => {
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    return nextWeek.toISOString().split('T')[0];
-  };
+  // const getTomorrowDate = () => {
+  //   const tomorrow = new Date();
+  //   tomorrow.setDate(tomorrow.getDate() + 1);
+  //   return tomorrow.toISOString().split('T')[0];
+  // };
+
+  // const getNextWeekDate = () => {
+  //   const nextWeek = new Date();
+  //   nextWeek.setDate(nextWeek.getDate() + 7);
+  //   return nextWeek.toISOString().split('T')[0];
+  // };
 
   const handleSubmit = () => {
     if (!selectedDate) {
@@ -113,36 +126,29 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
             {/* Date Selection */}
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Select Date</Text>
-              <TextInput
-                style={styles.dateInput}
-                placeholder={`e.g., ${getTodayDate()}`}
-                value={selectedDate}
-                onChangeText={setSelectedDate}
-                maxLength={10}
-                placeholderTextColor="#999"
-              />
 
-              {/* Quick date buttons */}
-              <View style={styles.quickDateContainer}>
-                <TouchableOpacity
-                  style={styles.quickDateButton}
-                  onPress={() => setSelectedDate(getTodayDate())}
-                >
-                  <Text style={styles.quickDateText}>Today</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickDateButton}
-                  onPress={() => setSelectedDate(getTomorrowDate())}
-                >
-                  <Text style={styles.quickDateText}>Tomorrow</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickDateButton}
-                  onPress={() => setSelectedDate(getNextWeekDate())}
-                >
-                  <Text style={styles.quickDateText}>Next Week</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                <Text style={styles.dateButtonText}>
+                  {selectedDateObj
+                    ? selectedDateObj.toDateString()
+                    : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={selectedDateObj || new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  minimumDate={new Date()}
+                  onChange={onDateChange}
+                />
+              )}
             </View>
 
             {/* Quantity Selection */}
@@ -375,5 +381,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    backgroundColor: '#fff',
+    gap: 10,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: '#333',
   },
 });

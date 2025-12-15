@@ -69,7 +69,7 @@ interface LeaveItem {
 const statusColors: Record<string, string> = {
   leave: '#9C27B0',
   distributed: '#4CAF50',
-  // pending: '#FF9800',
+  pending: '#FF9800',
   approved: '#4CAF50',
   missed: '#2196F3',
   cancelled: '#FF5722',
@@ -127,15 +127,15 @@ const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) 
         <Text style={calendarScreenStyles.legendText}>Distributed</Text>
       </View>
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.missed }]} />
         <Text style={calendarScreenStyles.legendText}>Missed</Text>
-      </View>
+      </View> */}
 
-      <View style={calendarScreenStyles.legendItem}>
+      {/* <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
         <Text style={calendarScreenStyles.legendText}>Cancelled</Text>
-      </View>
+      </View> */}
 
       {/* Hide leave for vendors */}
       {!isVendor && (
@@ -145,10 +145,10 @@ const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) 
             <Text style={calendarScreenStyles.legendText}>Leave</Text>
           </View>
 
-          {/* <View style={calendarScreenStyles.legendItem}>
+          <View style={calendarScreenStyles.legendItem}>
             <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending }]} />
             <Text style={calendarScreenStyles.legendText}>Pending</Text>
-          </View> */}
+          </View>
         </>
       )}
     </View>

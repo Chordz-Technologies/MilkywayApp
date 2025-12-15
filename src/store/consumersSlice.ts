@@ -52,6 +52,9 @@ export interface DeliveryPayload {
   date: string;
   milkman_id: number;
   status: 'delivered' | 'cancelled';
+  cow_milk: number;
+  buffalo_milk: number;
+  reason: string;
   remarks?: string;
   replaceExisting?: boolean;
 }
@@ -184,7 +187,7 @@ export const markDelivery = createAsyncThunk(
   async (payload: DeliveryPayload, { rejectWithValue }) => {
     try {
       const response = await markDeliveryAsSuccessful(payload);
-      console.log(response);
+      console.log("Delivery data payload:", payload);
       return {
         ...payload,
         timestamp: new Date().toISOString(),

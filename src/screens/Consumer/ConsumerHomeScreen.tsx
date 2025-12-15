@@ -51,7 +51,7 @@ const ConsumerHomeScreen = () => {
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user?.userID) {return;}
+    if (!user?.userID) { return; }
 
     setLoading(true);
     try {
@@ -71,11 +71,11 @@ const ConsumerHomeScreen = () => {
         const vendorRes = await getAllVendors(pincode || undefined);
 
         let vList: any = null;
-        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
-        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
-        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
-        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
-        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+        if (vendorRes?.data?.data) { vList = vendorRes.data.data; }
+        else if (vendorRes?.data?.vendors) { vList = vendorRes.data.vendors; }
+        else if (vendorRes?.data?.results) { vList = vendorRes.data.results; }
+        else if (Array.isArray(vendorRes?.data)) { vList = vendorRes.data; }
+        else if (Array.isArray(vendorRes)) { vList = vendorRes; }
 
         if (Array.isArray(vList) && vList.length > 0) {
           const joinedVendorData = vList.find((v: any) => v.id === providerId);
@@ -96,17 +96,18 @@ const ConsumerHomeScreen = () => {
         const vendorRes = await getAllVendors(pincode || undefined);
 
         let vList: any = null;
-        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
-        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
-        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
-        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
-        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+        if (vendorRes?.data?.data) { vList = vendorRes.data.data; }
+        else if (vendorRes?.data?.vendors) { vList = vendorRes.data.vendors; }
+        else if (vendorRes?.data?.results) { vList = vendorRes.data.results; }
+        else if (Array.isArray(vendorRes?.data)) { vList = vendorRes.data; }
+        else if (Array.isArray(vendorRes)) { vList = vendorRes; }
 
         setVendors(Array.isArray(vList) ? vList : []);
       }
     } catch (err: any) {
       setVendors([]);
       Alert.alert('Error', err?.message || 'Failed to load vendors');
+      console.log('❌ Error details:', JSON.stringify(err?.response?.data, null, 2));
     } finally {
       setLoading(false);
     }
@@ -154,10 +155,10 @@ const ConsumerHomeScreen = () => {
         vendor.gir_cow_rate && parseFloat(vendor.gir_cow_rate.toString()) > 0
           ? vendor.gir_cow_rate
           : vendor.jarshi_cow_rate && parseFloat(vendor.jarshi_cow_rate.toString()) > 0
-          ? vendor.jarshi_cow_rate
-          : vendor.deshi_cow_rate && parseFloat(vendor.deshi_cow_rate.toString()) > 0
-          ? vendor.deshi_cow_rate
-          : undefined;
+            ? vendor.jarshi_cow_rate
+            : vendor.deshi_cow_rate && parseFloat(vendor.deshi_cow_rate.toString()) > 0
+              ? vendor.deshi_cow_rate
+              : undefined;
     }
 
     if (rate) {

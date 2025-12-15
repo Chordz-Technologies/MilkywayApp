@@ -6,6 +6,7 @@ import {
   applyForLeave,
   requestExtraMilk,
 } from '../apiServices/allApi';
+import { getConsumerSummary } from '../apiServices/allApi';
 
 interface DeliveryCalendarItem {
   date: string;
@@ -16,6 +17,11 @@ interface DeliveryCalendarItem {
 interface CustomMarking {
   marked?: boolean;
   dotColor?: string;
+  dots?: Array<{
+    key: string;
+    color: string;
+    selectedDotColor?: string;
+  }>;
   selected?: boolean;
   selectedColor?: string;
 }
@@ -36,18 +42,20 @@ export interface ExtraMilkItem {
 }
 
 interface MonthlySummary {
-  totalMilk: string;
-  totalBill: string;
+  totalMilk: number;
+  totalBill: number;
   totalLeaves: number;
   totalDeliveries: number;
 }
 
 interface CalendarState {
-  calendarData: { [key: string]: CustomMarking };
-  deliveryTypes: Record<string, string>;
+  // store calendar data scoped by customerId to avoid cross-customer merges
+  calendarDataByCustomer: Record<string, { [date: string]: CustomMarking }>;
+  deliveryTypesByCustomer: Record<string, Record<string, string[]>>;
   upcomingLeaves: Record<number, LeaveItem[]>;
   upcomingMilkRequests: Record<number, ExtraMilkItem[]>;
-  monthlySummary: MonthlySummary;
+  // per-customer monthly summaries
+  monthlySummaryByCustomer: Record<string, MonthlySummary>;
   loading: boolean;
   error: string | null;
   currentMonth: number;
@@ -57,16 +65,11 @@ interface CalendarState {
 }
 
 const initialState: CalendarState = {
-  calendarData: {},
-  deliveryTypes: {},
+  calendarDataByCustomer: {},
+  deliveryTypesByCustomer: {},
   upcomingLeaves: {},
   upcomingMilkRequests: {},
-  monthlySummary: {
-    totalMilk: '0L',
-    totalBill: '₹0',
-    totalLeaves: 0,
-    totalDeliveries: 0,
-  },
+  monthlySummaryByCustomer: {},
   loading: false,
   error: null,
   currentMonth: new Date().getMonth(),
@@ -202,6 +205,40 @@ export const fetchCalendarData = createAsyncThunk(
   }
 );
 
+export const fetchConsumerSummary = createAsyncThunk(
+  'calendar/fetchConsumerSummary',
+  async (params: { customerId: number; month: string; year: string }, thunkAPI) => {
+    try {
+      console.log('📡 Fetching consumer summary:', params);
+      const response = await getConsumerSummary({
+        customer_id: params.customerId,
+        month: params.month,
+        year: params.year,
+      });
+
+      // Backend returns { status, code, message, data: { ... } }
+      const payload = response?.data?.data || response?.data;
+
+      console.log('📊 Consumer summary response payload:', payload);
+
+      const summary = {
+        // store numeric values; UI will format
+        totalMilk: payload?.total_milk_delivered_litres != null
+          ? Number(payload.total_milk_delivered_litres)
+          : Number((payload?.cow_milk_delivered_litres || 0) + (payload?.buffalo_milk_delivered_litres || 0)),
+        totalBill: Number(payload?.unpaid_amount ?? 0),
+        totalDeliveries: Number(payload?.total_deliveries ?? 0),
+        totalLeaves: Number(payload?.leaves_count ?? 0),
+      };
+
+      return { customerId: params.customerId, month: params.month, year: params.year, summary };
+    } catch (error: any) {
+      console.error('❌ fetchConsumerSummary error:', error?.response?.data || error?.message);
+      return thunkAPI.rejectWithValue('Failed to fetch consumer summary');
+    }
+  }
+);
+
 interface LeaveRequestInput {
   id?: string;
   startDate: string;
@@ -303,6 +340,8 @@ const getStatusColor = (status: string) => {
       return '#9C27B0';
     case 'extra_milk':
       return '#FFC107';
+    case 'pending_extra_milk':
+      return '#F44336';
     case 'vendor_unavailable':
       return '#F44336';
     case 'distributor_unavailable':
@@ -310,6 +349,8 @@ const getStatusColor = (status: string) => {
     case 'cancelled':
       return '#FF5722';
     case 'leave':
+      return '#9C27B0';
+    case 'pending_leave':
       return '#9C27B0';
     default:
       return '#757575';
@@ -332,24 +373,59 @@ const calendarSlice = createSlice({
       state.upcomingLeaves[customerId] = (state.upcomingLeaves[customerId] || []).filter(
         (leave) => leave.id !== leaveId
       );
-      if (state.calendarData[leaveDate]) {
-        delete state.calendarData[leaveDate];
+
+      const custKey = String(customerId);
+
+      // Remove leave dots for this customer only
+      const custCalendar = state.calendarDataByCustomer[custKey] || {};
+      if (custCalendar[leaveDate]) {
+        const existing = custCalendar[leaveDate];
+        const remainingDots = (existing.dots || []).filter(d => !d.key?.startsWith('leave-'));
+        if (remainingDots.length > 0) {
+          state.calendarDataByCustomer[custKey] = {
+            ...(state.calendarDataByCustomer[custKey] || {}),
+            [leaveDate]: { ...existing, dots: remainingDots },
+          };
+        } else {
+          const copy = { ...(state.calendarDataByCustomer[custKey] || {}) };
+          delete copy[leaveDate];
+          state.calendarDataByCustomer[custKey] = copy;
+        }
       }
-      if (state.deliveryTypes[leaveDate]) {
-        delete state.deliveryTypes[leaveDate];
+
+      const custDelivery = state.deliveryTypesByCustomer[custKey] || {};
+      if (custDelivery[leaveDate]) {
+        const remaining = (custDelivery[leaveDate] || []).filter(s => s !== 'customer_paused' && s !== 'leave');
+        if (remaining.length > 0) {
+          state.deliveryTypesByCustomer[custKey] = {
+            ...(state.deliveryTypesByCustomer[custKey] || {}),
+            [leaveDate]: remaining,
+          };
+        } else {
+          const copy = { ...(state.deliveryTypesByCustomer[custKey] || {}) };
+          delete copy[leaveDate];
+          state.deliveryTypesByCustomer[custKey] = copy;
+        }
       }
     },
-    clearCalendar(state) {
-      state.calendarData = {};
-      state.deliveryTypes = {};
+    // Clear calendar globally or for a specific customer when payload.customerId provided
+    clearCalendar(state, action: PayloadAction<{ customerId?: number }>) {
+      const custId = action && action.payload ? action.payload.customerId : undefined;
+      if (custId != null) {
+        const key = String(custId);
+        delete state.calendarDataByCustomer[key];
+        delete state.deliveryTypesByCustomer[key];
+        delete state.monthlySummaryByCustomer[key];
+        // keep upcoming arrays intact for other customers
+        return;
+      }
+
+      // global clear
+      state.calendarDataByCustomer = {};
+      state.deliveryTypesByCustomer = {};
       state.upcomingLeaves = {};
       state.upcomingMilkRequests = {};
-      state.monthlySummary = {
-        totalMilk: '0L',
-        totalBill: '₹0',
-        totalLeaves: 0,
-        totalDeliveries: 0,
-      };
+      state.monthlySummaryByCustomer = {};
       state.error = null;
       state.lastUpdated = null;
       state.lastFetchedMonths = [];
@@ -372,19 +448,22 @@ const calendarSlice = createSlice({
 
         state.loading = false;
 
-        // Log BEFORE merge
-        console.log('📊 BEFORE MERGE:');
-        console.log('  - deliveryTypes count:', Object.keys(state.deliveryTypes).length);
-        console.log('  - calendarData count:', Object.keys(state.calendarData).length);
-        if (Object.keys(state.deliveryTypes).length > 0) {
-          const dates = Object.keys(state.deliveryTypes).sort();
+        // Log BEFORE merge (per-customer)
+        const _custKey = String(action.payload.customerId);
+        const beforeDelivery = state.deliveryTypesByCustomer[_custKey] || {};
+        const beforeCalendar = state.calendarDataByCustomer[_custKey] || {};
+        console.log('📊 BEFORE MERGE (customer):');
+        console.log('  - deliveryTypes count:', Object.keys(beforeDelivery).length);
+        console.log('  - calendarData count:', Object.keys(beforeCalendar).length);
+        if (Object.keys(beforeDelivery).length > 0) {
+          const dates = Object.keys(beforeDelivery).sort();
           console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
           console.log('  - Sample dates:', dates.slice(0, 5));
         }
 
         // Process new data with date normalization
         const newCalendarData: { [key: string]: CustomMarking } = {};
-        const newDeliveryTypes: Record<string, string> = {};
+        const newDeliveryTypes: Record<string, string[]> = {};
         let deliveredCount = 0;
         let leaveCount = 0;
 
@@ -400,10 +479,23 @@ const calendarSlice = createSlice({
             }
 
             const color = getStatusColor(item.status);
-            newCalendarData[normalizedDate] = { marked: true, dotColor: color };
-            newDeliveryTypes[normalizedDate] = item.status;
 
-            // Count deliveries and leaves from calendar data
+            // Aggregate dots for the date
+            const existing = newCalendarData[normalizedDate] || { marked: true, dots: [] } as CustomMarking;
+            const dots = (existing.dots || []) as any[];
+            const dotKey = `${item.status}-${normalizedDate}`;
+            if (!dots.find(d => d.key === dotKey)) {
+              dots.push({ key: dotKey, color, selectedDotColor: color });
+            }
+            newCalendarData[normalizedDate] = { ...existing, marked: true, dots };
+
+            // Aggregate delivery types as arrays
+            if (!newDeliveryTypes[normalizedDate]) { newDeliveryTypes[normalizedDate] = []; }
+            if (!newDeliveryTypes[normalizedDate].includes(item.status)) {
+              newDeliveryTypes[normalizedDate].push(item.status);
+            }
+
+            // Count deliveries and leaves from calendar data (count each occurrence of delivered/leave once per item)
             if (item.status === 'delivered') { deliveredCount++; }
             if (item.status === 'customer_paused' || item.status === 'leave') { leaveCount++; }
           });
@@ -419,14 +511,60 @@ const calendarSlice = createSlice({
           console.error('   Value:', action.payload.data);
         }
 
-        // MERGE instead of REPLACE
-        state.calendarData = {
-          ...state.calendarData,
+        // MERGE into per-customer storage instead of the global maps
+        const custKey = String(action.payload.customerId);
+
+        const existingCalendarForCust = state.calendarDataByCustomer[custKey] || {};
+        const existingDeliveryForCust = state.deliveryTypesByCustomer[custKey] || {};
+
+        // Merge arrays for deliveryTypes scoped to this customer
+        const mergedDeliveryTypes: Record<string, string[]> = { ...existingDeliveryForCust };
+        Object.entries(newDeliveryTypes).forEach(([date, statuses]) => {
+          if (!mergedDeliveryTypes[date]) {
+            mergedDeliveryTypes[date] = [...statuses];
+          } else {
+            const set = new Set([...(mergedDeliveryTypes[date] || []), ...statuses]);
+            mergedDeliveryTypes[date] = Array.from(set);
+          }
+        });
+
+        state.calendarDataByCustomer[custKey] = {
+          ...existingCalendarForCust,
           ...newCalendarData,
         };
 
-        state.deliveryTypes = {
-          ...state.deliveryTypes,
+        state.deliveryTypesByCustomer[custKey] = mergedDeliveryTypes;
+        // ✅ FIX: Replace data for this month (not merge) to clear stale pending requests
+        // Extract month from payload.month (e.g., "2025-12")
+        const [fetchedYear, fetchedMonth] = action.payload.month.split('-');
+
+        // Clear old data for this month only - filter out dates from the fetched month
+        const calendarAfterClear: Record<string, CustomMarking> = {};
+        Object.entries(existingCalendarForCust).forEach(([dateStr, marking]) => {
+          const [year, month] = dateStr.split('-');
+          // Keep only dates NOT from the fetched month
+          if (year !== fetchedYear || month !== fetchedMonth) {
+            calendarAfterClear[dateStr] = marking;
+          }
+        });
+
+        const deliveryAfterClear: Record<string, string[]> = {};
+        Object.entries(existingDeliveryForCust).forEach(([dateStr, statuses]) => {
+          const [year, month] = dateStr.split('-');
+          // Keep only dates NOT from the fetched month
+          if (year !== fetchedYear || month !== fetchedMonth) {
+            deliveryAfterClear[dateStr] = statuses;
+          }
+        });
+
+        // Now merge fresh data for this month with old data from other months
+        state.calendarDataByCustomer[custKey] = {
+          ...calendarAfterClear,
+          ...newCalendarData,
+        };
+
+        state.deliveryTypesByCustomer[custKey] = {
+          ...deliveryAfterClear,
           ...newDeliveryTypes,
         };
 
@@ -437,12 +575,15 @@ const calendarSlice = createSlice({
           state.lastFetchedMonths.push(monthKey);
         }
 
-        // Log AFTER merge
-        console.log('📊 AFTER MERGE:');
-        console.log('  - deliveryTypes count:', Object.keys(state.deliveryTypes).length);
-        console.log('  - calendarData count:', Object.keys(state.calendarData).length);
-        if (Object.keys(state.deliveryTypes).length > 0) {
-          const dates = Object.keys(state.deliveryTypes).sort();
+        // Log AFTER merge (per-customer)
+        const _afterKey = String(action.payload.customerId);
+        const afterDelivery = state.deliveryTypesByCustomer[_afterKey] || {};
+        const afterCalendar = state.calendarDataByCustomer[_afterKey] || {};
+        console.log('📊 AFTER MERGE (customer):');
+        console.log('  - deliveryTypes count:', Object.keys(afterDelivery).length);
+        console.log('  - calendarData count:', Object.keys(afterCalendar).length);
+        if (Object.keys(afterDelivery).length > 0) {
+          const dates = Object.keys(afterDelivery).sort();
           console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
           console.log('  - Recent dates:', dates.slice(-5));
         }
@@ -453,41 +594,39 @@ const calendarSlice = createSlice({
         if (action.payload.summary) {
           console.log('✅ Backend summary received:', action.payload.summary);
 
-          // Check if backend values are valid (not zero/empty)
-          const hasValidMilk = action.payload.summary.totalMilk &&
-            action.payload.summary.totalMilk !== '0L' &&
-            action.payload.summary.totalMilk !== '0';
-          const hasValidLeaves = action.payload.summary.totalLeaves > 0;
-          const hasValidDeliveries = action.payload.summary.totalDeliveries > 0;
-
-          state.monthlySummary = {
-            totalMilk: hasValidMilk ? action.payload.summary.totalMilk : '0L',
-            totalBill: action.payload.summary.totalBill || '₹0',
-            totalDeliveries: hasValidDeliveries ? action.payload.summary.totalDeliveries : deliveredCount,
-            totalLeaves: hasValidLeaves ? action.payload.summary.totalLeaves : leaveCount,
+          const custKey = String(action.payload.customerId);
+          // Prefer backend numeric values when provided; fallback to calculated counts where appropriate
+          state.monthlySummaryByCustomer[custKey] = {
+            totalMilk: typeof action.payload.summary.totalMilk === 'number' ? action.payload.summary.totalMilk : 0,
+            totalBill: typeof action.payload.summary.totalBill === 'number' ? action.payload.summary.totalBill : 0,
+            totalDeliveries: typeof action.payload.summary.totalDeliveries === 'number' ? action.payload.summary.totalDeliveries : deliveredCount,
+            totalLeaves: typeof action.payload.summary.totalLeaves === 'number' ? action.payload.summary.totalLeaves : leaveCount,
           };
 
-          console.log('📊 Summary validation:', {
+          console.log('📊 Summary validation (customer):', {
+            customerId: action.payload.customerId,
             backendValues: action.payload.summary,
-            hasValidMilk,
-            hasValidLeaves,
-            hasValidDeliveries,
             calculatedDeliveries: deliveredCount,
             calculatedLeaves: leaveCount,
-            usingBackend: { milk: hasValidMilk, leaves: hasValidLeaves, deliveries: hasValidDeliveries },
-            usingCalculated: { deliveries: !hasValidDeliveries, leaves: !hasValidLeaves },
           });
         } else {
           console.log('⚠️ No backend summary, using calculated values');
-          state.monthlySummary.totalDeliveries = deliveredCount;
-          state.monthlySummary.totalLeaves = leaveCount;
+          const custKey = String(action.payload.customerId);
+          state.monthlySummaryByCustomer[custKey] = {
+            totalMilk: 0,
+            totalBill: 0,
+            totalDeliveries: deliveredCount,
+            totalLeaves: leaveCount,
+          };
         }
 
-        console.log('📊 Final Summary:', state.monthlySummary);
-        console.log('   - Total Milk:', state.monthlySummary.totalMilk);
-        console.log('   - Total Bill:', state.monthlySummary.totalBill);
-        console.log('   - Deliveries:', state.monthlySummary.totalDeliveries);
-        console.log('   - Leaves:', state.monthlySummary.totalLeaves);
+        const custKeyForFinal = String(action.payload.customerId);
+        const finalSummary = state.monthlySummaryByCustomer[custKeyForFinal] || { totalMilk: '0L', totalBill: '₹0', totalDeliveries: 0, totalLeaves: 0 };
+        console.log('📊 Final Summary (customer):', finalSummary);
+        console.log('   - Total Milk:', finalSummary.totalMilk);
+        console.log('   - Total Bill:', finalSummary.totalBill);
+        console.log('   - Deliveries:', finalSummary.totalDeliveries);
+        console.log('   - Leaves:', finalSummary.totalLeaves);
         console.log('=========================================');
 
         // Initialize leave and milk requests arrays for this customer
@@ -504,6 +643,20 @@ const calendarSlice = createSlice({
         state.error = action.payload as string;
         console.error('❌ fetchCalendarData rejected:', action.payload);
       })
+      // Consumer summary fetch
+      .addCase(fetchConsumerSummary.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchConsumerSummary.fulfilled, (state, action) => {
+        state.loading = false;
+        const custKey = String(action.payload.customerId);
+        state.monthlySummaryByCustomer[custKey] = action.payload.summary || { totalMilk: 0, totalBill: 0, totalLeaves: 0, totalDeliveries: 0 };
+      })
+      .addCase(fetchConsumerSummary.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
       .addCase(submitLeaveRequest.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -514,11 +667,31 @@ const calendarSlice = createSlice({
         const { dates, reason, customerId } = action.payload;
 
         const leaves = state.upcomingLeaves[customerId] || [];
+        const custKey = String(customerId);
 
         dates.forEach(date => {
           const uniqueId = `${customerId}_${date}_${Date.now()}`;
-          state.calendarData[date] = { marked: true, dotColor: '#9C27B0' };
-          state.deliveryTypes[date] = 'customer_paused';
+
+          // Ensure calendarData has a leave dot for this customer
+          const existing = (state.calendarDataByCustomer[custKey] || {})[date] || { marked: true, dots: [] } as CustomMarking;
+          const dots = (existing.dots || []) as any[];
+          const dotKey = `leave-${date}`;
+          if (!dots.find(d => d.key === dotKey)) {
+            dots.push({ key: dotKey, color: getStatusColor('leave'), selectedDotColor: getStatusColor('leave') });
+          }
+
+          state.calendarDataByCustomer[custKey] = {
+            ...(state.calendarDataByCustomer[custKey] || {}),
+            [date]: { ...existing, marked: true, dots },
+          };
+
+          // Add to deliveryTypes array for customer
+          const custDelivery = state.deliveryTypesByCustomer[custKey] || {};
+          if (!custDelivery[date]) { custDelivery[date] = []; }
+          if (!custDelivery[date].includes('customer_paused')) {
+            custDelivery[date].push('customer_paused');
+          }
+          state.deliveryTypesByCustomer[custKey] = custDelivery;
 
           if (!leaves.some(leave => leave.id === uniqueId)) {
             leaves.push({
@@ -531,7 +704,12 @@ const calendarSlice = createSlice({
         });
 
         state.upcomingLeaves[customerId] = leaves;
-        state.monthlySummary.totalLeaves += dates.length;
+        // update per-customer monthly summary
+        const existingSummary = state.monthlySummaryByCustomer[custKey] || { totalMilk: '0L', totalBill: '₹0', totalLeaves: 0, totalDeliveries: 0 };
+        state.monthlySummaryByCustomer[custKey] = {
+          ...existingSummary,
+          totalLeaves: existingSummary.totalLeaves + dates.length,
+        };
       })
       .addCase(submitLeaveRequest.rejected, (state, action) => {
         state.loading = false;
@@ -549,14 +727,28 @@ const calendarSlice = createSlice({
         const milkRequests = state.upcomingMilkRequests[customerId] || [];
 
         const uniqueId = `${customerId}_${date}_${Date.now()}`;
+        const custKey = String(customerId);
 
-        state.calendarData[date] = {
-          ...state.calendarData[date],
-          marked: true,
-          dotColor: '#FFC107',
+        const existing = (state.calendarDataByCustomer[custKey] || {})[date] || { marked: true, dots: [] } as CustomMarking;
+        const dots = (existing.dots || []) as any[];
+        // Show 'pending_extra_milk' status (request pending vendor approval) — don't show 'extra_milk' yet
+        const dotKey = `pending_extra_milk-${date}`;
+        if (!dots.find(d => d.key === dotKey)) {
+          dots.push({ key: dotKey, color: getStatusColor('pending_extra_milk'), selectedDotColor: getStatusColor('pending_extra_milk') });
+        }
+
+        state.calendarDataByCustomer[custKey] = {
+          ...(state.calendarDataByCustomer[custKey] || {}),
+          [date]: { ...existing, marked: true, dots },
         };
 
-        state.deliveryTypes[date] = 'extra_milk';
+        const custDelivery = state.deliveryTypesByCustomer[custKey] || {};
+        if (!custDelivery[date]) { custDelivery[date] = []; }
+        // Add 'pending_extra_milk' status instead of 'extra_milk'
+        if (!custDelivery[date].includes('pending_extra_milk')) {
+          custDelivery[date].push('pending_extra_milk');
+        }
+        state.deliveryTypesByCustomer[custKey] = custDelivery;
 
         if (!milkRequests.some(req => req.id === uniqueId)) {
           milkRequests.push({
@@ -578,10 +770,20 @@ const calendarSlice = createSlice({
         if (action.payload?.calendar) {
           console.log('🔄 ========== REHYDRATE ==========');
           console.log('  - Restoring calendar from storage');
-          console.log('  - deliveryTypes:', Object.keys(action.payload.calendar.deliveryTypes || {}).length);
-          console.log('  - calendarData:', Object.keys(action.payload.calendar.calendarData || {}).length);
-          console.log('  - lastFetchedMonths:', action.payload.calendar.lastFetchedMonths);
+          // Support both new per-customer shape and older flat shape
+          const calendarPayload = action.payload.calendar;
+          const deliveryCount = calendarPayload.deliveryTypesByCustomer
+            ? Object.keys(calendarPayload.deliveryTypesByCustomer).length
+            : Object.keys(calendarPayload.deliveryTypes || {}).length;
+          const calendarCount = calendarPayload.calendarDataByCustomer
+            ? Object.keys(calendarPayload.calendarDataByCustomer).length
+            : Object.keys(calendarPayload.calendarData || {}).length;
+
+          console.log('  - deliveryTypes entries:', deliveryCount);
+          console.log('  - calendarData entries:', calendarCount);
+          console.log('  - lastFetchedMonths:', calendarPayload.lastFetchedMonths);
           console.log('===================================');
+          // Merge payload carefully to avoid shape mismatch
           return { ...state, ...action.payload.calendar, loading: false };
         }
       });

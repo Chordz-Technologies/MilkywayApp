@@ -201,7 +201,7 @@ const VendorHomeScreen = () => {
       if (response?.data?.status === 'success') {
         setDashboardData(response.data.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Dashboard fetch error:', err);
     }
   }, [selectedMonth, user?.userID]);
@@ -243,8 +243,9 @@ const VendorHomeScreen = () => {
         const consumerReqData = consumerReqRes?.data?.data?.extra_milk_requests || [];
         setConsumerExtraMilkRequests(Array.isArray(consumerReqData) ? consumerReqData : []);
         console.log('✅ Consumer extra milk requests fetched:', consumerReqData.length);
-      } catch (consumerReqError) {
+      } catch (consumerReqError: any) {
         console.error('Consumer requests fetch error:', consumerReqError);
+        console.log('Consumer fetch error:', JSON.stringify(consumerReqError?.response?.data, null, 2));
         setConsumerExtraMilkRequests([]);
       }
 

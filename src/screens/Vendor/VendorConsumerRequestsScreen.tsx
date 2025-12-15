@@ -16,7 +16,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getConsumerRequests, manageConsumerRequest } from '../../apiServices/allApi';
 import { RootState } from '../../store';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCalendarData } from '../../store/calendarSlice';
+import type { AppDispatch } from '../../store';
 
 type RootStackParamList = {
   VendorConsumerRequests: undefined;
@@ -43,6 +45,7 @@ type ConsumerRequest = {
 
 const VendorConsumerRequestsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,6 +149,15 @@ const VendorConsumerRequestsScreen = () => {
               if (action === 'approve') {
                 // Mark request as accepted locally
                 setAcceptedRequestIds(prev => new Set([...prev, requestId]));
+
+                // Refetch consumer's calendar to show updated status (pending_extra_milk → extra_milk)
+                const consumerRequest = requests.find(r => r.request_id === requestId);
+                if (consumerRequest?.customer_id) {
+                  const now = new Date();
+                  const monthString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+                  dispatch(fetchCalendarData({ customerId: consumerRequest.customer_id, month: monthString }));
+                }
+
                 Alert.alert(
                   'Request Accepted',
                   'Now assign a distributor for this extra milk request.',

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -10,6 +9,9 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  TextInput,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -31,10 +33,11 @@ import {
   checkDailyReset,
   AssignedConsumer,
 } from '../../store/consumersSlice';
-import { getMilkmanExtraMilkRequests, markExtraMilkDelivery } from '../../apiServices/allApi';
+import { getMilkmanExtraMilkRequests } from '../../apiServices/allApi';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import { Linking } from 'react-native';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -75,11 +78,36 @@ const ConsumerListScreen = () => {
   const refreshing = useSelector(selectConsumersRefreshing);
   const stats = useSelector(selectConsumersStats);
   const lastActiveDate = useSelector(selectLastActiveDate);
-  const extraMilk = useSelector((state: RootState) => state.consumers.extraMilkRequirement);
-
+  const [isMarkingThisDelivery, setIsMarkingThisDelivery] = useState(false);
+  const [isMarkingCancelDelivery, setIsMarkingCancelDelivery] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [extraRequests, setExtraRequests] = useState<any[]>([]);
   const [extraLoading, setExtraLoading] = useState(false);
+  const [editedMilkMap, setEditedMilkMap] = useState<{ [customerId: number]: { cow_milk: string; buffalo_milk: string } }>({});
+  const [isEditingMap, setIsEditingMap] = useState<{ [customerId: number]: boolean }>({});
+  const [cancelReasonModal, setCancelReasonModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<AssignedConsumer | any>(null);
+  const [searchText, setSearchText] = useState('');
+
+  const filteredConsumers = consumers.filter(c =>
+    c.customer_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+    c.customer_contact?.includes(searchText)
+  );
+
+  const toggleEdit = (customerId: number) => {
+    setIsEditingMap(prev => ({ ...prev, [customerId]: !prev[customerId] }));
+  };
+
+  useEffect(() => {
+    const initialMap: { [id: number]: { cow_milk: string; buffalo_milk: string } } = {};
+    consumers.forEach((c) => {
+      initialMap[c.customer_id] = {
+        cow_milk: safeParseMilkQuantity(c.milk_requirement?.cow_milk_litre).toString(),
+        buffalo_milk: safeParseMilkQuantity(c.milk_requirement?.buffalo_milk_litre).toString(),
+      };
+    });
+    setEditedMilkMap(initialMap);
+  }, [consumers]);
 
   const loadNotificationCount = async () => {
     try {
@@ -134,30 +162,16 @@ const ConsumerListScreen = () => {
   const fetchExtraMilkRequests = useCallback(async () => {
     const milkmanId = getMilkmanId();
     if (!milkmanId) return;
+
     setExtraLoading(true);
     try {
       const resp = await getMilkmanExtraMilkRequests(milkmanId, getTodayString());
       const data = resp?.data?.data || resp?.data || [];
 
-      // Normalize items to have customer_id and request_id
-      const normalized = Array.isArray(data)
-        ? data.map((r: any) => ({
-          id: r.id || r.request_id,
-          request_id: r.request_id || r.id,
-          customer_id: r.customer_id || r.customer?.id || r.consumer_id || r.consumer?.customer_id,
-          customer_name: r.customer_name || r.customer?.first_name + ' ' + r.customer?.last_name || r.consumer?.name || r.customer?.name,
-          customer_address: r.customer_address || r.customer?.address || r.consumer?.address,
-          date: r.date || r.request_date || getTodayString(),
-          cow_milk_extra: r.cow_milk_extra ?? r.cow_milk_extra_litres ?? 0,
-          buffalo_milk_extra: r.buffalo_milk_extra ?? r.buffalo_milk_extra_litres ?? 0,
-          total_extra_milk: (r.cow_milk_extra ?? r.cow_milk_extra_litres ?? 0) + (r.buffalo_milk_extra ?? r.buffalo_milk_extra_litres ?? 0),
-          raw: r,
-        }))
-        : [];
-
-      setExtraRequests(normalized);
+      setExtraRequests(data);
     } catch (err) {
       console.error('Error fetching extra milk requests:', err);
+      setExtraRequests([]);
     } finally {
       setExtraLoading(false);
     }
@@ -202,27 +216,30 @@ const ConsumerListScreen = () => {
     return address;
   }, []);
 
-  const getMilkRequirementText = useCallback((requirement?: AssignedConsumer['milk_requirement']) => {
-    if (!requirement) {
-      return 'No requirement specified';
-    }
+  const getMilkRequirementText = useCallback(
+    (
+      requirement?: AssignedConsumer["milk_requirement"],
+      editedMilk?: { cow_milk: string; buffalo_milk: string }
+    ) => {
+      if (!requirement) return "No requirement specified";
 
-    const cow = safeParseMilkQuantity(requirement.cow_milk_litre);
-    const buffalo = safeParseMilkQuantity(requirement.buffalo_milk_litre);
-    const total = cow + buffalo;
+      // 1️⃣ If edited values are provided, use those
+      const cow = editedMilk?.cow_milk
+        ? Number(editedMilk.cow_milk)
+        : safeParseMilkQuantity(requirement.cow_milk_litre);
 
-    if (total === 0) {
-      return 'No milk required';
-    }
+      const buffalo = editedMilk?.buffalo_milk
+        ? Number(editedMilk.buffalo_milk)
+        : safeParseMilkQuantity(requirement.buffalo_milk_litre);
 
-    if (cow > 0 && buffalo > 0) {
-      return `Mixed: ${cow}L Cow + ${buffalo}L Buffalo = ${total}L Total`;
-    } else if (cow > 0) {
-      return `Cow Milk Only: ${cow}L Daily`;
-    } else {
-      return `Buffalo Milk Only: ${buffalo}L Daily`;
-    }
-  }, []);
+      const total = cow + buffalo;
+
+      if (total === 0) return "No milk required";
+
+      return `Cow: ${cow}L\nBuffalo: ${buffalo}L\nTotal: ${total}L`;
+    },
+    []
+  );
 
   useEffect(() => {
     if (isAuthenticated && user?.userID) {
@@ -238,17 +255,11 @@ const ConsumerListScreen = () => {
     useCallback(() => {
       if (isAuthenticated && user?.userID) {
         dispatch(checkDailyReset()).then(() => {
-          const lastFetch = new Date().getTime();
-          const fiveMinutes = 5 * 60 * 1000;
-
-          if (!consumers.length || (lastFetch - fiveMinutes > lastFetch)) {
-            dispatch(fetchAssignedConsumers(getMilkmanId()));
-            // refresh extra-milk requests as well
-            fetchExtraMilkRequests();
-          }
+          dispatch(fetchAssignedConsumers(getMilkmanId()));
+          fetchExtraMilkRequests(); // ✅ ALWAYS refresh
         });
       }
-    }, [dispatch, isAuthenticated, user?.userID, getMilkmanId, consumers.length])
+    }, [dispatch, isAuthenticated, user?.userID, getMilkmanId])
   );
 
   const handleRefresh = useCallback(() => {
@@ -296,7 +307,7 @@ const ConsumerListScreen = () => {
 
     Alert.alert(
       'Mark as Delivered',
-      `Confirm delivery for:\n\n${consumer.customer_name}\nDate: ${today}\nAmount: ${getMilkRequirementText(consumer.milk_requirement)}`,
+      `Confirm delivery for:\n\n${consumer.customer_name}\nDate: ${today}\nAmount: ${getMilkRequirementText(consumer.milk_requirement, editedMilkMap[consumer.customer_id])}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -304,11 +315,16 @@ const ConsumerListScreen = () => {
           style: 'default',
           onPress: async () => {
             try {
+              setIsMarkingThisDelivery(true);
+
               await dispatch(markDelivery({
                 customer_id: consumer.customer_id,
                 date: today,
                 milkman_id: milkmanId,
                 status: 'delivered',
+                cow_milk: Number(editedMilkMap[consumer.customer_id]?.cow_milk) || 0,
+                buffalo_milk: Number(editedMilkMap[consumer.customer_id]?.buffalo_milk) || 0,
+                reason: `Delivered as per requirement`,
                 remarks: `Delivery completed successfully for ${consumer.customer_name}`,
                 replaceExisting: true,
               })).unwrap();
@@ -321,11 +337,14 @@ const ConsumerListScreen = () => {
             } catch (error: any) {
               Alert.alert('Error', error || 'Failed to mark delivery. Please try again.');
             }
+            finally {
+              setIsMarkingThisDelivery(false);
+            }
           },
         },
       ]
     );
-  }, [dispatch, getMilkmanId, getMilkRequirementText, getTodayString, getTodayDeliveryStatus]);
+  }, [dispatch, getMilkmanId, editedMilkMap, getMilkRequirementText, getTodayString, getTodayDeliveryStatus]);
 
   const handleMarkDeliveryCancelled = useCallback(async (consumer: AssignedConsumer, reason?: string) => {
     const today = getTodayString();
@@ -342,11 +361,16 @@ const ConsumerListScreen = () => {
     }
 
     try {
+      setIsMarkingCancelDelivery(true);
+
       await dispatch(markDelivery({
         customer_id: consumer.customer_id,
         date: today,
         milkman_id: milkmanId,
         status: 'cancelled',
+        cow_milk: Number(editedMilkMap[consumer.customer_id]?.cow_milk) || 0,
+        buffalo_milk: Number(editedMilkMap[consumer.customer_id]?.buffalo_milk) || 0,
+        reason: reason || 'No reason provided',
         remarks: reason || `Delivery cancelled for ${consumer.customer_name}`,
         replaceExisting: true,
       })).unwrap();
@@ -359,125 +383,10 @@ const ConsumerListScreen = () => {
     } catch (error: any) {
       Alert.alert('Error', error || 'Failed to cancel delivery. Please try again.');
     }
-  }, [dispatch, getMilkmanId, getTodayString, getTodayDeliveryStatus]);
-
-  const handleMarkExtraDelivered = useCallback(async (request: any) => {
-    Alert.alert(
-      'Mark Extra Milk Delivered',
-      `Mark extra milk request for ${request.customer_name} as delivered?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Delivered',
-          onPress: async () => {
-            try {
-              await markExtraMilkDelivery({
-                request_id: request.id || request.request_id,
-                status: 'delivered',
-              });
-              // remove locally
-              setExtraRequests(prev => prev.filter(r => (r.id || r.request_id) !== (request.id || request.request_id)));
-              // refresh consumers to remove extra milk indicator
-              dispatch(refreshConsumers(getMilkmanId()));
-              Alert.alert('Success', 'Extra milk request marked as delivered');
-            } catch (err: any) {
-              console.error('Error marking extra delivered:', JSON.stringify(err?.response?.data, null, 2));
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to mark extra milk delivered');
-            }
-          },
-        },
-      ]
-    );
-  }, [dispatch, getMilkmanId]);
-
-  const renderExtraRequests = useCallback(() => {
-    if (extraLoading) {
-      return (
-        <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
-          <ActivityIndicator size="small" color="#007AFF" />
-        </View>
-      );
+    finally {
+      setIsMarkingCancelDelivery(false);
     }
-
-    if (!extraRequests || extraRequests.length === 0) return null;
-
-    return (
-      <View style={{ paddingBottom: 12 }}>
-        {extraRequests.map((req) => (
-          <View key={req.id || req.request_id} style={styles.modernCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.customerInfo}>
-                <View style={styles.modernAvatar}>
-                  <Text style={styles.avatarText}>
-                    {req.customer_name?.[0]?.toUpperCase() || 'C'}
-                  </Text>
-                </View>
-                <View style={styles.customerDetails}>
-                  <Text>Extra Milk Request For</Text>
-                  <Text style={styles.customerName} numberOfLines={1}>{req.customer_name || 'Unknown'}</Text>
-                  <View style={styles.contactContainer}>
-                    <Ionicons name="calendar" size={12} color="#007AFF" />
-                    <Text style={styles.contactText} numberOfLines={1}>{req.date || 'No date'}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={[styles.statusBadge, { backgroundColor: '#FFF9F0' }]}>
-                <Text style={[styles.statusText, { color: '#FF9500' }]}>EXTRA</Text>
-              </View>
-            </View>
-
-            <View style={styles.addressSection}>
-              <Ionicons name="location" size={14} color="#FF9500" />
-              <Text style={styles.addressText} numberOfLines={2}>
-                {req.customer_address}
-              </Text>
-            </View>
-
-            <View style={styles.milkSection}>
-              <View style={styles.milkHeader}>
-                <Ionicons name="water" size={16} color="#007AFF" />
-                <Text style={styles.milkHeaderText}>Extra Milk Request</Text>
-                <View style={styles.totalMilkBadge}>
-                  <Text style={styles.totalMilkBadgeText}>{(() => {
-                    const cow = parseFloat(req.cow_milk_extra) || 0;
-                    const buff = parseFloat(req.buffalo_milk_extra) || 0;
-                    const total = (cow + buff) || (parseFloat(req.total_extra_milk) || 0);
-                    if (cow > 0 && buff > 0) return `${total}L`;
-                    if (cow > 0) return `${cow}L`;
-                    return `${buff}L`;
-                  })()}</Text>
-                </View>
-              </View>
-              <View style={styles.milkDetails}>
-                <View style={styles.milkType}>
-                  <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
-                  <Text style={styles.milkTypeText}>Cow: {req.cow_milk_extra ?? 0}L</Text>
-                </View>
-                <View style={styles.milkType}>
-                  <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
-                  <Text style={styles.milkTypeText}>Buffalo: {req.buffalo_milk_extra ?? 0}L</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deliverButton]}
-                onPress={() => handleMarkExtraDelivered(req)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.buttonContent}>
-                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                  <Text style={[styles.actionButtonText, { color: '#fff' }]}>Delivered Extra Milk</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </View>
-    );
-  }, [extraRequests, extraLoading, handleMarkExtraDelivered]);
+  }, [dispatch, getMilkmanId, editedMilkMap, getTodayString, getTodayDeliveryStatus]);
 
   const handleViewCalendar = useCallback((consumer: AssignedConsumer) => {
     dispatch(setSelectedConsumer(consumer));
@@ -498,16 +407,38 @@ const ConsumerListScreen = () => {
     };
   }, [dispatch, error]);
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+
+    const [year, month, day] = dateStr.split('-');
+    return `${day}-${month}-${year}`;
+  };
+
   const renderConsumerItem = ({ item }: { item: AssignedConsumer }) => {
     const address = formatAddress(item.customer_address);
-    const isMarkingThisDelivery = markingDelivery === item.customer_id;
-    const extraForConsumer = extraRequests.find(r => (r.customer_id || r.customer?.id || r.customer_id) === item.customer_id);
-
-    console.log(`[Debug] Consumer: ${item.customer_name} Vendor info: `, item.provider);
 
     const cowMilk = safeParseMilkQuantity(item.milk_requirement?.cow_milk_litre);
     const buffaloMilk = safeParseMilkQuantity(item.milk_requirement?.buffalo_milk_litre);
-    const totalMilk = cowMilk + buffaloMilk;
+
+    const editedMilk = editedMilkMap[item.customer_id] || { cow_milk: '', buffalo_milk: '' };
+
+    // Safe getter
+    const safeNumber = (val: any) => val ? Number(val) : 0;
+
+    const isEditingThis = isEditingMap[item.customer_id];
+
+    const cowValue =
+      isEditingThis
+        ? editedMilkMap[item.customer_id]?.cow_milk
+        : safeNumber(editedMilkMap[item.customer_id]?.cow_milk ?? cowMilk);
+
+    const buffaloValue =
+      isEditingThis
+        ? editedMilkMap[item.customer_id]?.buffalo_milk
+        : safeNumber(editedMilkMap[item.customer_id]?.buffalo_milk ?? buffaloMilk);
+
+    // TOTAL (auto-updated)
+    const totalMilk = safeNumber(cowValue) + safeNumber(buffaloValue);
 
     const hasCow = cowMilk > 0;
     const hasBuffalo = buffaloMilk > 0;
@@ -516,7 +447,7 @@ const ConsumerListScreen = () => {
     const todayStatus = getTodayDeliveryStatus(item);
 
     const deliveryButtonDisabled = isMarkingThisDelivery || !hasAnyMilk || todayStatus.isLocked;
-    const cancelButtonDisabled = isMarkingThisDelivery || !hasAnyMilk || todayStatus.isLocked;
+    const cancelButtonDisabled = isMarkingCancelDelivery || !hasAnyMilk || todayStatus.isLocked;
 
     return (
       <View style={styles.modernCard}>
@@ -531,12 +462,20 @@ const ConsumerListScreen = () => {
               <Text style={styles.customerName} numberOfLines={1}>
                 {item.customer_name || 'Unknown Customer'}
               </Text>
-              {/* <View style={styles.contactContainer}>
-                <Ionicons name="call" size={12} color="#007AFF" />
-                <Text style={styles.contactText} numberOfLines={1}>
-                  {item.customer_address || 'Unknown Address'}
-                </Text>
-              </View> */}
+              <TouchableOpacity
+                onPress={() => {
+                  if (item.customer_contact) {
+                    Linking.openURL(`tel:${item.customer_contact}`);
+                  }
+                }}
+              >
+                <View style={styles.contactContainer}>
+                  <Ionicons name="call" size={12} color="#007AFF" />
+                  <Text style={styles.contactText} numberOfLines={1}>
+                    {item.customer_contact || 'Unknown Contact'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -573,94 +512,133 @@ const ConsumerListScreen = () => {
           </View>
         )}
 
-        {!extraForConsumer && (
-          <View style={styles.milkSection}>
-            <View style={styles.milkHeader}>
-              <Ionicons name="water" size={16} color="#007AFF" />
-              <Text style={styles.milkHeaderText}>Daily Requirement</Text>
-              <View style={styles.totalMilkBadge}>
-                <Text style={styles.totalMilkBadgeText}>{totalMilk}L</Text>
-              </View>
-            </View>
-            <View style={styles.milkDetails}>
-              {hasAnyMilk ? (
-                <>
-                  {hasCow && (
-                    <View style={styles.milkType}>
-                      <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
-                      <Text style={styles.milkTypeText}>
-                        Cow: {cowMilk}L
-                      </Text>
-                    </View>
-                  )}
-
-                  {hasBuffalo && (
-                    <View style={styles.milkType}>
-                      <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
-                      <Text style={styles.milkTypeText}>
-                        Buffalo: {buffaloMilk}L
-                      </Text>
-                    </View>
-                  )}
-                </>
-              ) : (
-                <View style={styles.noMilkContainer}>
-                  <Text style={styles.noMilkText}>
-                    No milk requirement specified
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* <View style={styles.milkSection}>
+        <View style={styles.milkSection}>
           <View style={styles.milkHeader}>
             <Ionicons name="water" size={16} color="#007AFF" />
-            <Text style={styles.milkHeaderText}>Extra Milk Requirement</Text>
+            <Text style={styles.milkHeaderText}>Daily Milk Requirement</Text>
+
+            {/* TOTAL MILK BADGE */}
             <View style={styles.totalMilkBadge}>
-              <Text style={styles.totalMilkBadgeText}>{extraMilk?.total_litres ?? 0}L</Text>
+              <Text style={styles.totalMilkBadgeText}>{totalMilk}L</Text>
             </View>
           </View>
-          <View style={styles.milkDetails}>
-            {hasAnyMilk ? (
-              <>
-                {hasCow && (
-                  <View style={styles.milkType}>
-                    <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
-                    <Text style={styles.milkTypeText}>
-                      Cow: {extraMilk?.cow_milk_litres ?? 0}L
-                    </Text>
-                  </View>
-                )}
 
-                {hasBuffalo && (
-                  <View style={styles.milkType}>
-                    <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
-                    <Text style={styles.milkTypeText}>
-                      Buffalo: {extraMilk?.buffalo_milk_litres ?? 0}L
-                    </Text>
-                  </View>
+          {/* MAIN ROW : LEFT = milk rows, RIGHT = edit button center-aligned */}
+          <View style={{ flexDirection: 'row', marginTop: 10 }}>
+
+            {/* LEFT SIDE (COW + BUFFALO ROWS) */}
+            <View style={{ flex: 1 }}>
+
+              {/* COW ROW */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <View style={styles.milkType}>
+                  <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
+                  <Text style={styles.milkTypeText}>Cow: </Text>
+                </View>
+
+                {isEditingThis ? (
+                  <>
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                        padding: 4,
+                        borderRadius: 5,
+                        width: 55,
+                        textAlign: 'center',
+                      }}
+                      keyboardType="numeric"
+                      value={editedMilk?.cow_milk}
+                      onChangeText={(text) =>
+                        setEditedMilkMap(prev => ({
+                          ...prev,
+                          [item.customer_id]: {
+                            ...prev[item.customer_id],
+                            cow_milk: text,
+                          }
+                        }))
+                      }
+                    />
+                    <Text style={{ marginLeft: 4 }}>L</Text>
+                  </>
+                ) : (
+                  <Text style={styles.milkTypeText}>{safeNumber(cowValue)}L</Text>
                 )}
-              </>
-            ) : (
-              <View style={styles.noMilkContainer}>
-                <Text style={styles.noMilkText}>
-                  No milk requirement specified
-                </Text>
               </View>
-            )}
-          </View>
-        </View> */}
 
-        {todayStatus.isLocked && (
-          <View style={styles.lockIndicator}>
-            <Ionicons name="shield-checkmark" size={16} color="#6B7280" />
-            <Text style={styles.lockIndicatorText}>
-              Processing completed - available again tomorrow
-            </Text>
+              {/* BUFFALO ROW */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.milkType}>
+                  <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
+                  <Text style={styles.milkTypeText}>Buffalo: </Text>
+                </View>
+
+                {isEditingThis ? (
+                  <>
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                        padding: 4,
+                        borderRadius: 5,
+                        width: 55,
+                        textAlign: 'center',
+                      }}
+                      keyboardType="numeric"
+                      value={editedMilk?.buffalo_milk}
+                      onChangeText={(text) =>
+                        setEditedMilkMap(prev => ({
+                          ...prev,
+                          [item.customer_id]: {
+                            ...prev[item.customer_id],
+                            buffalo_milk: text,
+                          }
+                        }))
+                      }
+                    />
+                    <Text style={{ marginLeft: 4 }}>L</Text>
+                  </>
+                ) : (
+                  <Text style={styles.milkTypeText}>{safeNumber(buffaloValue)}L</Text>
+                )}
+              </View>
+            </View>
+
+            {/* RIGHT SIDE (EDIT / DONE BUTTON CENTERED) */}
+            <View
+              style={{
+                justifyContent: 'center', // Vertically center button
+                alignItems: 'center',
+                paddingLeft: 10,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => toggleEdit(item.customer_id)}
+                style={{
+                  backgroundColor: isEditingThis ? 'green' : '#007AFF',
+                  paddingVertical: 7,
+                  paddingHorizontal: 16,
+                  borderRadius: 6,
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>
+                  {isEditingThis ? 'Done' : 'Edit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
+        </View>
+
+        {
+          todayStatus.isLocked && (
+            <View style={styles.lockIndicator}>
+              <Ionicons name="shield-checkmark" size={16} color="#6B7280" />
+              <Text style={styles.lockIndicatorText}>
+                Processing completed - available again tomorrow
+              </Text>
+            </View>
+          )
+        }
 
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
@@ -716,35 +694,30 @@ const ConsumerListScreen = () => {
                 return;
               }
 
-              Alert.alert(
-                'Cancel Delivery',
-                'Select reason for cancellation:',
-                [
-                  { text: 'Customer Unavailable', onPress: () => handleMarkDeliveryCancelled(item, 'Customer unavailable') },
-                  { text: 'Address Issue', onPress: () => handleMarkDeliveryCancelled(item, 'Address issue') },
-                  { text: 'Product Issue', onPress: () => handleMarkDeliveryCancelled(item, 'Product issue') },
-                  { text: 'Weather/Traffic', onPress: () => handleMarkDeliveryCancelled(item, 'Weather/Traffic delay') },
-                  { text: 'Other', onPress: () => handleMarkDeliveryCancelled(item, 'Other reason') },
-                  { text: 'Back', style: 'cancel' },
-                ]
-              );
+              // OPEN THE MODAL HERE (correct place)
+              setSelectedItem(item);
+              setCancelReasonModal(true);
             }}
             activeOpacity={0.8}
             disabled={cancelButtonDisabled}
           >
-            <View style={styles.buttonContent}>
-              <Ionicons
-                name="close-circle"
-                size={18}
-                color={cancelButtonDisabled ? '#999' : '#FF3B30'}
-              />
-              <Text style={[
-                styles.actionButtonText,
-                { color: cancelButtonDisabled ? '#999' : '#FF3B30' },
-              ]}>
-                {todayStatus.isCancelled ? 'Cancelled' : 'Cancel'}
-              </Text>
-            </View>
+            {isMarkingCancelDelivery ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={cancelButtonDisabled ? '#999' : '#FF3B30'}
+                />
+                <Text style={[
+                  styles.actionButtonText,
+                  { color: cancelButtonDisabled ? '#999' : '#FF3B30' },
+                ]}>
+                  {todayStatus.isCancelled ? 'Cancelled' : 'Cancel'}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -776,7 +749,7 @@ const ConsumerListScreen = () => {
             </View>
           )}
         </View>
-      </View>
+      </View >
     );
   };
 
@@ -792,18 +765,11 @@ const ConsumerListScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.modernHeader}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerBackButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1C1C1E" />
-        </TouchableOpacity>
 
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Daily Deliveries</Text>
           <Text style={styles.headerSubtitle}>
-            {getTodayString()} • {stats.totalConsumers} consumers • {stats.totalMilk}L total
-            {lastActiveDate && lastActiveDate !== getTodayString() && ' • New Day!'}
+            {formatDate(getTodayString())}
           </Text>
         </View>
 
@@ -882,6 +848,31 @@ const ConsumerListScreen = () => {
         </View>
       </View>
 
+      {extraRequests.length > 0 && (
+        <TouchableOpacity
+          style={styles.pendingCard}
+          onPress={() =>
+            navigation.navigate('ExtraMilkList', { milkmanId: getMilkmanId(), today: getTodayString() })
+          }
+          activeOpacity={0.8}
+        >
+          <View style={styles.pendingLeft}>
+            <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
+              <Ionicons name="water" size={24} color="#007AFF" />
+            </View>
+            <View>
+              <Text style={styles.pendingTitle}>Approved Extra Milk Requests</Text>
+            </View>
+          </View>
+          <View style={styles.pendingRight}>
+            <Text style={[styles.pendingCount, { color: '#007AFF' }]}>
+              {extraRequests.length}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
+          </View>
+        </TouchableOpacity>
+      )}
+
       {error && (
         <View style={styles.modernErrorBanner}>
           <Ionicons name="alert-circle" size={20} color="#FF3B30" />
@@ -898,6 +889,23 @@ const ConsumerListScreen = () => {
         </View>
       )}
 
+      <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+        <TextInput
+          placeholder="Search Consumer..."
+          placeholderTextColor="#A0A0A0"
+          value={searchText}
+          onChangeText={setSearchText}
+          style={{
+            backgroundColor: '#fff',
+            padding: 10,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#ccc',
+            marginBottom: 5,
+          }}
+        />
+      </View>
+
       {loading && consumers.length === 0 ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -905,8 +913,7 @@ const ConsumerListScreen = () => {
         </View>
       ) : (
         <FlatList
-          data={consumers}
-          ListHeaderComponent={() => renderExtraRequests()}
+          data={filteredConsumers}
           keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
           renderItem={renderConsumerItem}
           contentContainerStyle={styles.modernListContainer}
@@ -936,6 +943,76 @@ const ConsumerListScreen = () => {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* CANCEL REASON MODAL */}
+      <Modal
+        visible={cancelReasonModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCancelReasonModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          padding: 20
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 10,
+            maxHeight: '70%',   // <-- makes it scrollable
+            padding: 20
+          }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
+              Select reason for cancellation
+            </Text>
+
+            <ScrollView>
+              {[
+                'Customer unavailable',
+                'Address issue',
+                'Product issue',
+                'Weather/Traffic delay',
+                'Other reason',
+                'Payment pending',
+                'Customer refused',
+                'Milk not required today',
+                'Door locked',
+                'Phone not reachable',
+                'Wrong address',
+                'Shifted house'
+              ].map((reason, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  onPress={() => {
+                    handleMarkDeliveryCancelled(selectedItem, reason);
+                    setCancelReasonModal(false);
+                  }}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#ddd'
+                  }}
+                >
+                  <Text style={{ fontSize: 16 }}>{reason}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => setCancelReasonModal(false)}
+              style={{
+                marginTop: 10,
+                alignSelf: 'flex-end',
+                padding: 10
+              }}
+            >
+              <Text style={{ fontSize: 16, color: 'red' }}>Close</Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1010,7 +1087,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
+    padding: 8,
     alignItems: 'center',
     ...Platform.select({
       ios: {
@@ -1025,12 +1102,12 @@ const styles = StyleSheet.create({
     }),
   },
   statIconContainer: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   statValue: {
     fontSize: 20,
@@ -1058,23 +1135,6 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 4,
-      },
-    }),
-  },
-  extraCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
-      },
-      android: {
-        elevation: 2,
       },
     }),
   },
@@ -1278,7 +1338,7 @@ const styles = StyleSheet.create({
     borderColor: '#FF3B30',
   },
   cancelButtonDisabled: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#C7C7CC',
     borderColor: '#C7C7CC',
   },
   actionButtonText: {
@@ -1400,6 +1460,55 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  pendingCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  pendingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pendingIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 24,
+    backgroundColor: '#FFF4E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  pendingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  pendingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pendingCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF9500',
+    marginRight: 8,
   },
 });
 

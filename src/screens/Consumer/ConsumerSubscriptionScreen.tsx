@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    FlatList,
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
@@ -10,6 +9,7 @@ import {
     Platform,
     RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,13 +29,28 @@ type Subscription = {
     price: number;
     duration: string;
     description: string;
+    total_regular_cow: number;
+    total_regular_buffalo: number;
+    total_extra_cow: number;
+    total_extra_buffalo: number;
+    line_items: BillLineItem[];
+};
+
+type BillLineItem = {
+    id: number;
+    date: string;
+    description: string;
+    quantity: string;
+    rate: string;
+    amount: string;
+    is_extra: boolean;
 };
 
 const VendorSubscriptionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    // const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -68,25 +83,30 @@ const VendorSubscriptionScreen = () => {
                     id: item.id || 0,
                     name: `Monthly Bill`,
                     price: parseFloat(item.total_amount) || 0,
-                    duration: `${item.start_date} → ${item.end_date}`,
+                    duration: `${formatDate(item.start_date)} → ${formatDate(item.end_date)}`,
                     description: `Status: ${item.status}`,
+                    total_regular_cow: item.total_regular_cow || 0,
+                    total_regular_buffalo: item.total_regular_buffalo || 0,
+                    total_extra_cow: item.total_extra_cow || 0,
+                    total_extra_buffalo: item.total_extra_buffalo || 0,
+                    line_items: item.line_items || [],
                 }));
                 setSubscriptions(formattedData);
             } else {
                 Alert.alert('Error', 'No bills found.');
                 setSubscriptions([]);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('❌ Error fetching bills:', error);
             Alert.alert('Error', 'Failed to load bills.');
         } finally {
             setIsLoading(false);
-            setRefreshing(false);
+            // setRefreshing(false);
         }
     };
 
     const onRefresh = () => {
-        setRefreshing(true);
+        // setRefreshing(true);
         fetchSubscriptions();
     };
 
@@ -220,8 +240,54 @@ const VendorSubscriptionScreen = () => {
         }
     };
 
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+
+        const [year, month, day] = dateStr.split('-');
+        return `${day}-${month}-${year}`;
+    };
+
+    const getMilkDescription = (item: BillLineItem) => {
+        const desc = item.description.toLowerCase();
+
+        const isCow = desc.includes('cow');
+        const isBuffalo = desc.includes('buffalo');
+
+        if (item.is_extra) {
+            if (isCow) return 'Cow Extra';
+            if (isBuffalo) return 'Buffalo Extra';
+            return 'Extra Milk';
+        }
+
+        if (isCow) return 'Cow';
+        if (isBuffalo) return 'Buffalo';
+
+        return 'Milk';
+    };
+
+    const renderLineItem = ({ item }: { item: BillLineItem }) => (
+        <View style={styles.tableRow}>
+            <Text style={[styles.tableCell, { flex: 1.3 }]}>
+                {formatDate(item.date)}
+            </Text>
+            <Text style={[styles.tableCell, { flex: 1.4 }]}>
+                {getMilkDescription(item)}
+            </Text>
+            <Text style={[styles.tableCell, { flex: 0.8 }]}>
+                {item.quantity}
+            </Text>
+            <Text style={[styles.tableCell, { flex: 0.8 }]}>
+                ₹{item.rate}
+            </Text>
+            <Text style={[styles.tableCell, { flex: 1 }]}>
+                ₹{item.amount}
+            </Text>
+        </View>
+    );
+
     const renderSubscriptionCard = ({ item }: { item: Subscription }) => {
         const isProcessing = processingId === item.id;
+
         return (
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
@@ -238,21 +304,78 @@ const VendorSubscriptionScreen = () => {
                     </View>
                 </View>
 
-                <View style={styles.descriptionContainer}>
+                {/* <View style={styles.descriptionContainer}>
                     <Text style={styles.descriptionText}>{item.description}</Text>
-                </View>
+                </View> */}
 
                 {/* ✅ Display additional info: start date, end date, total */}
-                <View style={{ marginBottom: 15 }}>
-                    <Text style={{ fontSize: 14, color: '#444', marginBottom: 10 }}>
-                        🗓 Start Date: <Text style={{ fontWeight: '600' }}>{item.duration.split("→")[0].trim()}</Text>
-                    </Text>
-                    <Text style={{ fontSize: 14, color: '#444', marginBottom: 10 }}>
-                        📅 End Date: <Text style={{ fontWeight: '600' }}>{item.duration.split("→")[1].trim()}</Text>
-                    </Text>
-                    <Text style={{ fontSize: 14, color: '#444', marginBottom: 10 }}>
-                        💰 Total Amount: <Text style={{ fontWeight: '600' }}>₹{item.price}</Text>
-                    </Text>
+                <View style={styles.summaryGrid}>
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Start Date</Text>
+                        <Text style={styles.summaryValue}>
+                            {item.duration.split("→")[0].trim()}
+                        </Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>End Date</Text>
+                        <Text style={styles.summaryValue}>
+                            {item.duration.split("→")[1].trim()}
+                        </Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Cow Milk</Text>
+                        <Text style={styles.summaryValue}>{item.total_regular_cow} L</Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Buffalo Milk</Text>
+                        <Text style={styles.summaryValue}>{item.total_regular_buffalo} L</Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Extra Cow Milk</Text>
+                        <Text style={styles.summaryValue}>{item.total_extra_cow} L</Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Extra Buffalo Milk</Text>
+                        <Text style={styles.summaryValue}>{item.total_extra_buffalo} L</Text>
+                    </View>
+
+                    <View style={styles.summaryItemFull}>
+                        <Text style={styles.summaryLabel}>Total Amount</Text>
+                        <Text style={[styles.summaryValue, { fontSize: 16 }]}>
+                            ₹{item.price}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* 📋 Daily Milk Delivery Table */}
+                <View style={styles.tableContainer}>
+                    <Text style={styles.tableTitle}>Milk Deliveries :</Text>
+
+                    {/* Table Header */}
+                    <View style={styles.tableHeader}>
+                        <Text style={[styles.tableHeaderText, { flex: 1.3 }]}>Date</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.4 }]}>Type</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Quantity</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 0.8 }]}>Rate</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1 }]}>Amount</Text>
+                    </View>
+
+                    {/* Scrollable Rows */}
+                    <View style={{ height: 5 * 35 }}>
+                        <FlashList
+                            data={item.line_items}
+                            keyExtractor={(row) => row.id.toString()}
+                            renderItem={renderLineItem}
+                            nestedScrollEnabled
+                            showsVerticalScrollIndicator
+                            scrollEnabled={item.line_items.length > 5}
+                        />
+                    </View>
                 </View>
 
                 <TouchableOpacity
@@ -278,7 +401,7 @@ const VendorSubscriptionScreen = () => {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FF9500" />
-                <Text style={styles.loadingText}>Loading subscriptions...</Text>
+                <Text style={styles.loadingText}>Loading bills...</Text>
             </View>
         );
     }
@@ -291,8 +414,8 @@ const VendorSubscriptionScreen = () => {
                     <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Subscriptions</Text>
-                    <Text style={styles.headerSubtitle}>Choose your preferred plan below</Text>
+                    <Text style={styles.headerTitle}>Monthly Bills</Text>
+                    <Text style={styles.headerSubtitle}>Pay your bills below</Text>
                 </View>
             </View>
 
@@ -304,12 +427,12 @@ const VendorSubscriptionScreen = () => {
                     <Text style={styles.emptySubtitle}>Subscription plans will appear here.</Text>
                 </View>
             ) : (
-                <FlatList
+                <FlashList
                     data={subscriptions}
                     keyExtractor={(item) => `sub_${item.id}`}
                     renderItem={renderSubscriptionCard}
                     contentContainerStyle={styles.listContainer}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    // refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                     showsVerticalScrollIndicator={false}
                 />
             )}
@@ -447,6 +570,32 @@ const styles = StyleSheet.create({
         color: '#1a1a1a',
         lineHeight: 20,
     },
+    summaryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 12,
+    },
+
+    summaryItem: {
+        width: '50%',
+        marginBottom: 10,
+    },
+
+    summaryItemFull: {
+        width: '100%',
+        marginTop: 6,
+    },
+
+    summaryLabel: {
+        fontSize: 12,
+        color: '#777',
+    },
+
+    summaryValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1a1a1a',
+    },
     button: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -491,5 +640,46 @@ const styles = StyleSheet.create({
         color: '#666',
         textAlign: 'center',
         lineHeight: 20,
+    },
+    tableContainer: {
+        marginBottom: 16,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 10,
+        padding: 10,
+    },
+
+    tableTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 8,
+        color: '#1a1a1a',
+    },
+
+    tableHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 6,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
+    },
+
+    tableHeaderText: {
+        flex: 1,
+        fontWeight: '600',
+        fontSize: 13,
+        color: '#444',
+    },
+
+    tableRow: {
+        flexDirection: 'row',
+        paddingVertical: 6,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#e0e0e0',
+    },
+
+    tableCell: {
+        flex: 1,
+        fontSize: 13,
+        color: '#333',
     },
 });

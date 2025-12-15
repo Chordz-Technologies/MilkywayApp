@@ -128,7 +128,7 @@
 // // // //             status: milkman.status || 'active',
 // // // //             assigned_customers_count: milkman.assigned_customers_count || 0,
 // // // //           }));
-        
+
 // // // //         setDistributors(activeDistributors);
 // // // //         setFilteredDistributors(activeDistributors);
 // // // //         console.log('Total active distributors found:', activeDistributors.length);
@@ -140,9 +140,9 @@
 
 // // // //     } catch (err: any) {
 // // // //       console.error('❌ Error fetching distributors:', err);
-      
+
 // // // //       let errorMessage = 'Failed to load distributors.';
-      
+
 // // // //       if (err.response?.status === 500) {
 // // // //         errorMessage = 'Server error. Please try again later.';
 // // // //       } else if (err.response?.status === 401) {
@@ -186,7 +186,7 @@
 
 // // // //   const handleAssignDistributor = useCallback(async (distributorId: number) => {
 // // // //     if (processing) return;
-    
+
 // // // //     setSelectedDistributorId(distributorId);
 // // // //     setProcessing(true);
 
@@ -204,7 +204,7 @@
 // // // //       console.log('✅ Assignment API success:', response.data);
 
 // // // //       const selectedDistributor = distributors.find(d => d.id === distributorId);
-      
+
 // // // //       Alert.alert(
 // // // //         'Assignment Successful',
 // // // //         `Consumer ${getConsumerName()} has been successfully assigned to ${selectedDistributor?.full_name || 'the distributor'}.`,
@@ -222,9 +222,9 @@
 
 // // // //     } catch (err: any) {
 // // // //       console.error('❌ Error assigning consumer to distributor:', err);
-      
+
 // // // //       let errorMessage = 'Failed to assign consumer to distributor.';
-      
+
 // // // //       if (err.response?.status === 400) {
 // // // //         errorMessage = err.response?.data?.detail || 
 // // // //                       err.response?.data?.message || 
@@ -240,7 +240,7 @@
 // // // //       } else if (err.message) {
 // // // //         errorMessage = err.message;
 // // // //       }
-      
+
 // // // //       Alert.alert('Assignment Failed', errorMessage);
 // // // //       setSelectedDistributorId(null);
 // // // //     } finally {
@@ -251,7 +251,7 @@
 // // // //   const renderDistributorItem = ({ item }: { item: Distributor }) => {
 // // // //     const isSelected = selectedDistributorId === item.id;
 // // // //     const isProcessing = processing && selectedDistributorId === item.id;
-    
+
 // // // //     return (
 // // // //       <TouchableOpacity
 // // // //         style={[styles.distributorItem, isSelected && styles.selectedItem]}
@@ -717,7 +717,7 @@
 
 // // //       // Try multiple data extraction paths
 // // //       let distributorData = [];
-      
+
 // // //       // Check various possible response structures
 // // //       if (response.data?.data && Array.isArray(response.data.data)) {
 // // //         distributorData = response.data.data;
@@ -737,19 +737,19 @@
 // // //       }
 
 // // //       console.log('📋 Raw distributor count:', distributorData.length);
-      
+
 // // //       if (distributorData.length > 0) {
 // // //         console.log('🔍 First distributor item:', JSON.stringify(distributorData[0], null, 2));
-        
+
 // // //         // Enhanced transformation to handle different API structures
 // // //         const transformedDistributors = distributorData
 // // //           .map((item: any, index: number) => {
 // // //             console.log(`🔄 Processing item ${index}:`, JSON.stringify(item, null, 2));
-            
+
 // // //             // Handle nested milkman object or direct properties
 // // //             const milkmanData = item.milkman || item;
 // // //             const userData = item.user || {};
-            
+
 // // //             const distributor = {
 // // //               id: item.id || milkmanData.id || userData.id || index + 1,
 // // //               full_name: milkmanData.full_name || 
@@ -766,7 +766,7 @@
 // // //               status: item.status || milkmanData.status || 'active',
 // // //               assigned_customers_count: item.assigned_customers_count || milkmanData.customers_count || 0,
 // // //             };
-            
+
 // // //             console.log(`✅ Transformed distributor ${index}:`, distributor);
 // // //             return distributor;
 // // //           })
@@ -776,7 +776,7 @@
 // // //             console.log(`🔍 Distributor ${distributor.full_name} - Valid: ${isValid}`);
 // // //             return isValid;
 // // //           });
-        
+
 // // //         setDistributors(transformedDistributors);
 // // //         setFilteredDistributors(transformedDistributors);
 // // //         console.log('✅ Final distributors set:', transformedDistributors.length, transformedDistributors);
@@ -789,9 +789,9 @@
 // // //     } catch (err: any) {
 // // //       console.error('❌ Error fetching distributors:', err);
 // // //       console.error('❌ Error response:', err.response?.data);
-      
+
 // // //       let errorMessage = 'Failed to load distributors.';
-      
+
 // // //       if (err.response?.status === 500) {
 // // //         errorMessage = 'Server error. Please try again later.';
 // // //       } else if (err.response?.status === 401) {
@@ -836,7 +836,7 @@
 
 // // //   const handleAssignDistributor = useCallback(async (distributorId: number) => {
 // // //     if (processing) return;
-    
+
 // // //     setSelectedDistributorId(distributorId);
 // // //     setProcessing(true);
 
@@ -854,7 +854,7 @@
 // // //       console.log('✅ Assignment API success:', response.data);
 
 // // //       const selectedDistributor = distributors.find(d => d.id === distributorId);
-      
+
 // // //       Alert.alert(
 // // //         'Assignment Successful',
 // // //         `Consumer ${getConsumerName()} has been successfully assigned to ${selectedDistributor?.full_name || 'the distributor'}.`,
@@ -871,9 +871,9 @@
 // // //     } catch (err: any) {
 // // //       console.error('❌ Error assigning consumer to distributor:', err);
 // // //       console.error('❌ Assignment error response:', err.response?.data);
-      
+
 // // //       let errorMessage = 'Failed to assign consumer to distributor.';
-      
+
 // // //       if (err.response?.status === 400) {
 // // //         errorMessage = err.response?.data?.detail || 
 // // //                       err.response?.data?.message || 
@@ -889,7 +889,7 @@
 // // //       } else if (err.message) {
 // // //         errorMessage = err.message;
 // // //       }
-      
+
 // // //       Alert.alert('Assignment Failed', errorMessage);
 // // //       setSelectedDistributorId(null);
 // // //     } finally {
@@ -900,7 +900,7 @@
 // // //   const renderDistributorItem = ({ item }: { item: Distributor }) => {
 // // //     const isSelected = selectedDistributorId === item.id;
 // // //     const isProcessing = processing && selectedDistributorId === item.id;
-    
+
 // // //     return (
 // // //       <TouchableOpacity
 // // //         style={[styles.distributorItem, isSelected && styles.selectedItem]}
@@ -1423,7 +1423,7 @@
 
 // //       // Try multiple data extraction paths
 // //       let distributorData = [];
-      
+
 // //       // Check various possible response structures
 // //       if (response.data?.data && Array.isArray(response.data.data)) {
 // //         distributorData = response.data.data;
@@ -1443,19 +1443,19 @@
 // //       }
 
 // //       console.log('📋 Raw distributor count:', distributorData.length);
-      
+
 // //       if (distributorData.length > 0) {
 // //         console.log('🔍 First distributor item:', JSON.stringify(distributorData[0], null, 2));
-        
+
 // //         // Enhanced transformation to handle different API structures
 // //         const transformedDistributors = distributorData
 // //           .map((item: any, index: number) => {
 // //             console.log(`🔄 Processing item ${index}:`, JSON.stringify(item, null, 2));
-            
+
 // //             // Handle nested milkman object or direct properties
 // //             const milkmanData = item.milkman || item;
 // //             const userData = item.user || {};
-            
+
 // //             const distributor = {
 // //               id: item.id || milkmanData.id || userData.id || index + 1,
 // //               full_name: milkmanData.full_name || 
@@ -1472,7 +1472,7 @@
 // //               status: item.status || milkmanData.status || 'active',
 // //               assigned_customers_count: item.assigned_customers_count || milkmanData.customers_count || 0,
 // //             };
-            
+
 // //             console.log(`✅ Transformed distributor ${index}:`, distributor);
 // //             return distributor;
 // //           })
@@ -1482,7 +1482,7 @@
 // //             console.log(`🔍 Distributor ${distributor.full_name} - Valid: ${isValid}`);
 // //             return isValid;
 // //           });
-        
+
 // //         setDistributors(transformedDistributors);
 // //         setFilteredDistributors(transformedDistributors);
 // //         console.log('✅ Final distributors set:', transformedDistributors.length, transformedDistributors);
@@ -1495,9 +1495,9 @@
 // //     } catch (err: any) {
 // //       console.error('❌ Error fetching distributors:', err);
 // //       console.error('❌ Error response:', err.response?.data);
-      
+
 // //       let errorMessage = 'Failed to load distributors.';
-      
+
 // //       if (err.response?.status === 500) {
 // //         errorMessage = 'Server error. Please try again later.';
 // //       } else if (err.response?.status === 401) {
@@ -1542,17 +1542,17 @@
 
 // //   const handleAssignDistributor = useCallback(async (distributorId: number) => {
 // //     if (processing) return;
-    
+
 // //     setSelectedDistributorId(distributorId);
 // //     setProcessing(true);
 
 // //     try {
 // //       // Debug the consumer object first
 // //       console.log('🔍 Full consumer object:', JSON.stringify(consumer, null, 2));
-      
+
 // //       // Try multiple ways to get the customer ID
 // //       let customerId;
-      
+
 // //       if (consumer.customer?.id) {
 // //         customerId = consumer.customer.id;
 // //         console.log('✅ Using consumer.customer.id:', customerId);
@@ -1583,7 +1583,7 @@
 // //       console.log('✅ Assignment API success:', response.data);
 
 // //       const selectedDistributor = distributors.find(d => d.id === distributorId);
-      
+
 // //       Alert.alert(
 // //         'Assignment Successful',
 // //         `Consumer ${getConsumerName()} has been successfully assigned to ${selectedDistributor?.full_name || 'the distributor'}.`,
@@ -1600,9 +1600,9 @@
 // //     } catch (err: any) {
 // //       console.error('❌ Error assigning consumer to distributor:', err);
 // //       console.error('❌ Assignment error response:', err.response?.data);
-      
+
 // //       let errorMessage = 'Failed to assign consumer to distributor.';
-      
+
 // //       if (err.response?.data?.message === 'Customer not found.') {
 // //         errorMessage = 'Customer not found. The customer may have been deleted or the ID is incorrect.';
 // //       } else if (err.response?.status === 400) {
@@ -1620,7 +1620,7 @@
 // //       } else if (err.message) {
 // //         errorMessage = err.message;
 // //       }
-      
+
 // //       Alert.alert('Assignment Failed', errorMessage);
 // //       setSelectedDistributorId(null);
 // //     } finally {
@@ -1631,7 +1631,7 @@
 // //   const renderDistributorItem = ({ item }: { item: Distributor }) => {
 // //     const isSelected = selectedDistributorId === item.id;
 // //     const isProcessing = processing && selectedDistributorId === item.id;
-    
+
 // //     return (
 // //       <TouchableOpacity
 // //         style={[styles.distributorItem, isSelected && styles.selectedItem]}
@@ -2148,7 +2148,7 @@
 //             assigned_customers_count: 0,
 //           };
 //         });
-        
+
 //         setDistributors(transformedDistributors);
 //         setFilteredDistributors(transformedDistributors);
 //       } else {
@@ -2191,7 +2191,7 @@
 
 //   const handleAssignDistributor = useCallback(async (distributorId: number) => {
 //     if (processing) return;
-    
+
 //     setSelectedDistributorId(distributorId);
 //     setProcessing(true);
 
@@ -2205,11 +2205,11 @@
 //       console.log('Assigning:', assignmentData);
 
 //       const response = await assignConsumerToDistributor(assignmentData);
-      
+
 //       console.log('Assignment success:', response.data);
 
 //       const selectedDistributor = distributors.find(d => d.id === distributorId);
-      
+
 //       Alert.alert(
 //         'Success!',
 //         `${getConsumerName()} has been assigned to ${selectedDistributor?.full_name || 'the distributor'}.`,
@@ -2225,12 +2225,12 @@
 
 //     } catch (err: any) {
 //       console.error('Assignment error:', err);
-      
+
 //       let errorMessage = 'Failed to assign consumer.';
 //       if (err.response?.data?.message) {
 //         errorMessage = err.response.data.message;
 //       }
-      
+
 //       Alert.alert('Error', errorMessage);
 //       setSelectedDistributorId(null);
 //     } finally {
@@ -2241,7 +2241,7 @@
 //   const renderDistributorItem = ({ item }: { item: Distributor }) => {
 //     const isSelected = selectedDistributorId === item.id;
 //     const isProcessing = processing && selectedDistributorId === item.id;
-    
+
 //     return (
 //       <TouchableOpacity
 //         style={[styles.distributorItem, isSelected && styles.selectedItem]}
@@ -2782,7 +2782,7 @@ const AssignDistributorScreen = () => {
 
   const handleAssignDistributor = useCallback(async (distributorId: number) => {
     if (processing) return;
-    
+
     setSelectedDistributorId(distributorId);
     setProcessing(true);
 
@@ -2842,23 +2842,15 @@ const AssignDistributorScreen = () => {
 
     } catch (err: any) {
       console.error('❌ Assignment error:', err);
-      console.error('❌ Error response:', err.response?.data);
 
-      let errorMessage = 'Failed to assign consumer.';
+      const apiMessage = err.response?.data?.message;
 
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.status === 404) {
-        if (err.response.data?.message?.includes('not accepted by the same vendor')) {
-          errorMessage = 'Vendor validation failed. Please ensure both customer and distributor belong to your vendor account.';
-        } else {
-          errorMessage = 'Customer or distributor not found.';
-        }
-      }
-
-      Alert.alert('Assignment Error', errorMessage);
-      setSelectedDistributorId(null);
-    } finally {
+      Alert.alert(
+        'Assignment Error',
+        apiMessage ?? 'Something went wrong while assigning.'
+      );
+    }
+    finally {
       setProcessing(false);
     }
   }, [processing, consumer, distributors, navigation, getConsumerName, user?.userID]);
@@ -2896,10 +2888,10 @@ const AssignDistributorScreen = () => {
             {isProcessing ? (
               <ActivityIndicator color="#007AFF" size="small" />
             ) : (
-              <Ionicons 
-                name={isSelected ? "checkmark-circle" : "add-circle-outline"} 
-                size={24} 
-                color={isSelected ? "#34C759" : "#007AFF"} 
+              <Ionicons
+                name={isSelected ? "checkmark-circle" : "add-circle-outline"}
+                size={24}
+                color={isSelected ? "#34C759" : "#007AFF"}
               />
             )}
           </View>

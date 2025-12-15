@@ -66,7 +66,7 @@ export const fetchConsumerProfile = createAsyncThunk<
       return response.data;
     } catch (error: any) {
       console.error('❌ Fetch consumer profile error:', error);
-
+      console.log('❌ Error details:', JSON.stringify(error?.response?.data, null, 2));
       if (error?.response?.status === 404) {
         return rejectWithValue('Consumer profile not found. Please create a consumer profile first.');
       }

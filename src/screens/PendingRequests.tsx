@@ -100,11 +100,15 @@ const AnimatedRequestItem = React.memo(({
   onAccept,
   onReject,
   processing,
+  processingRequestId,
+  rejectingRequestId,
 }: {
   item: Request;
   onAccept: () => void;
   onReject: () => void;
   processing: boolean;
+  processingRequestId: number | null;
+  rejectingRequestId: number | null;
 }) => {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const slideValue = useRef(new Animated.Value(0)).current;
@@ -232,7 +236,7 @@ const AnimatedRequestItem = React.memo(({
             disabled={processing}
             activeOpacity={0.8}
           >
-            {processing ? (
+            {processingRequestId === item.id ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
@@ -248,8 +252,14 @@ const AnimatedRequestItem = React.memo(({
             disabled={processing}
             activeOpacity={0.8}
           >
-            <Ionicons name="close-circle" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Reject</Text>
+            {rejectingRequestId === item.id ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="close-circle" size={18} color="#fff" />
+                <Text style={styles.buttonText}>Reject</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -281,6 +291,7 @@ const PendingRequestsScreen = () => {
   const [processingRequestId, setProcessingRequestId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [rejectingRequestId, setRejectingRequestId] = useState<number | null>(null);
 
   // Animation values
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -416,58 +427,65 @@ const PendingRequestsScreen = () => {
 
     return displayName;
   }, []);
-// In PendingRequestsScreen.tsx, update the navigation call:
-const handleRequestAction = useCallback(async (
-  requestId: number,
-  action: 'accepted' | 'rejected'
-) => {
-  try {
-    setProcessingRequestId(requestId);
-    console.log(`${action === 'accepted' ? 'Accepting' : 'Rejecting'} request:`, requestId);
-
+  // In PendingRequestsScreen.tsx, update the navigation call:
+  const handleRequestAction = useCallback(async (
+    requestId: number,
+    action: 'accepted' | 'rejected'
+  ) => {
     if (action === 'accepted') {
-      await acceptRequest(requestId.toString());
+      setProcessingRequestId(requestId);
+      setRejectingRequestId(null);
+    } else {
+      setRejectingRequestId(requestId);
+      setProcessingRequestId(null);
+    }
+    try {
+      console.log(`${action === 'accepted' ? 'Accepting' : 'Rejecting'} request:`, requestId);
 
-      const acceptedRequest = requests.find(req => req.id === requestId);
+      if (action === 'accepted') {
+        await acceptRequest(requestId.toString());
 
-      if (acceptedRequest && acceptedRequest.user_type === 'customer') {
-        Alert.alert(
-          'Consumer Request Accepted',
-          `Consumer ${getRequestDisplayName(acceptedRequest)} has been accepted. Please assign a distributor.`,
-          [
-            {
-              text: 'Assign Distributor',
-              onPress: () => {
-                // Remove the callback function from navigation params
-                navigationHook.navigate('AssignDistributor', {
-                  consumer: acceptedRequest,
-                  // Remove onAssignmentComplete from here
-                });
+        const acceptedRequest = requests.find(req => req.id === requestId);
+
+        if (acceptedRequest && acceptedRequest.user_type === 'customer') {
+          Alert.alert(
+            'Consumer Request Accepted',
+            `Consumer ${getRequestDisplayName(acceptedRequest)} has been accepted. Please assign a distributor.`,
+            [
+              {
+                text: 'Assign Distributor',
+                onPress: () => {
+                  // Remove the callback function from navigation params
+                  navigationHook.navigate('AssignDistributor', {
+                    consumer: acceptedRequest,
+                    // Remove onAssignmentComplete from here
+                  });
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        } else {
+          Alert.alert('Success', 'Request successfully accepted.');
+          setTimeout(() => fetchRequests(), 1000);
+        }
       } else {
-        Alert.alert('Success', 'Request successfully accepted.');
+        await rejectRequest(requestId.toString());
+        Alert.alert('Success', 'Request successfully rejected.');
         setTimeout(() => fetchRequests(), 1000);
       }
-    } else {
-      await rejectRequest(requestId.toString());
-      Alert.alert('Success', 'Request successfully rejected.');
-      setTimeout(() => fetchRequests(), 1000);
-    }
 
-  } catch (err: any) {
-    console.error(`Error ${action === 'accepted' ? 'accepting' : 'rejecting'} request:`, err);
-    const errorMessage = err.response?.data?.detail ||
-      err.response?.data?.message ||
-      err.message ||
-      `Failed to ${action === 'accepted' ? 'accept' : 'reject'} request.`;
-    Alert.alert('Error', errorMessage);
-  } finally {
-    setProcessingRequestId(null);
-  }
-}, [requests, fetchRequests, navigationHook, getRequestDisplayName]);
+    } catch (err: any) {
+      console.error(`Error ${action === 'accepted' ? 'accepting' : 'rejecting'} request:`, err);
+      const errorMessage = err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message ||
+        `Failed to ${action === 'accepted' ? 'accept' : 'reject'} request.`;
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setProcessingRequestId(null);
+      setRejectingRequestId(null);
+    }
+  }, [requests, fetchRequests, navigationHook, getRequestDisplayName]);
 
 
   const renderRequestItem = useCallback(({ item }: { item: Request }) => (
@@ -476,8 +494,10 @@ const handleRequestAction = useCallback(async (
       onAccept={() => handleRequestAction(item.id, 'accepted')}
       onReject={() => handleRequestAction(item.id, 'rejected')}
       processing={processingRequestId === item.id}
+      processingRequestId={processingRequestId}
+      rejectingRequestId={rejectingRequestId}
     />
-  ), [handleRequestAction, processingRequestId]);
+  ), [handleRequestAction, processingRequestId, rejectingRequestId]);
 
   const keyExtractor = useCallback((item: Request, index: number) => `request_${item.id || index}`, []);
 
