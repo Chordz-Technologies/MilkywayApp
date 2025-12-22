@@ -202,10 +202,11 @@ const SplashScreen = () => {
   useEffect(() => {
     const decideNext = async () => {
       const hasSeenSlides = await AsyncStorage.getItem('hasSeenSlides');
-      const termsAccepted = await AsyncStorage.getItem('termsAccepted');
+      const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
 
       setTimeout(() => {
-        if (isAuthenticated && user?.role) {
+        // USER IS LOGGED IN → GO DIRECTLY TO ROLE HOME
+        if (isAuthenticated && user?.role && !isLoggedOut) {
           if (user.role === 'vendor') {
             navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
           } else if (user.role === 'customer') {
@@ -213,18 +214,20 @@ const SplashScreen = () => {
           } else if (user.role === 'milkman') {
             navigation.reset({ index: 0, routes: [{ name: 'DistributorHome' }] });
           }
+          return;
+        }
+
+        // USER LOGGED OUT OR FIRST INSTALL
+        if (!hasSeenSlides || isLoggedOut) {
+          navigation.reset({ index: 0, routes: [{ name: 'Slide' }] });
         } else {
-          if (hasSeenSlides && termsAccepted) {
-            navigation.reset({ index: 0, routes: [{ name: 'Slide' }] });
-          } else {
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-          }
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         }
       }, 1500);
     };
 
     decideNext();
-  }, [isAuthenticated, user?.role, navigation]); // include navigation to deps
+  }, [isAuthenticated, user?.role]);
 
   return (
     <SafeAreaWrapper>

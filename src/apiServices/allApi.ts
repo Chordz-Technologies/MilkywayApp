@@ -470,3 +470,7 @@ export const deleteVendorAccountPermanently = (vendorId: string | number) =>
 export const deleteConsumerAccountPermanently = (consumerId: string | number) =>
   apiClient.delete(`/customer/customers/${consumerId}/`);
 
+export const changePassword = (data: {
+  old_password: string;
+  new_password: string;
+}) => apiClient.post('/vendor-login/change_password/', data);

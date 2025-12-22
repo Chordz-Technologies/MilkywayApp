@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, Modal } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,6 +13,7 @@ import {
   deleteConsumerAccount
 } from '../../store/consumerProfileSlice';
 import { logout } from '../../store/authSlice';
+import { changePassword } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 const ConsumerProfileEditScreen = ({ navigation }: any) => {
@@ -28,6 +29,15 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const error = useSelector((state: RootState) => state.consumerProfile?.error);
   const success = useSelector((state: RootState) => state.consumerProfile?.success || false);
   const scrollRef = useRef<ScrollView>(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const toStringSafe = (val: any): string => {
     if (typeof val === 'string') { return val; }
@@ -39,7 +49,6 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
     first_name: '',
     last_name: '',
     email: '',
-    password: '',
     flat_no: '',
     society_name: '',
     village: '',
@@ -74,7 +83,6 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
         first_name: toStringSafe(data.first_name),
         last_name: toStringSafe(data.last_name),
         email: toStringSafe(data.email),
-        password: '',
         flat_no: toStringSafe(data.flat_no),
         society_name: toStringSafe(data.society_name),
         village: toStringSafe(data.village),
@@ -143,6 +151,50 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
     }
 
     dispatch(updateConsumerProfile({ id: user.userID, data: form }));
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirm password do not match');
+      return;
+    }
+
+    setPasswordError('');
+
+    try {
+      setChangingPassword(true);
+
+      await changePassword({
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
+
+      Alert.alert('Success', 'Password changed successfully');
+
+      setShowChangePasswordModal(false);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+    } catch (err: any) {
+      setPasswordError(
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        'Failed to change password'
+      );
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleLogout = () => {
@@ -273,20 +325,38 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
               <Text style={styles.subheading}>Update your information</Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => setIsEditMode(!isEditMode)}
-            >
-              <Ionicons
-                name={isEditMode ? "close-outline" : "pencil-outline"}
-                size={20}
-                color="#007AFF"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.editButtonText}>
-                {isEditMode ? "Cancel" : "Edit Profile"}
-              </Text>
-            </TouchableOpacity>
+            {/* Action Buttons Row */}
+            <View style={styles.actionRow}>
+              {/* Change Password - LEFT */}
+              <TouchableOpacity
+                style={[styles.editButton, styles.leftButton]}
+                onPress={() => setShowChangePasswordModal(true)}
+              >
+                <Ionicons
+                  name="key-outline"
+                  size={20}
+                  color="#007AFF"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.editButtonText}>Change Password</Text>
+              </TouchableOpacity>
+
+              {/* Edit Profile - RIGHT */}
+              <TouchableOpacity
+                style={[styles.editButton, styles.rightButton]}
+                onPress={() => setIsEditMode(!isEditMode)}
+              >
+                <Ionicons
+                  name={isEditMode ? 'close-outline' : 'pencil-outline'}
+                  size={20}
+                  color="#007AFF"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.editButtonText}>
+                  {isEditMode ? 'Cancel' : 'Edit Profile'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Personal Information */}
             <View style={styles.section}>
@@ -325,20 +395,6 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                   placeholder="Email"
                   value={form.email}
                   onChangeText={(v) => handleChange('email', v)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#999"
-                  editable={isEditMode}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  value={form.password}
-                  onChangeText={(v) => handleChange('password', v)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   placeholderTextColor="#999"
@@ -529,6 +585,114 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+
+      {/* Change Password Modal */}
+      <Modal visible={showChangePasswordModal} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+
+              <Text style={styles.modalTitle}>Change Password</Text>
+
+              {/* Error Message */}
+              {passwordError ? (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              ) : null}
+
+              {/* Old Password */}
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Old Password"
+                  secureTextEntry={!showOldPassword}
+                  value={oldPassword}
+                  onChangeText={(v) => {
+                    setOldPassword(v);
+                    setPasswordError('');
+                  }}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
+                  <Ionicons
+                    name={showOldPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* New Password */}
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="New Password"
+                  secureTextEntry={!showNewPassword}
+                  value={newPassword}
+                  onChangeText={(v) => {
+                    setNewPassword(v);
+                    setPasswordError('');
+                  }}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                  <Ionicons
+                    name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirm Password */}
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Confirm New Password"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={(v) => {
+                    setConfirmPassword(v);
+                    setPasswordError('');
+                  }}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Submit */}
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Update Password</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Cancel */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowChangePasswordModal(false);
+                  setPasswordError('');
+                }}
+                style={{ marginTop: 20 }}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaWrapper>
   );
 };
@@ -585,6 +749,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
     paddingBottom: 8,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  leftButton: {
+    alignSelf: 'flex-start',
+  },
+  rightButton: {
+    alignSelf: 'flex-end',
   },
   editButton: {
     flexDirection: 'row',
@@ -695,6 +870,70 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#dc3545',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    color: '#333',
+  },
+  modalButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 12,
+  },
+  errorText: {
+    color: '#dc3545',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  cancelText: {
+    color: '#dc3545',
+    textAlign: 'center',
     fontSize: 16,
     fontWeight: '500',
   },
