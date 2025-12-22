@@ -17,6 +17,7 @@ import {
   getDistributorDetailsById,
   getDistributorAssignedConsumers,
 } from '../../apiServices/allApi';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type UserDetailsParams = {
   userId: number;
@@ -184,237 +185,239 @@ const UserDetailsScreen = () => {
   const hasEmail = userData?.email || userData?.email_address || userData?.user_email;
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {params.userType === 'consumer' ? 'Consumer Details' : 'Distributor Details'}
-        </Text>
-
-        {/* Calendar Icon in Header */}
-        <TouchableOpacity
-          onPress={handleNavigateToCalendar}
-          style={styles.calendarButton}
-        >
-          <Ionicons name="calendar-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Profile Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarLarge}>
-              <Text style={styles.avatarLargeText}>{getInitials(fullName)}</Text>
-            </View>
-          </View>
-          <Text style={styles.userName}>{fullName}</Text>
-          <View style={styles.userTypeBadge}>
-            <Text style={styles.userTypeText}>
-              {params.userType === 'consumer' ? 'Consumer' : 'Distributor'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Calendar Action Card - Prominent */}
-        <View style={styles.section}>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.calendarActionCard}
-            onPress={handleNavigateToCalendar}
-            activeOpacity={0.7}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <View style={styles.calendarIconContainer}>
-              <Ionicons name="calendar" size={32} color="#007AFF" />
-            </View>
-            <View style={styles.calendarContent}>
-              <Text style={styles.calendarTitle}>View Calendar</Text>
-              <Text style={styles.calendarSubtitle}>
-                {params.userType === 'consumer'
-                  ? 'View delivery schedule and history'
-                  : 'View distributor schedule and deliveries'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {params.userType === 'consumer' ? 'Consumer Details' : 'Distributor Details'}
+          </Text>
+
+          {/* Calendar Icon in Header */}
+          <TouchableOpacity
+            onPress={handleNavigateToCalendar}
+            style={styles.calendarButton}
+          >
+            <Ionicons name="calendar-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
-
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="call-outline" size={20} color="#007AFF" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone Number</Text>
-                <Text style={styles.infoValue}>{phoneNumber}</Text>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Profile Section */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarLarge}>
+                <Text style={styles.avatarLargeText}>{getInitials(fullName)}</Text>
               </View>
             </View>
-
-            {hasEmail && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="mail-outline" size={20} color="#007AFF" />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Email</Text>
-                    <Text style={styles.infoValue}>{email}</Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Address Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
-
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="location-outline" size={20} color="#007AFF" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Full Address</Text>
-                <Text style={styles.infoValue}>{formatAddress()}</Text>
-              </View>
+            <Text style={styles.userName}>{fullName}</Text>
+            <View style={styles.userTypeBadge}>
+              <Text style={styles.userTypeText}>
+                {params.userType === 'consumer' ? 'Consumer' : 'Distributor'}
+              </Text>
             </View>
           </View>
-        </View>
 
-        {/* Work Details for Distributor */}
-        {params.userType === 'distributor' && userData?.assigned_customers_count !== undefined && (
+          {/* Calendar Action Card - Prominent */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Work Summary</Text>
+            <TouchableOpacity
+              style={styles.calendarActionCard}
+              onPress={handleNavigateToCalendar}
+              activeOpacity={0.7}
+            >
+              <View style={styles.calendarIconContainer}>
+                <Ionicons name="calendar" size={32} color="#007AFF" />
+              </View>
+              <View style={styles.calendarContent}>
+                <Text style={styles.calendarTitle}>View Calendar</Text>
+                <Text style={styles.calendarSubtitle}>
+                  {params.userType === 'consumer'
+                    ? 'View delivery schedule and history'
+                    : 'View distributor schedule and deliveries'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Contact Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Contact Information</Text>
 
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
                 <View style={styles.infoIcon}>
-                  <Ionicons name="people-outline" size={20} color="#007AFF" />
+                  <Ionicons name="call-outline" size={20} color="#007AFF" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Total Assigned Consumers</Text>
-                  <Text style={styles.infoValue}>
-                    {userData.assigned_customers_count} consumers
-                  </Text>
+                  <Text style={styles.infoLabel}>Phone Number</Text>
+                  <Text style={styles.infoValue}>{phoneNumber}</Text>
                 </View>
               </View>
-            </View>
-          </View>
-        )}
 
-        {/* Assigned Consumers List for Distributor */}
-        {params.userType === 'distributor' && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Assigned Consumers</Text>
-              {loadingConsumers && (
-                <ActivityIndicator size="small" color="#007AFF" />
+              {hasEmail && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIcon}>
+                      <Ionicons name="mail-outline" size={20} color="#007AFF" />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Email</Text>
+                      <Text style={styles.infoValue}>{email}</Text>
+                    </View>
+                  </View>
+                </>
               )}
             </View>
-
-            {loadingConsumers ? (
-              <View style={styles.loadingConsumersContainer}>
-                <ActivityIndicator size="small" color="#007AFF" />
-                <Text style={styles.loadingConsumersText}>Loading consumers...</Text>
-              </View>
-            ) : assignedConsumers.length > 0 ? (
-              <View style={styles.consumerListCard}>
-                {assignedConsumers.map((consumer, index) => (
-                  <View key={consumer.id || consumer.customer_id || index}>
-                    <View style={styles.consumerItem}>
-                      <View style={styles.consumerAvatar}>
-                        <Text style={styles.consumerAvatarText}>
-                          {getInitials(consumer.customer_name || 'U')}
-                        </Text>
-                      </View>
-                      <View style={styles.consumerInfo}>
-                        <Text style={styles.consumerName}>
-                          {consumer.customer_name || 'Unknown Consumer'}
-                        </Text>
-                        <Text style={styles.consumerContact}>
-                          {consumer.customer_contact || 'No contact'}
-                        </Text>
-                      </View>
-                      <View style={styles.consumerStatus}>
-                        <View style={[
-                          styles.statusDot,
-                          { backgroundColor: consumer.status === 'active' ? '#34C759' : '#999' },
-                        ]} />
-                      </View>
-                    </View>
-                    {index < assignedConsumers.length - 1 && <View style={styles.divider} />}
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyConsumersCard}>
-                <Ionicons name="people-outline" size={48} color="#ccc" />
-                <Text style={styles.emptyConsumersText}>No consumers assigned yet</Text>
-              </View>
-            )}
           </View>
-        )}
 
-        {/* Account Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
+          {/* Address Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Address</Text>
 
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="person-outline" size={20} color="#007AFF" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>User ID</Text>
-                <Text style={styles.infoValue}>{params.userId}</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <Ionicons name="location-outline" size={20} color="#007AFF" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Full Address</Text>
+                  <Text style={styles.infoValue}>{formatAddress()}</Text>
+                </View>
               </View>
             </View>
+          </View>
 
-            {userData?.provider && (
-              <>
-                <View style={styles.divider} />
+          {/* Work Details for Distributor */}
+          {params.userType === 'distributor' && userData?.assigned_customers_count !== undefined && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Work Summary</Text>
+
+              <View style={styles.infoCard}>
                 <View style={styles.infoRow}>
                   <View style={styles.infoIcon}>
-                    <Ionicons name="business-outline" size={20} color="#007AFF" />
+                    <Ionicons name="people-outline" size={20} color="#007AFF" />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Provider ID</Text>
-                    <Text style={styles.infoValue}>{userData.provider}</Text>
+                    <Text style={styles.infoLabel}>Total Assigned Consumers</Text>
+                    <Text style={styles.infoValue}>
+                      {userData.assigned_customers_count} consumers
+                    </Text>
                   </View>
                 </View>
-              </>
-            )}
-
-            <View style={styles.divider} />
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
               </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Status</Text>
-                <Text style={[styles.infoValue, { color: '#34C759' }]}>Active</Text>
+            </View>
+          )}
+
+          {/* Assigned Consumers List for Distributor */}
+          {params.userType === 'distributor' && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Assigned Consumers</Text>
+                {loadingConsumers && (
+                  <ActivityIndicator size="small" color="#007AFF" />
+                )}
+              </View>
+
+              {loadingConsumers ? (
+                <View style={styles.loadingConsumersContainer}>
+                  <ActivityIndicator size="small" color="#007AFF" />
+                  <Text style={styles.loadingConsumersText}>Loading consumers...</Text>
+                </View>
+              ) : assignedConsumers.length > 0 ? (
+                <View style={styles.consumerListCard}>
+                  {assignedConsumers.map((consumer, index) => (
+                    <View key={consumer.id || consumer.customer_id || index}>
+                      <View style={styles.consumerItem}>
+                        <View style={styles.consumerAvatar}>
+                          <Text style={styles.consumerAvatarText}>
+                            {getInitials(consumer.customer_name || 'U')}
+                          </Text>
+                        </View>
+                        <View style={styles.consumerInfo}>
+                          <Text style={styles.consumerName}>
+                            {consumer.customer_name || 'Unknown Consumer'}
+                          </Text>
+                          <Text style={styles.consumerContact}>
+                            {consumer.customer_contact || 'No contact'}
+                          </Text>
+                        </View>
+                        <View style={styles.consumerStatus}>
+                          <View style={[
+                            styles.statusDot,
+                            { backgroundColor: consumer.status === 'active' ? '#34C759' : '#999' },
+                          ]} />
+                        </View>
+                      </View>
+                      {index < assignedConsumers.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyConsumersCard}>
+                  <Ionicons name="people-outline" size={48} color="#ccc" />
+                  <Text style={styles.emptyConsumersText}>No consumers assigned yet</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Account Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Information</Text>
+
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <Ionicons name="person-outline" size={20} color="#007AFF" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>User ID</Text>
+                  <Text style={styles.infoValue}>{params.userId}</Text>
+                </View>
+              </View>
+
+              {userData?.provider && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoIcon}>
+                      <Ionicons name="business-outline" size={20} color="#007AFF" />
+                    </View>
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Provider ID</Text>
+                      <Text style={styles.infoValue}>{userData.provider}</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              <View style={styles.divider} />
+
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Status</Text>
+                  <Text style={[styles.infoValue, { color: '#34C759' }]}>Active</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Bottom Spacing */}
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+          {/* Bottom Spacing */}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

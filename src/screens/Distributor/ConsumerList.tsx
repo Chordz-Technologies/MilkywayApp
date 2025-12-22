@@ -38,6 +38,7 @@ import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { Linking } from 'react-native';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -749,7 +750,7 @@ const ConsumerListScreen = () => {
             </View>
           )}
         </View>
-      </View >
+      </View>
     );
   };
 
@@ -763,257 +764,260 @@ const ConsumerListScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.modernHeader}>
+    <SafeAreaWrapper>
 
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Daily Deliveries</Text>
-          <Text style={styles.headerSubtitle}>
-            {formatDate(getTodayString())}
-          </Text>
-        </View>
+      <View style={styles.container}>
+        <View style={styles.modernHeader}>
 
-        {/* Notification Icon - Placeholder for future implementation */}
-        <TouchableOpacity
-          style={styles.notificationButton}
-          onPress={async () => {
-            await markAllAsRead();
-            setNotificationCount(0);
-            (navigation as any).navigate('Notifications');
-          }}
-        >
-          <View>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-            {notificationCount > 0 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  right: -6,
-                  top: -3,
-                  backgroundColor: 'red',
-                  borderRadius: 10,
-                  paddingHorizontal: 5,
-                  paddingVertical: 1,
-                  minWidth: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
-                  {notificationCount}
-                </Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.modernStatsContainer}>
-        <View style={styles.statCard}>
-          <View style={[styles.statIconContainer, { backgroundColor: '#E8F4FD' }]}>
-            <Ionicons name="people" size={20} color="#007AFF" />
-          </View>
-          <Text style={styles.statValue}>{stats.totalConsumers}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={[styles.statIconContainer, { backgroundColor: '#F0FFF4' }]}>
-            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-          </View>
-          <Text style={styles.statValue}>
-            {consumers.filter(c => getTodayDeliveryStatus(c).isDelivered).length}
-          </Text>
-          <Text style={styles.statLabel}>Delivered</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={[styles.statIconContainer, { backgroundColor: '#FFF5F5' }]}>
-            <Ionicons name="close-circle" size={20} color="#FF3B30" />
-          </View>
-          <Text style={styles.statValue}>
-            {consumers.filter(c => getTodayDeliveryStatus(c).isCancelled).length}
-          </Text>
-          <Text style={styles.statLabel}>Cancelled</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={[styles.statIconContainer, { backgroundColor: '#FFF9F0' }]}>
-            <Ionicons name="time" size={20} color="#FF9500" />
-          </View>
-          <Text style={styles.statValue}>
-            {consumers.filter(c => !getTodayDeliveryStatus(c).hasDelivery).length}
-          </Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-      </View>
-
-      {extraRequests.length > 0 && (
-        <TouchableOpacity
-          style={styles.pendingCard}
-          onPress={() =>
-            navigation.navigate('ExtraMilkList', { milkmanId: getMilkmanId(), today: getTodayString() })
-          }
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingLeft}>
-            <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
-              <Ionicons name="water" size={24} color="#007AFF" />
-            </View>
-            <View>
-              <Text style={styles.pendingTitle}>Approved Extra Milk Requests</Text>
-            </View>
-          </View>
-          <View style={styles.pendingRight}>
-            <Text style={[styles.pendingCount, { color: '#007AFF' }]}>
-              {extraRequests.length}
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Daily Deliveries</Text>
+            <Text style={styles.headerSubtitle}>
+              {formatDate(getTodayString())}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
           </View>
-        </TouchableOpacity>
-      )}
 
-      {error && (
-        <View style={styles.modernErrorBanner}>
-          <Ionicons name="alert-circle" size={20} color="#FF3B30" />
-          <Text style={styles.errorText}>{error}</Text>
+          {/* Notification Icon - Placeholder for future implementation */}
           <TouchableOpacity
-            onPress={() => {
-              dispatch(clearError());
-              handleRefresh();
+            style={styles.notificationButton}
+            onPress={async () => {
+              await markAllAsRead();
+              setNotificationCount(0);
+              (navigation as any).navigate('Notifications');
             }}
-            style={styles.errorRetryButton}
           >
-            <Text style={styles.errorRetryText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
-        <TextInput
-          placeholder="Search Consumer..."
-          placeholderTextColor="#A0A0A0"
-          value={searchText}
-          onChangeText={setSearchText}
-          style={{
-            backgroundColor: '#fff',
-            padding: 10,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#ccc',
-            marginBottom: 5,
-          }}
-        />
-      </View>
-
-      {loading && consumers.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredConsumers}
-          keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
-          renderItem={renderConsumerItem}
-          contentContainerStyle={styles.modernListContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
-            />
-          }
-          ListEmptyComponent={() => (
-            <View style={styles.modernEmptyContainer}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="people-outline" size={60} color="#C7C7CC" />
-              </View>
-              <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
-              <Text style={styles.emptyText}>
-                You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
-              </Text>
-              <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
-                <Ionicons name="refresh" size={18} color="#fff" />
-                <Text style={styles.modernRefreshButtonText}>Refresh</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* CANCEL REASON MODAL */}
-      <Modal
-        visible={cancelReasonModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCancelReasonModal(false)}
-      >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'center',
-          padding: 20
-        }}>
-          <View style={{
-            backgroundColor: 'white',
-            borderRadius: 10,
-            maxHeight: '70%',   // <-- makes it scrollable
-            padding: 20
-          }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
-              Select reason for cancellation
-            </Text>
-
-            <ScrollView>
-              {[
-                'Customer unavailable',
-                'Address issue',
-                'Product issue',
-                'Weather/Traffic delay',
-                'Other reason',
-                'Payment pending',
-                'Customer refused',
-                'Milk not required today',
-                'Door locked',
-                'Phone not reachable',
-                'Wrong address',
-                'Shifted house'
-              ].map((reason, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => {
-                    handleMarkDeliveryCancelled(selectedItem, reason);
-                    setCancelReasonModal(false);
-                  }}
+            <View>
+              <Ionicons name="notifications-outline" size={24} color="#333" />
+              {notificationCount > 0 && (
+                <View
                   style={{
-                    paddingVertical: 12,
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#ddd'
+                    position: 'absolute',
+                    right: -6,
+                    top: -3,
+                    backgroundColor: 'red',
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1,
+                    minWidth: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 16 }}>{reason}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                    {notificationCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
 
-            <TouchableOpacity
-              onPress={() => setCancelReasonModal(false)}
-              style={{
-                marginTop: 10,
-                alignSelf: 'flex-end',
-                padding: 10
-              }}
-            >
-              <Text style={{ fontSize: 16, color: 'red' }}>Close</Text>
-            </TouchableOpacity>
+        <View style={styles.modernStatsContainer}>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#E8F4FD' }]}>
+              <Ionicons name="people" size={20} color="#007AFF" />
+            </View>
+            <Text style={styles.statValue}>{stats.totalConsumers}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
 
+          <View style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#F0FFF4' }]}>
+              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+            </View>
+            <Text style={styles.statValue}>
+              {consumers.filter(c => getTodayDeliveryStatus(c).isDelivered).length}
+            </Text>
+            <Text style={styles.statLabel}>Delivered</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#FFF5F5' }]}>
+              <Ionicons name="close-circle" size={20} color="#FF3B30" />
+            </View>
+            <Text style={styles.statValue}>
+              {consumers.filter(c => getTodayDeliveryStatus(c).isCancelled).length}
+            </Text>
+            <Text style={styles.statLabel}>Cancelled</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: '#FFF9F0' }]}>
+              <Ionicons name="time" size={20} color="#FF9500" />
+            </View>
+            <Text style={styles.statValue}>
+              {consumers.filter(c => !getTodayDeliveryStatus(c).hasDelivery).length}
+            </Text>
+            <Text style={styles.statLabel}>Pending</Text>
           </View>
         </View>
-      </Modal>
-    </View>
+
+        {extraRequests.length > 0 && (
+          <TouchableOpacity
+            style={styles.pendingCard}
+            onPress={() =>
+              navigation.navigate('ExtraMilkList', { milkmanId: getMilkmanId(), today: getTodayString() })
+            }
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingLeft}>
+              <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
+                <Ionicons name="water" size={24} color="#007AFF" />
+              </View>
+              <View>
+                <Text style={styles.pendingTitle}>Approved Extra Milk Requests</Text>
+              </View>
+            </View>
+            <View style={styles.pendingRight}>
+              <Text style={[styles.pendingCount, { color: '#007AFF' }]}>
+                {extraRequests.length}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {error && (
+          <View style={styles.modernErrorBanner}>
+            <Ionicons name="alert-circle" size={20} color="#FF3B30" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                dispatch(clearError());
+                handleRefresh();
+              }}
+              style={styles.errorRetryButton}
+            >
+              <Text style={styles.errorRetryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <TextInput
+            placeholder="Search Consumer..."
+            placeholderTextColor="#A0A0A0"
+            value={searchText}
+            onChangeText={setSearchText}
+            style={{
+              backgroundColor: '#fff',
+              padding: 10,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#ccc',
+              marginBottom: 5,
+            }}
+          />
+        </View>
+
+        {loading && consumers.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredConsumers}
+            keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
+            renderItem={renderConsumerItem}
+            contentContainerStyle={styles.modernListContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#007AFF']}
+                tintColor="#007AFF"
+              />
+            }
+            ListEmptyComponent={() => (
+              <View style={styles.modernEmptyContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <Ionicons name="people-outline" size={60} color="#C7C7CC" />
+                </View>
+                <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
+                <Text style={styles.emptyText}>
+                  You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
+                </Text>
+                <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
+                  <Ionicons name="refresh" size={18} color="#fff" />
+                  <Text style={styles.modernRefreshButtonText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        {/* CANCEL REASON MODAL */}
+        <Modal
+          visible={cancelReasonModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setCancelReasonModal(false)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            padding: 20
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderRadius: 10,
+              maxHeight: '70%',   // <-- makes it scrollable
+              padding: 20
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
+                Select reason for cancellation
+              </Text>
+
+              <ScrollView>
+                {[
+                  'Customer unavailable',
+                  'Address issue',
+                  'Product issue',
+                  'Weather/Traffic delay',
+                  'Other reason',
+                  'Payment pending',
+                  'Customer refused',
+                  'Milk not required today',
+                  'Door locked',
+                  'Phone not reachable',
+                  'Wrong address',
+                  'Shifted house'
+                ].map((reason, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => {
+                      handleMarkDeliveryCancelled(selectedItem, reason);
+                      setCancelReasonModal(false);
+                    }}
+                    style={{
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#ddd'
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{reason}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <TouchableOpacity
+                onPress={() => setCancelReasonModal(false)}
+                style={{
+                  marginTop: 10,
+                  alignSelf: 'flex-end',
+                  padding: 10
+                }}
+              >
+                <Text style={{ fontSize: 16, color: 'red' }}>Close</Text>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

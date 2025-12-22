@@ -895,6 +895,7 @@ import { checkStoredAuth } from '../../store/authSlice';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 const SEEN_CUSTOMERS_KEY = 'seen_consumers_v1';
 
@@ -1131,6 +1132,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation();
   const route = useRoute();
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   const routeParams = route.params as {
     viewerRole?: 'consumer' | 'distributor' | 'vendor';
@@ -1247,52 +1249,33 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       if (customerId !== null && isAuthenticated) {
         const now = new Date();
         dispatch(setCurrentMonth({ month: now.getMonth(), year: now.getFullYear() }));
-        const monthString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-        // Only clear calendar when switching to a customer that we've never viewed before.
-        // We persist a small "seen" set in AsyncStorage so existing/previously-viewed
-        // customers keep their merged history while first-time customers get a fresh view.
+        const monthString = `${now.getFullYear()}-${(now.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`;
+
         if (prevCustomerRef.current !== customerId) {
           (async () => {
             try {
-              const raw = await AsyncStorage.getItem(SEEN_CUSTOMERS_KEY);
-              const seen: number[] = raw ? JSON.parse(raw) : [];
-              const isFirstTime = !seen.includes(customerId as number);
+              setSummaryLoading(true); // start loader
 
-              if (isFirstTime) {
-                dispatch(clearCalendar({ customerId }));
-              }
-
-              // Fetch calendar data regardless; for first-time views we fetch after clearing
-              // so the UI shows only the fresh server-provided marks.
+              // 1️⃣ FIRST: fetch calendar
               await dispatch(fetchCalendarData({ customerId, month: monthString }));
 
-              // Also fetch monthly summary (separate endpoint expects MM and YYYY)
+              // 2️⃣ THEN: fetch summary
               const monthMM = (now.getMonth() + 1).toString().padStart(2, '0');
               const yearYYYY = now.getFullYear().toString();
-              try {
-                await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-              } catch (e) {
-                // swallow — summary fetch failure shouldn't block calendar
-                console.warn('Failed to fetch consumer summary', e);
-              }
+              await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
 
-              // Mark customer as seen after successful fetch
-              if (isFirstTime) {
-                seen.push(customerId as number);
-                await AsyncStorage.setItem(SEEN_CUSTOMERS_KEY, JSON.stringify(seen));
-              }
-            } catch (err) {
-              // On any error fall back to a normal fetch to avoid blocking the UI
-              console.error('Error handling seen-customers logic:', err);
-              dispatch(fetchCalendarData({ customerId, month: monthString }));
+            } catch (e) {
+              console.warn('Calendar/Summary fetch failed', e);
+            } finally {
+              setSummaryLoading(false); // stop loader
             }
           })();
 
-          // Remember last customer viewed
           prevCustomerRef.current = customerId;
         }
-        // If same customer, don't refetch — use cached data. Manual pull-to-refresh will still work.
       }
     }, [customerId, isAuthenticated, dispatch])
   );
@@ -1353,6 +1336,13 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
     const value = upcomingMilkRequests[customerId];
     return Array.isArray(value) ? value : [];
   }, [upcomingMilkRequests, customerId, isVendor]);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+
+    const [year, month, day] = dateStr.split('-');
+    return `${day}-${month}-${year}`;
+  };
 
   // Build marked dates with role-based filtering
   const markedDates: MarkedDates = useMemo(() => {
@@ -1489,7 +1479,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
     if (leaveForDate) {
       Alert.alert(
         'Leave',
-        `On leave 🏠 on ${day.dateString}`,
+        `On leave 🏠 on ${formatDate(day.dateString)}`,
         [{ text: 'OK' }]
       );
       return;
@@ -1534,10 +1524,10 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
         const statuses = Array.isArray(statusOrArray) ? statusOrArray : [statusOrArray as any];
 
         // Vendors shouldn't see leave or extra milk details
-        if (isVendor) {
-          const allowed = statuses.filter(s => allowedVendorStatuses.includes(s));
-          if (allowed.length === 0) { return; }
-        }
+        // if (isVendor) {
+        //   const allowed = statuses.filter(s => allowedVendorStatuses.includes(s));
+        //   if (allowed.length === 0) { return; }
+        // }
 
         const messageMap: Record<string, string> = isDistributor
           ? {
@@ -1569,7 +1559,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
 
         if (messagesToShow.length > 0) {
           Alert.alert('Status', `${messagesToShow.join('\n')}
-on ${day.dateString}`);
+on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
         }
       }
     }
@@ -1584,38 +1574,55 @@ on ${day.dateString}`);
     normalizeDate,
   ]);
 
-  const handleMonthChange = useCallback((month: any) => {
-    if (customerId === null) { return; }
+  const handleMonthChange = useCallback(
+    async (month: any) => {
+      if (customerId === null) return;
 
-    const newMonth = month.month - 1;
-    const newYear = month.year;
+      const newMonth = month.month - 1;
+      const newYear = month.year;
 
-    dispatch(setCurrentMonth({ month: newMonth, year: newYear }));
+      dispatch(setCurrentMonth({ month: newMonth, year: newYear }));
 
-    const monthString = `${newYear}-${month.month.toString().padStart(2, '0')}`;
-    dispatch(fetchCalendarData({ customerId, month: monthString }));
+      const monthString = `${newYear}-${month.month.toString().padStart(2, '0')}`;
 
-    // Also fetch the monthly summary for the selected month (expects MM + YYYY)
-    const monthMM = month.month.toString().padStart(2, '0');
-    const yearYYYY = month.year.toString();
-    dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-  }, [customerId, dispatch]);
+      try {
+        setSummaryLoading(true);
 
-  const onRefresh = useCallback(() => {
-    if (customerId === null) { return; }
+        // 1️⃣ calendar first
+        await dispatch(fetchCalendarData({ customerId, month: monthString }));
+
+        // 2️⃣ summary after calendar
+        const monthMM = month.month.toString().padStart(2, '0');
+        const yearYYYY = month.year.toString();
+        await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
+      } finally {
+        setSummaryLoading(false);
+      }
+    },
+    [customerId, dispatch]
+  );
+
+  const onRefresh = useCallback(async () => {
+    if (customerId === null) return;
 
     setRefreshing(true);
+    setSummaryLoading(true);
     dispatch(clearError());
 
-    const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-    dispatch(fetchCalendarData({ customerId, month: monthString }))
-      .finally(() => {
-        // Always refresh the monthly summary after calendar data
-        const monthMM = (currentMonth + 1).toString().padStart(2, '0');
-        const yearYYYY = currentYear.toString();
-        dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-      })
-      .finally(() => setRefreshing(false));
+    try {
+      const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
+
+      // calendar first
+      await dispatch(fetchCalendarData({ customerId, month: monthString }));
+
+      // summary next
+      const monthMM = (currentMonth + 1).toString().padStart(2, '0');
+      const yearYYYY = currentYear.toString();
+      await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
+    } finally {
+      setRefreshing(false);
+      setSummaryLoading(false);
+    }
   }, [customerId, currentMonth, currentYear, dispatch]);
 
   const handleLeaveSubmit = useCallback(async (leaveData: LeaveRequestData) => {
@@ -1682,117 +1689,124 @@ on ${day.dateString}`);
   }
 
   return (
-    <View style={styles.container}>
-      <View style={[calendarScreenStyles.header, actualShowBackButton && styles.headerWithBackButton]}>
-        {actualShowBackButton && (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButtonStyle}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        )}
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        <View style={[calendarScreenStyles.header, actualShowBackButton && styles.headerWithBackButton]}>
+          {actualShowBackButton && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButtonStyle}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+            >
+              <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          )}
 
-        <View style={styles.headerContent}>
-          <Text style={calendarScreenStyles.title}>
-            {consumerName} - Calendar
-          </Text>
-
-          <View style={calendarScreenStyles.monthSelector}>
-            <Text style={calendarScreenStyles.monthText}>
-              {monthNames[currentMonth]} {currentYear}
+          <View style={styles.headerContent}>
+            <Text style={calendarScreenStyles.title}>
+              {consumerName} - Calendar
             </Text>
+
+            <View style={calendarScreenStyles.monthSelector}>
+              <Text style={calendarScreenStyles.monthText}>
+                {monthNames[currentMonth]} {currentYear}
+              </Text>
+            </View>
+
+            {customerId !== null && (
+              <Text style={calendarScreenStyles.customerIdText}>
+                Customer ID: {customerId}
+              </Text>
+            )}
           </View>
 
-          {customerId !== null && (
-            <Text style={calendarScreenStyles.customerIdText}>
-              Customer ID: {customerId}
-            </Text>
+          {/* Notification Icon - Placeholder for future implementation */}
+          {!isVendor && !isDistributor && (
+            <TouchableOpacity
+              style={styles.notificationButton}
+              onPress={async () => {
+                await markAllAsRead();
+                setNotificationCount(0);
+                (navigation as any).navigate('Notifications');
+              }}
+            >
+              <View>
+                <Ionicons name="notifications-outline" size={24} color="#333" />
+                {notificationCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: -6,
+                      top: -3,
+                      backgroundColor: 'red',
+                      borderRadius: 10,
+                      paddingHorizontal: 5,
+                      paddingVertical: 1,
+                      minWidth: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                      {notificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Notification Icon - Placeholder for future implementation */}
-        {!isVendor && (
-          <TouchableOpacity
-            style={styles.notificationButton}
-            onPress={async () => {
-              await markAllAsRead();
-              setNotificationCount(0);
-              (navigation as any).navigate('Notifications');
-            }}
-          >
-            <View>
-              <Ionicons name="notifications-outline" size={24} color="#333" />
-              {notificationCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    right: -6,
-                    top: -3,
-                    backgroundColor: 'red',
-                    borderRadius: 10,
-                    paddingHorizontal: 5,
-                    paddingVertical: 1,
-                    minWidth: 18,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
-                    {notificationCount}
-                  </Text>
-                </View>
-              )}
+        <ScrollView
+          style={calendarScreenStyles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          <View style={calendarScreenStyles.calendarContainer}>
+            <Calendar
+              style={calendarScreenStyles.calendar}
+              theme={calendarTheme}
+              onDayPress={handleDayPress}
+              onMonthChange={handleMonthChange}
+              markedDates={markedDates}
+              markingType="multi-dot"
+              hideExtraDays={true}
+              disableMonthChange={false}
+              firstDay={1}
+              enableSwipeMonths={true}
+              current={`${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`}
+            />
+          </View>
+
+          <StatusLegend isDistributor={isDistributor} isVendor={isVendor} />
+
+          {summaryLoading ? (
+            <View style={calendarScreenStyles.summaryContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
-          </TouchableOpacity>
-        )}
-      </View>
+          ) : (
+            <MonthlySummary
+              monthlySummary={monthlySummary}
+              currentMonth={currentMonth}
+              currentYear={currentYear}
+              isDistributor={isDistributor}
+              isVendor={isVendor}
+              leavesCount={monthlySummary?.totalLeaves ?? leavesForCustomer.length}
+            />
+          )}
 
-      <ScrollView
-        style={calendarScreenStyles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        <View style={calendarScreenStyles.calendarContainer}>
-          <Calendar
-            style={calendarScreenStyles.calendar}
-            theme={calendarTheme}
-            onDayPress={handleDayPress}
-            onMonthChange={handleMonthChange}
-            markedDates={markedDates}
-            markingType="multi-dot"
-            hideExtraDays={true}
-            disableMonthChange={false}
-            firstDay={1}
-            enableSwipeMonths={true}
-            current={`${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`}
-          />
-        </View>
-
-        <StatusLegend isDistributor={isDistributor} isVendor={isVendor} />
-
-        <MonthlySummary
-          monthlySummary={monthlySummary}
-          currentMonth={currentMonth}
-          currentYear={currentYear}
-          isDistributor={isDistributor}
-          isVendor={isVendor}
-          leavesCount={monthlySummary?.totalLeaves ?? leavesForCustomer.length}
-        />
-
-        {/* Only show action buttons and lists for actual consumer, not distributor or vendor viewing */}
-        {!isDistributor && !isVendor && (
-          <>
-            {/* {leavesForCustomer.length > 0 && (
+          {/* Only show action buttons and lists for actual consumer, not distributor or vendor viewing */}
+          {!isDistributor && !isVendor && (
+            <>
+              {/* {leavesForCustomer.length > 0 && (
               <View style={calendarScreenStyles.leavesContainer}>
                 <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
                 {leavesForCustomer.map((leave, index) => (
@@ -1833,51 +1847,52 @@ on ${day.dateString}`);
               </View>
             )} */}
 
-            <View style={calendarScreenStyles.actionsContainer}>
-              <TouchableOpacity
-                style={calendarScreenStyles.actionButton}
-                onPress={openLeaveModal}
-                activeOpacity={0.7}
-                accessibilityLabel="Apply for leave"
-              >
-                <View style={calendarScreenStyles.actionIcon}>
-                  <Ionicons name="calendar-outline" size={22} color={colors.white} />
-                </View>
-                <View style={calendarScreenStyles.actionTextContainer}>
-                  <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
-                </View>
-              </TouchableOpacity>
+              <View style={calendarScreenStyles.actionsContainer}>
+                <TouchableOpacity
+                  style={calendarScreenStyles.actionButton}
+                  onPress={openLeaveModal}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Apply for leave"
+                >
+                  <View style={calendarScreenStyles.actionIcon}>
+                    <Ionicons name="calendar-outline" size={22} color={colors.white} />
+                  </View>
+                  <View style={calendarScreenStyles.actionTextContainer}>
+                    <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
+                  </View>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={calendarScreenStyles.actionButton}
-                onPress={openExtraMilkModal}
-                activeOpacity={0.7}
-                accessibilityLabel="Request extra milk"
-              >
-                <View style={calendarScreenStyles.actionIcon}>
-                  <Ionicons name="add-circle-outline" size={22} color={colors.white} />
-                </View>
-                <View style={calendarScreenStyles.actionTextContainer}>
-                  <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </>
+                <TouchableOpacity
+                  style={calendarScreenStyles.actionButton}
+                  onPress={openExtraMilkModal}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Request extra milk"
+                >
+                  <View style={calendarScreenStyles.actionIcon}>
+                    <Ionicons name="add-circle-outline" size={22} color={colors.white} />
+                  </View>
+                  <View style={calendarScreenStyles.actionTextContainer}>
+                    <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        {actualViewerRole === 'consumer' && (
+          <ConsumerModals
+            viewerRole={actualViewerRole}
+            showLeaveModal={modalState.showLeaveModal}
+            showExtraMilkModal={modalState.showExtraMilkModal}
+            onCloseLeave={closeLeaveModal}
+            onCloseExtraMilk={closeExtraMilkModal}
+            onSubmitLeave={handleLeaveSubmit}
+            onSubmitExtraMilk={handleExtraMilkSubmit}
+          />
         )}
-      </ScrollView>
-
-      {actualViewerRole === 'consumer' && (
-        <ConsumerModals
-          viewerRole={actualViewerRole}
-          showLeaveModal={modalState.showLeaveModal}
-          showExtraMilkModal={modalState.showExtraMilkModal}
-          onCloseLeave={closeLeaveModal}
-          onCloseExtraMilk={closeExtraMilkModal}
-          onSubmitLeave={handleLeaveSubmit}
-          onSubmitExtraMilk={handleExtraMilkSubmit}
-        />
-      )}
-    </View>
+      </View>
+    </SafeAreaWrapper>
   );
 };
 
@@ -1892,10 +1907,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   headerContent: {
-    flex: 1,
-    marginLeft: 12,
+    position: 'absolute',
+    top: 25,          // 👈 same visual effect as paddingTop
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
+
   backButtonStyle: {
+    position: 'absolute',
+    left: 16,
+    top: 44,          // aligns with title center
+
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1903,6 +1926,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1910,15 +1934,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   notificationButton: {
+    position: 'absolute',
+    right: 16,
+    top: 44,
+
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: '#F0F8FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
-    position: 'relative',
   },
+
 });
 
 export default React.memo(ConsumerCalendarScreen);

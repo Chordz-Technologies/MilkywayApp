@@ -5,8 +5,8 @@ import {
   getConsumerCalendar,
   applyForLeave,
   requestExtraMilk,
+  getConsumerSummary
 } from '../apiServices/allApi';
-import { getConsumerSummary } from '../apiServices/allApi';
 
 interface DeliveryCalendarItem {
   date: string;
@@ -329,29 +329,27 @@ const getDatesBetween = (startDate: string, endDate: string): string[] => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'delivered':
-      return '#4CAF50';
-    case 'missed':
-      return '#2196F3';
-    case 'not_requested':
-      return '#FF9800';
-    case 'consumer_unavailable':
-      return '#F44336';
-    case 'customer_paused':
-      return '#9C27B0';
-    case 'extra_milk':
-      return '#FFC107';
-    case 'pending_extra_milk':
-      return '#F44336';
+      return '#009e05ff';
     case 'vendor_unavailable':
       return '#F44336';
     case 'distributor_unavailable':
       return '#F44336';
     case 'cancelled':
-      return '#FF5722';
+      return '#ff3c00ff';
     case 'leave':
       return '#9C27B0';
-    case 'pending_leave':
+    case 'delivered_extra_milk':
+      return '#45ca49ff';
+    case 'extra_milk':
+      return '#FFC107';
+    case 'pending_extra_milk':
+      return '#2196F3';
+    case 'customer_paused':
       return '#9C27B0';
+    case 'missed':
+      return '#2196F3';
+    case 'not_requested':
+      return '#FF9800';
     default:
       return '#757575';
   }

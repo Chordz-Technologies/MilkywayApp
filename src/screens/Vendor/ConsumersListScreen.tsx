@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { getAcceptedCustomers } from '../../apiServices/allApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
     AllConsumersList: undefined;
@@ -156,104 +157,106 @@ const ConsumersListScreen = () => {
     }, [navigation]);
 
     return (
-        <View style={styles.container}>
-            {/* HEADER BAR */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-                </TouchableOpacity>
+        <SafeAreaWrapper>
+            <View style={styles.container}>
+                {/* HEADER BAR */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                    </TouchableOpacity>
 
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>All Consumers</Text>
-                    <Text style={styles.headerSubtitle}>
-                        View all accepted consumers here
-                    </Text>
-                </View>
-            </View>
-
-            {/* LIST CONTAINER */}
-            <View style={styles.listContainer}>
-                {acceptedConsumers.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="people-outline" size={48} color="#ccc" />
-                        <Text style={styles.emptyText}>No accepted consumers found.</Text>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitle}>All Consumers</Text>
+                        <Text style={styles.headerSubtitle}>
+                            View all accepted consumers here
+                        </Text>
                     </View>
-                ) : (
-                    <FlatList
-                        data={acceptedConsumers}
-                        keyExtractor={(item, index) => `consumer_${item.id || index}`}
-                        refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                        }
-                        renderItem={({ item }) => (
-                            <View style={styles.listItemContainer}>
-                                <TouchableOpacity
-                                    style={styles.listItem}
-                                    activeOpacity={0.8}
-                                    onPress={() => handleNavigateToUserDetails(item)}
-                                >
-                                    <View style={styles.left}>
-                                        <View style={styles.avatar}>
-                                            <Text style={styles.avatarText}>
-                                                {((item.customer?.first_name?.[0] || '') +
-                                                    (item.customer?.last_name?.[0] || ''))
-                                                    .toUpperCase() || item.name?.[0]?.toUpperCase() || 'U'}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.info}>
-                                            <Text style={styles.name}>
-                                                {item.customer
-                                                    ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
-                                                    : item.name}
-                                            </Text>
-                                            <Text style={styles.contact}>{item.user_contact}</Text>
-                                            {item.assigned_distributor_name && (
-                                                <Text style={styles.assigned}>
-                                                    Assigned: {item.assigned_distributor_name}
-                                                </Text>
-                                            )}
-                                        </View>
-                                    </View>
+                </View>
 
-                                    <View style={styles.right}>
-                                        <View
-                                            style={[
-                                                styles.statusBadge,
-                                                { backgroundColor: getStatusColor(item.status) + '20' },
-                                            ]}
-                                        >
-                                            <Text
+                {/* LIST CONTAINER */}
+                <View style={styles.listContainer}>
+                    {acceptedConsumers.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="people-outline" size={48} color="#ccc" />
+                            <Text style={styles.emptyText}>No accepted consumers found.</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={acceptedConsumers}
+                            keyExtractor={(item, index) => `consumer_${item.id || index}`}
+                            refreshControl={
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                            }
+                            renderItem={({ item }) => (
+                                <View style={styles.listItemContainer}>
+                                    <TouchableOpacity
+                                        style={styles.listItem}
+                                        activeOpacity={0.8}
+                                        onPress={() => handleNavigateToUserDetails(item)}
+                                    >
+                                        <View style={styles.left}>
+                                            <View style={styles.avatar}>
+                                                <Text style={styles.avatarText}>
+                                                    {((item.customer?.first_name?.[0] || '') +
+                                                        (item.customer?.last_name?.[0] || ''))
+                                                        .toUpperCase() || item.name?.[0]?.toUpperCase() || 'U'}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.info}>
+                                                <Text style={styles.name}>
+                                                    {item.customer
+                                                        ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
+                                                        : item.name}
+                                                </Text>
+                                                <Text style={styles.contact}>{item.user_contact}</Text>
+                                                {item.assigned_distributor_name && (
+                                                    <Text style={styles.assigned}>
+                                                        Assigned: {item.assigned_distributor_name}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.right}>
+                                            <View
                                                 style={[
-                                                    styles.statusText,
-                                                    { color: getStatusColor(item.status) },
+                                                    styles.statusBadge,
+                                                    { backgroundColor: getStatusColor(item.status) + '20' },
                                                 ]}
                                             >
-                                                {item.status?.toUpperCase()}
-                                            </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.statusText,
+                                                        { color: getStatusColor(item.status) },
+                                                    ]}
+                                                >
+                                                    {item.status?.toUpperCase()}
+                                                </Text>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={20} color="#ccc" />
                                         </View>
-                                        <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                                    </View>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.tempAssignButton,
-                                        item.has_temporary_distributor && styles.tempAssignButtonActive,
-                                    ]}
-                                    onPress={() => handleNavigateToTempAssignment(item)}
-                                    activeOpacity={0.7}
-                                >
-                                    <Ionicons
-                                        name={item.has_temporary_distributor ? 'close-circle' : 'swap-horizontal'}
-                                        size={18}
-                                        color={item.has_temporary_distributor ? '#FF3B30' : '#007AFF'}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    />
-                )}
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.tempAssignButton,
+                                            item.has_temporary_distributor && styles.tempAssignButtonActive,
+                                        ]}
+                                        onPress={() => handleNavigateToTempAssignment(item)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons
+                                            name={item.has_temporary_distributor ? 'close-circle' : 'swap-horizontal'}
+                                            size={18}
+                                            color={item.has_temporary_distributor ? '#FF3B30' : '#007AFF'}
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        />
+                    )}
+                </View>
             </View>
-        </View>
+        </SafeAreaWrapper>
     );
 };
 

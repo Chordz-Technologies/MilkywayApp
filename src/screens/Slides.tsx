@@ -186,15 +186,15 @@ import {
   NativeSyntheticEvent,
   ImageSourcePropType,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import colors from '../theme/colors';
+import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
-  Login: undefined;
+  TermsConditions: undefined;
 };
 
-type SlidesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+type SlidesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TermsConditions'>;
 
 type Props = {
   navigation: SlidesScreenNavigationProp;
@@ -236,51 +236,52 @@ const Slides: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleGetStarted = async () => {
-    await AsyncStorage.setItem('hasSeenSlides', 'true');
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    navigation.navigate('TermsConditions');
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        style={{ flex: 1 }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-        onMomentumScrollEnd={handleScrollEnd}
-      >
-        {slides.map((slide) => (
-          <View style={styles.slide} key={slide.title}>
-            <Text style={styles.title}>{slide.title}</Text>
-            <Text style={styles.desc}>{slide.desc}</Text>
-            <Image source={slide.image} style={styles.image} />
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        <Animated.ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={{ flex: 1 }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={handleScrollEnd}
+        >
+          {slides.map((slide) => (
+            <View style={styles.slide} key={slide.title}>
+              <Text style={styles.title}>{slide.title}</Text>
+              <Text style={styles.desc}>{slide.desc}</Text>
+              <Image source={slide.image} style={styles.image} />
 
-            {slide.title === 'Fast & Reliable Delivery' && (
-              <TouchableOpacity style={styles.startBtn} onPress={handleGetStarted}>
-                <Text style={styles.startBtnText}>Get Started</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-      </Animated.ScrollView>
+              {slide.title === 'Fast & Reliable Delivery' && (
+                <TouchableOpacity style={styles.startBtn} onPress={handleGetStarted}>
+                  <Text style={styles.startBtnText}>Get Started</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+        </Animated.ScrollView>
 
-      <View style={styles.dots}>
-        {slides.map((_, i) => (
-          <Animated.View
-            key={`dot-${i}`}
-            style={[
-              styles.dot,
-              { backgroundColor: current === i ? colors.gray : colors.primaryLight },
-            ]}
-          />
-        ))}
+        <View style={styles.dots}>
+          {slides.map((_, i) => (
+            <Animated.View
+              key={`dot-${i}`}
+              style={[
+                styles.dot,
+                { backgroundColor: current === i ? colors.gray : colors.primaryLight },
+              ]}
+            />
+          ))}
+        </View>
       </View>
-    </View>
+    </SafeAreaWrapper>
   );
 };
 

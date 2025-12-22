@@ -1,15 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Alert, Keyboard, TouchableWithoutFeedback, ScrollView, } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { styles } from '../styles/LoginStyle';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, checkStoredAuth, clearError } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store';
 import messaging from '@react-native-firebase/messaging';
+import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -129,86 +121,106 @@ const LoginScreen = () => {
   }, [showPassword]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Image
-        source={require('../assets/logo1.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-
-      <Text style={styles.welcomeText}>Milkyway</Text>
-
-      {/* Contact Input */}
-      <View style={styles.inputWrapper}>
-        <Icon name="phone" size={20} color="#555" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Mobile Number"
-          placeholderTextColor="#888"
-          keyboardType="phone-pad"
-          autoCapitalize="none"
-          value={contact}
-          onChangeText={handleContactChange}
-          maxLength={10}
-        />
-      </View>
-
-      {/* Password Input */}
-      <View style={styles.inputWrapper}>
-        <Icon name="lock" size={20} color="#555" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#888"
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TouchableOpacity onPress={togglePasswordVisibility}>
-          <Icon
-            name={showPassword ? 'eye-slash' : 'eye'}
-            size={18}
-            color="#555"
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={styles.forgotWrapper}
-        onPress={() => navigation.navigate('ForgotPassword')}
+    <SafeAreaWrapper>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}   // ✅ IMPORTANT
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <Text style={styles.forgotText}>Forgot Password?</Text>
-      </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{
+                flexGrow: 1,
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingBottom: 100,
+                backgroundColor: '#FFFFFF',
+              }}
+            >
+              <View style={styles.container}>
+                <Image
+                  source={require('../assets/logo1.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
 
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        <Text style={styles.loginText}>
-          {isLoading ? 'Logging in...' : 'Login'}
-        </Text>
-      </TouchableOpacity>
+                <Text style={styles.welcomeText}>Milkyway</Text>
 
-      <Text style={styles.registerText}>Register as:</Text>
-      <View style={styles.registerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorRegistration')}>
-          <Text style={styles.link}>Vendor</Text>
-        </TouchableOpacity>
-        <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('ConsumerRegistration')}>
-          <Text style={styles.link}>Consumer</Text>
-        </TouchableOpacity>
-        <Text style={styles.registerText}>/</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('DistributorRegistration')}>
-          <Text style={styles.link}>Distributor</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+                {/* Contact Input */}
+                <View style={styles.inputWrapper}>
+                  <Icon name="phone" size={20} color="#555" style={styles.icon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Mobile Number"
+                    placeholderTextColor="#888"
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    value={contact}
+                    onChangeText={handleContactChange}
+                    maxLength={10}
+                  />
+                </View>
+
+                {/* Password Input */}
+                <View style={styles.inputWrapper}>
+                  <Icon name="lock" size={20} color="#555" style={styles.icon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor="#888"
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity onPress={togglePasswordVisibility}>
+                    <Icon
+                      name={showPassword ? 'eye-slash' : 'eye'}
+                      size={18}
+                      color="#555"
+                      style={styles.icon}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.forgotWrapper}
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                >
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.loginText}>
+                    {isLoading ? 'Logging in...' : 'Login'}
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={styles.registerText}>Register as:</Text>
+                <View style={styles.registerContainer}>
+                  <TouchableOpacity onPress={() => navigation.navigate('VendorRegistration')}>
+                    <Text style={styles.link}>Vendor</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.registerText}>/</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('ConsumerRegistration')}>
+                    <Text style={styles.link}>Consumer</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.registerText}>/</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('DistributorRegistration')}>
+                    <Text style={styles.link}>Distributor</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 

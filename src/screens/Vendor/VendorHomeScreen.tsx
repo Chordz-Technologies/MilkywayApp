@@ -17,6 +17,7 @@ import {
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from '../../notifications/NotificationService';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import MonthPicker from "react-native-month-year-picker";
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 // Navigation Types
 type RootStackParamList = {
@@ -390,207 +391,209 @@ const VendorHomeScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.container}>
-        {/* HEADER WITH NOTIFICATION */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Vendor Home</Text>
-            <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
-          </View>
-          <View style={styles.headerActions}>
-            {/* ✅ Calendar Button */}
-            <TouchableOpacity
-              style={styles.notificationButton}
-              onPress={() => setShowMonthPicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
+    <SafeAreaWrapper>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          {/* HEADER WITH NOTIFICATION */}
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.headerTitle}>Vendor Home</Text>
+              <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
+            </View>
+            <View style={styles.headerActions}>
+              {/* ✅ Calendar Button */}
+              <TouchableOpacity
+                style={styles.notificationButton}
+                onPress={() => setShowMonthPicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={24} color="#007AFF" />
+              </TouchableOpacity>
 
-            {/* Month Picker */}
-            {showMonthPicker && (
-              <MonthPicker
-                onChange={onMonthChange}
-                value={selectedMonth}
-                minimumDate={new Date(2023, 0)}
-                maximumDate={new Date()}
-                locale="en"
-              />
-            )}
+              {/* Month Picker */}
+              {showMonthPicker && (
+                <MonthPicker
+                  onChange={onMonthChange}
+                  value={selectedMonth}
+                  minimumDate={new Date(2023, 0)}
+                  maximumDate={new Date()}
+                  locale="en"
+                />
+              )}
 
-            {/* Notification Button */}
-            <TouchableOpacity
-              style={styles.notificationButton}
-              onPress={async () => {
-                await markAllAsRead();
-                setNotificationCount(0);
-                navigation.navigate('Notifications');
-              }}
-            >
-              <View>
-                <Ionicons name="notifications-outline" size={24} color="#333" />
-                {notificationCount > 0 && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      right: -6,
-                      top: -3,
-                      backgroundColor: 'red',
-                      borderRadius: 10,
-                      paddingHorizontal: 5,
-                      paddingVertical: 1,
-                      minWidth: 18,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
-                      {notificationCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
+              {/* Notification Button */}
+              <TouchableOpacity
+                style={styles.notificationButton}
+                onPress={async () => {
+                  await markAllAsRead();
+                  setNotificationCount(0);
+                  navigation.navigate('Notifications');
+                }}
+              >
+                <View>
+                  <Ionicons name="notifications-outline" size={24} color="#333" />
+                  {notificationCount > 0 && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: -6,
+                        top: -3,
+                        backgroundColor: 'red',
+                        borderRadius: 10,
+                        paddingHorizontal: 5,
+                        paddingVertical: 1,
+                        minWidth: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+                        {notificationCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
 
-            {/* Logout Button */}
-            {/* <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              {/* Logout Button */}
+              {/* <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
               <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
             </TouchableOpacity> */}
+            </View>
           </View>
+
+          {/* PROFILE CARD */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('VendorProfile')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.profileImageContainer}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarInitials}>{getInitials(vendorName)}</Text>
+              </View>
+              <View style={styles.editBadge}>
+                <Ionicons name="pencil" size={12} color="#fff" />
+              </View>
+            </View>
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{vendorName}</Text>
+              <Text style={styles.profileLocation}>{village}</Text>
+              <View style={styles.profileBadge}>
+                <Text style={styles.profileBadgeText}>Premium ⭐</Text>
+              </View>
+            </View>
+
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+
+          {/* STATS GRID */}
+          <View style={styles.statsSection}>
+            <Text style={styles.sectionTitle}>Analytics Overview</Text>
+            <View style={styles.statsGrid}>
+              {statsData.map((stat, index) => (
+                <AnimatedStatCard
+                  key={index}
+                  stat={stat}
+                  onPress={() => handleCardPress(stat.label)}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* PENDING REQUESTS */}
+          <TouchableOpacity
+            style={styles.pendingCard}
+            onPress={() => navigation.navigate('PendingRequests')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingLeft}>
+              <View style={styles.pendingIconContainer}>
+                <Ionicons name="notifications" size={24} color="#FF9500" />
+              </View>
+              <View>
+                <Text style={styles.pendingTitle}>Pending Requests</Text>
+                <Text style={styles.pendingSubtitle}>Requires your attention</Text>
+              </View>
+            </View>
+            <View style={styles.pendingRight}>
+              <Text style={styles.pendingCount}>{dashboardData.pending_request_count}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+
+          {/* <-- NEW: CONSUMER EXTRA MILK REQUESTS CARD */}
+          <TouchableOpacity
+            style={styles.pendingCard}
+            onPress={() => navigation.navigate('VendorConsumerRequests')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingLeft}>
+              <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
+                <Ionicons name="water" size={24} color="#007AFF" />
+              </View>
+              <View>
+                <Text style={styles.pendingTitle}>Consumer Extra Milk</Text>
+                <Text style={styles.pendingSubtitle}>Extra milk requests from consumers</Text>
+              </View>
+            </View>
+            <View style={styles.pendingRight}>
+              <Text style={[styles.pendingCount, { color: '#007AFF' }]}>
+                {dashboardData.consumer_extra_milk_amount}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+
+          {/* <-- NEW: DISTRIBUTOR LEAVE REQUESTS CARD */}
+          <TouchableOpacity
+            style={styles.pendingCard}
+            onPress={() => navigation.navigate('VendorDistributorLeave')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingLeft}>
+              <View style={[styles.pendingIconContainer, { backgroundColor: '#FFF4E6' }]}>
+                <Ionicons name="calendar" size={24} color="#FF9500" />
+              </View>
+              <View>
+                <Text style={styles.pendingTitle}>Distributor Leave</Text>
+                <Text style={styles.pendingSubtitle}>Leave requests from distributors</Text>
+              </View>
+            </View>
+            <View style={styles.pendingRight}>
+              <Text style={[styles.pendingCount, { color: '#FF9500' }]}>
+                {dashboardData.distributor_leave_count}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.pendingCard}
+            onPress={() => navigation.navigate('VendorSubscription')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingLeft}>
+              <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
+                <Ionicons name="cash-outline" size={24} color="#007AFF" />
+              </View>
+              <View>
+                <Text style={styles.pendingTitle}>Subscriptions</Text>
+                <Text style={styles.pendingSubtitle}>Choose your preferred plan here</Text>
+              </View>
+            </View>
+            <View style={styles.pendingRight}>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
         </View>
-
-        {/* PROFILE CARD */}
-        <TouchableOpacity
-          style={styles.profileCard}
-          onPress={() => navigation.navigate('VendorProfile')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.profileImageContainer}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitials}>{getInitials(vendorName)}</Text>
-            </View>
-            <View style={styles.editBadge}>
-              <Ionicons name="pencil" size={12} color="#fff" />
-            </View>
-          </View>
-
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{vendorName}</Text>
-            <Text style={styles.profileLocation}>{village}</Text>
-            <View style={styles.profileBadge}>
-              <Text style={styles.profileBadgeText}>Premium ⭐</Text>
-            </View>
-          </View>
-
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
-
-        {/* STATS GRID */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Analytics Overview</Text>
-          <View style={styles.statsGrid}>
-            {statsData.map((stat, index) => (
-              <AnimatedStatCard
-                key={index}
-                stat={stat}
-                onPress={() => handleCardPress(stat.label)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* PENDING REQUESTS */}
-        <TouchableOpacity
-          style={styles.pendingCard}
-          onPress={() => navigation.navigate('PendingRequests')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingLeft}>
-            <View style={styles.pendingIconContainer}>
-              <Ionicons name="notifications" size={24} color="#FF9500" />
-            </View>
-            <View>
-              <Text style={styles.pendingTitle}>Pending Requests</Text>
-              <Text style={styles.pendingSubtitle}>Requires your attention</Text>
-            </View>
-          </View>
-          <View style={styles.pendingRight}>
-            <Text style={styles.pendingCount}>{dashboardData.pending_request_count}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
-
-        {/* <-- NEW: CONSUMER EXTRA MILK REQUESTS CARD */}
-        <TouchableOpacity
-          style={styles.pendingCard}
-          onPress={() => navigation.navigate('VendorConsumerRequests')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingLeft}>
-            <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
-              <Ionicons name="water" size={24} color="#007AFF" />
-            </View>
-            <View>
-              <Text style={styles.pendingTitle}>Consumer Extra Milk</Text>
-              <Text style={styles.pendingSubtitle}>Extra milk requests from consumers</Text>
-            </View>
-          </View>
-          <View style={styles.pendingRight}>
-            <Text style={[styles.pendingCount, { color: '#007AFF' }]}>
-              {dashboardData.consumer_extra_milk_amount}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
-
-        {/* <-- NEW: DISTRIBUTOR LEAVE REQUESTS CARD */}
-        <TouchableOpacity
-          style={styles.pendingCard}
-          onPress={() => navigation.navigate('VendorDistributorLeave')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingLeft}>
-            <View style={[styles.pendingIconContainer, { backgroundColor: '#FFF4E6' }]}>
-              <Ionicons name="calendar" size={24} color="#FF9500" />
-            </View>
-            <View>
-              <Text style={styles.pendingTitle}>Distributor Leave</Text>
-              <Text style={styles.pendingSubtitle}>Leave requests from distributors</Text>
-            </View>
-          </View>
-          <View style={styles.pendingRight}>
-            <Text style={[styles.pendingCount, { color: '#FF9500' }]}>
-              {dashboardData.distributor_leave_count}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.pendingCard}
-          onPress={() => navigation.navigate('VendorSubscription')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingLeft}>
-            <View style={[styles.pendingIconContainer, { backgroundColor: '#E8F4FD' }]}>
-              <Ionicons name="cash-outline" size={24} color="#007AFF" />
-            </View>
-            <View>
-              <Text style={styles.pendingTitle}>Subscriptions</Text>
-              <Text style={styles.pendingSubtitle}>Choose your preferred plan here</Text>
-            </View>
-          </View>
-          <View style={styles.pendingRight}>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaWrapper>
   );
 };
 

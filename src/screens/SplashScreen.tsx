@@ -193,6 +193,7 @@ import { RootState } from '../store';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import colors from '../theme/colors';
+import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 const SplashScreen = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -201,33 +202,36 @@ const SplashScreen = () => {
   useEffect(() => {
     const decideNext = async () => {
       const hasSeenSlides = await AsyncStorage.getItem('hasSeenSlides');
+      const termsAccepted = await AsyncStorage.getItem('termsAccepted');
 
       setTimeout(() => {
-  if (isAuthenticated && user?.role) {
-    if (user.role === 'vendor') {
-      navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
-    } else if (user.role === 'customer') {
-      navigation.reset({ index: 0, routes: [{ name: 'ConsumerHome' }] });
-    } else if (user.role === 'milkman') {
-      navigation.reset({ index: 0, routes: [{ name: 'DistributorHome' }] });
-    }
-  } else {
-    if (!hasSeenSlides) {
-      navigation.reset({ index: 0, routes: [{ name: 'Slide' }] });
-    } else {
-      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-    }
-  }
-}, 1500);
+        if (isAuthenticated && user?.role) {
+          if (user.role === 'vendor') {
+            navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
+          } else if (user.role === 'customer') {
+            navigation.reset({ index: 0, routes: [{ name: 'ConsumerHome' }] });
+          } else if (user.role === 'milkman') {
+            navigation.reset({ index: 0, routes: [{ name: 'DistributorHome' }] });
+          }
+        } else {
+          if (hasSeenSlides && termsAccepted) {
+            navigation.reset({ index: 0, routes: [{ name: 'Slide' }] });
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        }
+      }, 1500);
     };
 
     decideNext();
   }, [isAuthenticated, user?.role, navigation]); // include navigation to deps
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary }}>
-      <ActivityIndicator size="large" color={colors.white} />
-    </View>
+    <SafeAreaWrapper>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary }}>
+        <ActivityIndicator size="large" color={colors.white} />
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

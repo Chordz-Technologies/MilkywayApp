@@ -101,15 +101,16 @@ export const addCustomerRegistration = (payload: any) =>
 export const addDistributorRegistration = (payload: any) =>
   publicApiClient.post('/milkman/milkmen/', payload);
 
-//  OTP APIs - PUBLIC
-export const requestOtp = (phone_number: string) =>
-  publicApiClient.post('/vendor-login/request_otp/', { phone_number });
+//  Forgot password APIs - PUBLIC
+export const forgotPassword = (data: {
+  phone_number: string;
+  firebase_token: string;
+}) => {
+  return publicApiClient.post('/vendor-login/forgot_password/', data);
+};
 
-export const verifyOtp = (payload: { mobile: string; otp: string }) =>
-  publicApiClient.post('/vendor-login/verify_otp/', payload);
-
-export const changePassword = (payload: { mobile: string; password: string }) =>
-  publicApiClient.post('/vendor-login/change_password/', payload);
+export const resetPassword = (payload: { mobile: string; password: string }) =>
+  publicApiClient.post('/vendor-login/reset_password/', payload);
 
 /* ========= PROFILE APIs (Authenticated) ========= */
 
@@ -133,7 +134,6 @@ export const getDistributorDetailsById = (id: string | number) =>
 //   return apiClient.put(`/registration/vendor-business-registration/${id}/`, data);
 // };//  FIXED - Changed from PUT to PATCH
 export const updateVendorProfile = (id: number | string, data: any) => {
-  console.log('📤 PATCH /registration/vendor-business-registration/', id, data);
   return apiClient.patch(`/registration/vendor-business-registration/${id}/`, data);
 };
 
@@ -263,10 +263,18 @@ export const getDistributorLeaveRequests = () =>
 
 //  Get Distributor Calendar Data (Leave Allocation) - AUTHENTICATED
 export const getDistributorCalendar = (payload: {
-  milkman_id?: number; // Optional - for specific milkman
+  milkman_id: number; // Optional - for specific milkman
   month: string; // Required - Format: YYYY-MM
 }) =>
-  apiClient.get(`/consumer-calendar/distributor-calendar/check-leave-allocation/?milkman_id=${payload.milkman_id}&month=${payload.month}`);
+  apiClient.get(`/consumer-calendar/distributor-calendar/milkman-calendar/?milkman_id=${payload.milkman_id}&month=${payload.month}`);
+
+//  Get Distributor Monthly Summary - AUTHENTICATED
+export const getDistributorMonthSummary = (payload: {
+  milkman_id: number;
+  month: number | string; // Format: 1..12
+  year: number | string; // Format: YYYY
+}) =>
+  apiClient.get(`/dashboard/milkman-month-summary/?milkman_id=${payload.milkman_id}&month=${payload.month}&year=${payload.year}`);
 
 export const applyForDistributorLeave = (payload: {
   milkman_id?: number; // Optional - for requesting on behalf of another milkman

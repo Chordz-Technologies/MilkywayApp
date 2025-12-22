@@ -1,18 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Linking,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerDistributor, clearError } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 interface DistributorPayload {
   full_name: string;
@@ -161,199 +154,212 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
   const displayError = error || localError;
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.titleRow}>
-        <TouchableOpacity
-          style={styles.backArrow}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Icon name="arrow-left" size={32} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Distributor Registration</Text>
-      </View>
-
-      {displayError ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{displayError}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Full Name<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.name}
-          onChangeText={text => handleInputChange('name', text)}
-          placeholder="Enter full name"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
-        <View style={styles.phoneInputContainer}>
-          <Text style={styles.countryCode}>+91</Text>
-          <TextInput
-            style={styles.phoneInput}
-            value={form.phone}
-            onChangeText={text => {
-              const cleaned = text.replace(/\D/g, '').slice(0, 10);
-              handleInputChange('phone', cleaned);
-            }}
-            placeholder="Enter phone number"
-            keyboardType="number-pad"
-            maxLength={10}
-            placeholderTextColor="#888"
-          />
-        </View>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Flat / House<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.flat}
-          onChangeText={text => handleInputChange('flat', text)}
-          placeholder="Enter flat or house"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Society / Area<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.society}
-          onChangeText={text => handleInputChange('society', text)}
-          placeholder="Enter society or area"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Village<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.village}
-          onChangeText={text => handleInputChange('village', text)}
-          placeholder="Enter village"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Taluka<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.tal}
-          onChangeText={text => handleInputChange('tal', text)}
-          placeholder="Enter Taluka"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>District<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.dist}
-          onChangeText={text => handleInputChange('dist', text)}
-          placeholder="Enter District"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>State<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.state}
-          onChangeText={text => handleInputChange('state', text)}
-          placeholder="Enter State"
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      {/* ✅ Added Pincode Field */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={form.pincode}
-          onChangeText={text => {
-            const cleaned = text.replace(/\D/g, '').slice(0, 6);
-            handleInputChange('pincode', cleaned);
-          }}
-          placeholder="Enter 6-digit pincode"
-          keyboardType="number-pad"
-          maxLength={6}
-          placeholderTextColor="#888"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
-        <View style={styles.inputBoxRelative}>
-          <TextInput
-            style={[styles.input, styles.inputWithIcon]}
-            value={form.password}
-            onChangeText={text => handleInputChange('password', text)}
-            placeholder="Enter password"
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-            placeholderTextColor="#aaa"
-          />
-          <TouchableOpacity
-            style={styles.iconInside}
-            onPress={() => setShowPassword(v => !v)}
+    <SafeAreaWrapper>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            ref={scrollRef}
+            style={[styles.container, { paddingBottom: 100 }]}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.contentContainer,
+              { flexGrow: 1 }
+            ]}
           >
-            <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#444" />
-          </TouchableOpacity>
-        </View>
-      </View>
+            <View style={styles.titleRow}>
+              <TouchableOpacity
+                style={styles.backArrow}
+                onPress={() => navigation.goBack()}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="arrow-left" size={32} color="#333" />
+              </TouchableOpacity>
+              <Text style={styles.title}>Distributor Registration</Text>
+            </View>
 
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Confirm Password<Text style={styles.required}> *</Text></Text>
-        <View style={styles.inputBoxRelative}>
-          <TextInput
-            style={[styles.input, styles.inputWithIcon]}
-            value={form.confirmPassword}
-            onChangeText={text => handleInputChange('confirmPassword', text)}
-            placeholder="Confirm password"
-            secureTextEntry={!showConfirmPassword}
-            autoCapitalize="none"
-            placeholderTextColor="#aaa"
-          />
-          <TouchableOpacity
-            style={styles.iconInside}
-            onPress={() => setShowConfirmPassword(v => !v)}
-          >
-            <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#444" />
-          </TouchableOpacity>
-        </View>
-      </View>
+            {displayError ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{displayError}</Text>
+              </View>
+            ) : null}
 
-      <Text style={styles.terms}>
-        By registering, you agree to our{' '}
-        <Text
-          style={styles.link}
-          onPress={() => Linking.openURL('https://example.com/terms/distributor')}
-        >
-          Distributor Terms
-        </Text>.
-      </Text>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Full Name<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.name}
+                onChangeText={text => handleInputChange('name', text)}
+                placeholder="Enter full name"
+                placeholderTextColor="#888"
+              />
+            </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Registering...' : 'Register'}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
+              <View style={styles.phoneInputContainer}>
+                <Text style={styles.countryCode}>+91</Text>
+                <TextInput
+                  style={styles.phoneInput}
+                  value={form.phone}
+                  onChangeText={text => {
+                    const cleaned = text.replace(/\D/g, '').slice(0, 10);
+                    handleInputChange('phone', cleaned);
+                  }}
+                  placeholder="Enter phone number"
+                  keyboardType="number-pad"
+                  maxLength={10}
+                  placeholderTextColor="#888"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Flat / House<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.flat}
+                onChangeText={text => handleInputChange('flat', text)}
+                placeholder="Enter flat or house"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Society / Area<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.society}
+                onChangeText={text => handleInputChange('society', text)}
+                placeholder="Enter society or area"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Village<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.village}
+                onChangeText={text => handleInputChange('village', text)}
+                placeholder="Enter village"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Taluka<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.tal}
+                onChangeText={text => handleInputChange('tal', text)}
+                placeholder="Enter Taluka"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>District<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.dist}
+                onChangeText={text => handleInputChange('dist', text)}
+                placeholder="Enter District"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>State<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.state}
+                onChangeText={text => handleInputChange('state', text)}
+                placeholder="Enter State"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            {/* ✅ Added Pincode Field */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={form.pincode}
+                onChangeText={text => {
+                  const cleaned = text.replace(/\D/g, '').slice(0, 6);
+                  handleInputChange('pincode', cleaned);
+                }}
+                placeholder="Enter 6-digit pincode"
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
+              <View style={styles.inputBoxRelative}>
+                <TextInput
+                  style={[styles.input, styles.inputWithIcon]}
+                  value={form.password}
+                  onChangeText={text => handleInputChange('password', text)}
+                  placeholder="Enter password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  placeholderTextColor="#aaa"
+                />
+                <TouchableOpacity
+                  style={styles.iconInside}
+                  onPress={() => setShowPassword(v => !v)}
+                >
+                  <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Confirm Password<Text style={styles.required}> *</Text></Text>
+              <View style={styles.inputBoxRelative}>
+                <TextInput
+                  style={[styles.input, styles.inputWithIcon]}
+                  value={form.confirmPassword}
+                  onChangeText={text => handleInputChange('confirmPassword', text)}
+                  placeholder="Confirm password"
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  placeholderTextColor="#aaa"
+                />
+                <TouchableOpacity
+                  style={styles.iconInside}
+                  onPress={() => setShowConfirmPassword(v => !v)}
+                >
+                  <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* <Text style={styles.terms}>
+              By registering, you agree to our{' '}
+              <Text
+                style={styles.link}
+                onPress={() => Linking.openURL('https://example.com/terms/distributor')}
+              >
+                Distributor Terms
+              </Text>.
+            </Text> */}
+
+            <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
+              <Text style={styles.buttonText}>
+                {isLoading ? 'Registering...' : 'Register'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 }

@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RazorpayCheckout from 'react-native-razorpay';
 import { getCustomerBills, verifyConsumerPayment, createConsumerOrder } from '../../apiServices/allApi'; // ✅ import your APIs
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
     VendorSubscription: undefined;
@@ -407,36 +408,38 @@ const VendorSubscriptionScreen = () => {
     }
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-                </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Monthly Bills</Text>
-                    <Text style={styles.headerSubtitle}>Pay your bills below</Text>
+        <SafeAreaWrapper>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                    </TouchableOpacity>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitle}>Monthly Bills</Text>
+                        <Text style={styles.headerSubtitle}>Pay your bills below</Text>
+                    </View>
                 </View>
-            </View>
 
-            {/* Subscription List */}
-            {subscriptions.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="gift-outline" size={64} color="#ccc" />
-                    <Text style={styles.emptyTitle}>No Packages Found</Text>
-                    <Text style={styles.emptySubtitle}>Subscription plans will appear here.</Text>
-                </View>
-            ) : (
-                <FlashList
-                    data={subscriptions}
-                    keyExtractor={(item) => `sub_${item.id}`}
-                    renderItem={renderSubscriptionCard}
-                    contentContainerStyle={styles.listContainer}
-                    // refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
-        </View>
+                {/* Subscription List */}
+                {subscriptions.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="gift-outline" size={64} color="#ccc" />
+                        <Text style={styles.emptyTitle}>No Packages Found</Text>
+                        <Text style={styles.emptySubtitle}>Subscription plans will appear here.</Text>
+                    </View>
+                ) : (
+                    <FlashList
+                        data={subscriptions}
+                        keyExtractor={(item) => `sub_${item.id}`}
+                        renderItem={renderSubscriptionCard}
+                        contentContainerStyle={styles.listContainer}
+                        // refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                        showsVerticalScrollIndicator={false}
+                    />
+                )}
+            </View>
+        </SafeAreaWrapper>
     );
 };
 

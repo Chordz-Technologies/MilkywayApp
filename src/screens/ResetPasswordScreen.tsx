@@ -11,7 +11,8 @@ import { styles } from '../styles/ResetPasswordStyles';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { changePassword } from '../apiServices/allApi'; // ✅ import API
+import { resetPassword } from '../apiServices/allApi'; // ✅ import API
+import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ResetPassword'>;
 
@@ -29,7 +30,7 @@ const ResetPasswordScreen = () => {
       Alert.alert('Error', 'Passwords do not match');
     } else {
       try {
-        const res = await changePassword({ mobile, password: newPassword });
+        const res = await resetPassword({ mobile, password: newPassword });
 
         if (res.status === 200) {
           Alert.alert('Success', 'Password reset successful');
@@ -45,36 +46,38 @@ const ResetPasswordScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('../assets/newpass.png')} style={styles.logo} />
-      <Text style={styles.title}>Set New Password</Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        <Image source={require('../assets/newpass.png')} style={styles.logo} />
+        <Text style={styles.title}>Set New Password</Text>
 
-      <Text style={styles.subLabel}>Enter your new password below</Text>
+        <Text style={styles.subLabel}>Enter your new password below</Text>
 
-      <TextInput
-        placeholder="New Password"
-        secureTextEntry
-        style={styles.input}
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
+        <TextInput
+          placeholder="New Password"
+          secureTextEntry
+          style={styles.input}
+          value={newPassword}
+          onChangeText={setNewPassword}
+        />
 
-      <TextInput
-        placeholder="Confirm New Password"
-        secureTextEntry
-        style={styles.input}
-        value={confirmNewPassword}
-        onChangeText={setConfirmNewPassword}
-      />
+        <TextInput
+          placeholder="Confirm New Password"
+          secureTextEntry
+          style={styles.input}
+          value={confirmNewPassword}
+          onChangeText={setConfirmNewPassword}
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleReset}>
-        <Text style={styles.buttonText}>Reset Password</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleReset}>
+          <Text style={styles.buttonText}>Reset Password</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.backToLogin}>Back to Login</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.backToLogin}>Back to Login</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

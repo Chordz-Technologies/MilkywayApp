@@ -18,19 +18,22 @@ export const calendarScreenStyles = StyleSheet.create({
   // ===================
   header: {
     backgroundColor: '#fff',
-    padding: 16,
-    paddingTop: 50,
+    paddingHorizontal: 16,
+    height: 96, // ← replaces paddingTop: 50
+
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+
   title: {
     fontSize: 20,
     fontWeight: 'bold',

@@ -178,6 +178,7 @@ import ConsumerListScreen from '../screens/Vendor/ConsumersListScreen';
 import DistributorsListScreen from '../screens/Vendor/DistributorsListScreen';
 import MilkRequestDistributorAssignScreen from '../screens/Vendor/MilkRequestDistributorAssignScreen';
 import ExtraMilkListScreen from '../screens/Distributor/ExtraMilkListScreen';
+import TermsConditionScreen from '../screens/TermsConditionScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -194,6 +195,7 @@ const AppNavigator = () => {
         {/* Splash & Slides */}
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Slide" component={SlideScreen} />
+        <Stack.Screen name="TermsConditions" component={TermsConditionScreen} />
 
         {/* Auth screens */}
         <Stack.Screen name="Login" component={LoginScreen} />

@@ -667,32 +667,32 @@ export const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
- // Updated styles for the rate input section
-rateRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 4,
-  marginLeft: 2,
-  marginBottom: 8,
-},
-rateLabel: {
-  fontSize: 15,
-  color: '#333',
-  marginRight: 12,
-  fontWeight: '500',
-  minWidth: 50, // Adjusted for shorter "Rate" label
-},
-rateInput: {
-  width: 152, // Increased width to match ltrs box (was 70)
-  borderWidth: 1,
-  borderColor: '#bbb',
-  borderRadius: 8,
-  paddingVertical: 8,
-  paddingHorizontal: 10,
-  fontSize: 15,
-  backgroundColor: '#fff',
-  textAlign: 'center',
-},
+  // Updated styles for the rate input section
+  rateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginLeft: 2,
+    marginBottom: 8,
+  },
+  rateLabel: {
+    fontSize: 15,
+    color: '#333',
+    marginRight: 12,
+    fontWeight: '500',
+    minWidth: 50, // Adjusted for shorter "Rate" label
+  },
+  rateInput: {
+    width: 152, // Increased width to match ltrs box (was 70)
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    fontSize: 15,
+    backgroundColor: '#fff',
+    textAlign: 'center',
+  },
 
 
   // Legacy styles for backward compatibility
@@ -716,7 +716,7 @@ rateInput: {
     backgroundColor: '#007AFF',
     paddingVertical: 14,
     borderRadius: 22,
-    marginBottom: 18,
+    marginBottom: 70,
     width: '100%',
     alignItems: 'center',
     marginTop: 8,

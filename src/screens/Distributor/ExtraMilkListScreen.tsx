@@ -15,6 +15,7 @@ import { useDispatch } from 'react-redux';
 import { getMilkmanExtraMilkRequests, markExtraMilkDelivery } from '../../apiServices/allApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
     ExtraMilkList: { milkmanId: number; today: string };
@@ -239,34 +240,36 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-            <ListHeader />
+        <SafeAreaWrapper>
+            <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+                <ListHeader />
 
-            <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
-                <TextInput
-                    placeholder="Search Consumer..."
-                    placeholderTextColor="#A0A0A0"
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    style={{
-                        backgroundColor: '#fff',
-                        padding: 10,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                        marginTop: 10,
-                    }}
+                <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+                    <TextInput
+                        placeholder="Search Consumer..."
+                        placeholderTextColor="#A0A0A0"
+                        value={searchText}
+                        onChangeText={setSearchText}
+                        style={{
+                            backgroundColor: '#fff',
+                            padding: 10,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: '#ccc',
+                            marginTop: 10,
+                        }}
+                    />
+                </View>
+
+                <FlatList
+                    data={filteredRequests}
+                    keyExtractor={(item) => (item.id || item.request_id).toString()}
+                    renderItem={renderItem}
+                    contentContainerStyle={[styles.modernListContainer, { paddingTop: 16 }]}
+                    showsVerticalScrollIndicator={false}
                 />
             </View>
-
-            <FlatList
-                data={filteredRequests}
-                keyExtractor={(item) => (item.id || item.request_id).toString()}
-                renderItem={renderItem}
-                contentContainerStyle={[styles.modernListContainer, { paddingTop: 16 }]}
-                showsVerticalScrollIndicator={false}
-            />
-        </View>
+        </SafeAreaWrapper>
     );
 };
 

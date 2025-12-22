@@ -18,6 +18,7 @@ import {
 } from '../../apiServices/allApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RouteParams = {
   consumerId: number;
@@ -168,173 +169,175 @@ const TemporaryDistributorAssignmentScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {params.isTemporary ? 'Remove Temporary Distributor' : 'Assign Temporary Distributor'}
-        </Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Consumer Info Card */}
-        <View style={styles.consumerCard}>
-          <View style={styles.consumerHeader}>
-            <Ionicons name="person-outline" size={24} color="#007AFF" />
-            <View style={styles.consumerInfo}>
-              <Text style={styles.consumerLabel}>Consumer</Text>
-              <Text style={styles.consumerName}>{params.consumerName}</Text>
-            </View>
-          </View>
-
-          {params.currentDistributorName && (
-            <View style={styles.currentDistributorInfo}>
-              <Ionicons name="person-circle-outline" size={20} color="#666" />
-              <Text style={styles.currentDistributorText}>
-                {params.isTemporary ? 'Temporary: ' : 'Permanent: '}
-                <Text style={styles.currentDistributorName}>
-                  {params.currentDistributorName}
-                </Text>
-              </Text>
-            </View>
-          )}
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {params.isTemporary ? 'Remove Temporary Distributor' : 'Assign Temporary Distributor'}
+          </Text>
+          <View style={styles.placeholder} />
         </View>
 
-        {/* If temporary distributor exists, show remove option */}
-        {params.isTemporary ? (
-          <View style={styles.section}>
-            <View style={styles.warningCard}>
-              <Ionicons name="information-circle" size={24} color="#FF9500" />
-              <View style={styles.warningContent}>
-                <Text style={styles.warningTitle}>Temporary Assignment Active</Text>
-                <Text style={styles.warningText}>
-                  Remove the temporary distributor to restore the permanent distributor assignment.
-                </Text>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Consumer Info Card */}
+          <View style={styles.consumerCard}>
+            <View style={styles.consumerHeader}>
+              <Ionicons name="person-outline" size={24} color="#007AFF" />
+              <View style={styles.consumerInfo}>
+                <Text style={styles.consumerLabel}>Consumer</Text>
+                <Text style={styles.consumerName}>{params.consumerName}</Text>
               </View>
             </View>
 
-            <TouchableOpacity
-              style={[styles.deassignButton, submitting && styles.buttonDisabled]}
-              onPress={handleDeassignTemporary}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="close-circle-outline" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Remove Temporary Distributor</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {params.currentDistributorName && (
+              <View style={styles.currentDistributorInfo}>
+                <Ionicons name="person-circle-outline" size={20} color="#666" />
+                <Text style={styles.currentDistributorText}>
+                  {params.isTemporary ? 'Temporary: ' : 'Permanent: '}
+                  <Text style={styles.currentDistributorName}>
+                    {params.currentDistributorName}
+                  </Text>
+                </Text>
+              </View>
+            )}
           </View>
-        ) : (
-          <>
-            {/* Instructions */}
+
+          {/* If temporary distributor exists, show remove option */}
+          {params.isTemporary ? (
             <View style={styles.section}>
-              <View style={styles.instructionCard}>
-                <Ionicons name="information-circle" size={24} color="#007AFF" />
-                <View style={styles.instructionContent}>
-                  <Text style={styles.instructionTitle}>Temporary Assignment</Text>
-                  <Text style={styles.instructionText}>
-                    Select a distributor to temporarily handle deliveries for this consumer. The
-                    permanent distributor will be restored when you remove this assignment.
+              <View style={styles.warningCard}>
+                <Ionicons name="information-circle" size={24} color="#FF9500" />
+                <View style={styles.warningContent}>
+                  <Text style={styles.warningTitle}>Temporary Assignment Active</Text>
+                  <Text style={styles.warningText}>
+                    Remove the temporary distributor to restore the permanent distributor assignment.
                   </Text>
                 </View>
               </View>
+
+              <TouchableOpacity
+                style={[styles.deassignButton, submitting && styles.buttonDisabled]}
+                onPress={handleDeassignTemporary}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="close-circle-outline" size={20} color="#fff" />
+                    <Text style={styles.buttonText}>Remove Temporary Distributor</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
-
-            {/* Distributor List */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Available Distributors</Text>
-
-              {distributors.length === 0 ? (
-                <View style={styles.emptyCard}>
-                  <Ionicons name="people-outline" size={48} color="#ccc" />
-                  <Text style={styles.emptyText}>No other distributors available</Text>
-                </View>
-              ) : (
-                distributors.map((distributor) => (
-                  <TouchableOpacity
-                    key={distributor.milkman_id}
-                    style={[
-                      styles.distributorCard,
-                      selectedDistributorId === distributor.milkman_id && styles.selectedCard,
-                    ]}
-                    onPress={() => setSelectedDistributorId(distributor.milkman_id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.distributorLeft}>
-                      <View
-                        style={[
-                          styles.distributorAvatar,
-                          selectedDistributorId === distributor.milkman_id &&
-                          styles.selectedAvatar,
-                        ]}
-                      >
-                        <Text style={styles.distributorAvatarText}>
-                          {getInitials(distributor.milkman_name)}
-                        </Text>
-                      </View>
-                      <View style={styles.distributorInfo}>
-                        <Text style={styles.distributorName}>{distributor.milkman_name}</Text>
-                        <Text style={styles.distributorContact}>
-                          {distributor.milkman_contact}
-                        </Text>
-                        <Text style={styles.distributorCount}>
-                          {distributor.assigned_customers_count} consumers assigned
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.distributorRight}>
-                      {selectedDistributorId === distributor.milkman_id ? (
-                        <View style={styles.selectedIcon}>
-                          <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
-                        </View>
-                      ) : (
-                        <View style={styles.unselectedIcon}>
-                          <Ionicons name="radio-button-off" size={28} color="#ccc" />
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
-
-            {/* Assign Button */}
-            {distributors.length > 0 && (
+          ) : (
+            <>
+              {/* Instructions */}
               <View style={styles.section}>
-                <TouchableOpacity
-                  style={[
-                    styles.assignButton,
-                    (!selectedDistributorId || submitting) && styles.buttonDisabled,
-                  ]}
-                  onPress={handleAssignTemporary}
-                  disabled={!selectedDistributorId || submitting}
-                >
-                  {submitting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="person-add-outline" size={20} color="#fff" />
-                      <Text style={styles.buttonText}>Assign Temporary Distributor</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                <View style={styles.instructionCard}>
+                  <Ionicons name="information-circle" size={24} color="#007AFF" />
+                  <View style={styles.instructionContent}>
+                    <Text style={styles.instructionTitle}>Temporary Assignment</Text>
+                    <Text style={styles.instructionText}>
+                      Select a distributor to temporarily handle deliveries for this consumer. The
+                      permanent distributor will be restored when you remove this assignment.
+                    </Text>
+                  </View>
+                </View>
               </View>
-            )}
-          </>
-        )}
 
-        {/* Bottom Spacing */}
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+              {/* Distributor List */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Available Distributors</Text>
+
+                {distributors.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="people-outline" size={48} color="#ccc" />
+                    <Text style={styles.emptyText}>No other distributors available</Text>
+                  </View>
+                ) : (
+                  distributors.map((distributor) => (
+                    <TouchableOpacity
+                      key={distributor.milkman_id}
+                      style={[
+                        styles.distributorCard,
+                        selectedDistributorId === distributor.milkman_id && styles.selectedCard,
+                      ]}
+                      onPress={() => setSelectedDistributorId(distributor.milkman_id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.distributorLeft}>
+                        <View
+                          style={[
+                            styles.distributorAvatar,
+                            selectedDistributorId === distributor.milkman_id &&
+                            styles.selectedAvatar,
+                          ]}
+                        >
+                          <Text style={styles.distributorAvatarText}>
+                            {getInitials(distributor.milkman_name)}
+                          </Text>
+                        </View>
+                        <View style={styles.distributorInfo}>
+                          <Text style={styles.distributorName}>{distributor.milkman_name}</Text>
+                          <Text style={styles.distributorContact}>
+                            {distributor.milkman_contact}
+                          </Text>
+                          <Text style={styles.distributorCount}>
+                            {distributor.assigned_customers_count} consumers assigned
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.distributorRight}>
+                        {selectedDistributorId === distributor.milkman_id ? (
+                          <View style={styles.selectedIcon}>
+                            <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
+                          </View>
+                        ) : (
+                          <View style={styles.unselectedIcon}>
+                            <Ionicons name="radio-button-off" size={28} color="#ccc" />
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+
+              {/* Assign Button */}
+              {distributors.length > 0 && (
+                <View style={styles.section}>
+                  <TouchableOpacity
+                    style={[
+                      styles.assignButton,
+                      (!selectedDistributorId || submitting) && styles.buttonDisabled,
+                    ]}
+                    onPress={handleAssignTemporary}
+                    disabled={!selectedDistributorId || submitting}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="person-add-outline" size={20} color="#fff" />
+                        <Text style={styles.buttonText}>Assign Temporary Distributor</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* Bottom Spacing */}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

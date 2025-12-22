@@ -17,6 +17,7 @@ import {
   getJoinAssignmentStatus,
   createRequest,
 } from '../../apiServices/allApi';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type Vendor = {
   id: string | number;
@@ -47,7 +48,7 @@ const DistributorHomeScreen = () => {
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user?.userID) {return;}
+    if (!user?.userID) { return; }
 
     setLoading(true);
     try {
@@ -78,11 +79,11 @@ const DistributorHomeScreen = () => {
         const vendorRes = await getAllVendors(pincode || undefined);
         let vList: Vendor[] = [];
 
-        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
-        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
-        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
-        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
-        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+        if (vendorRes?.data?.data) { vList = vendorRes.data.data; }
+        else if (vendorRes?.data?.vendors) { vList = vendorRes.data.vendors; }
+        else if (vendorRes?.data?.results) { vList = vendorRes.data.results; }
+        else if (Array.isArray(vendorRes?.data)) { vList = vendorRes.data; }
+        else if (Array.isArray(vendorRes)) { vList = vendorRes; }
 
         const vendor = vList.find((v) => v.id === providerId) || null;
 
@@ -95,11 +96,11 @@ const DistributorHomeScreen = () => {
         const vendorRes = await getAllVendors(pincode || undefined);
         let vList: Vendor[] = [];
 
-        if (vendorRes?.data?.data) {vList = vendorRes.data.data;}
-        else if (vendorRes?.data?.vendors) {vList = vendorRes.data.vendors;}
-        else if (vendorRes?.data?.results) {vList = vendorRes.data.results;}
-        else if (Array.isArray(vendorRes?.data)) {vList = vendorRes.data;}
-        else if (Array.isArray(vendorRes)) {vList = vendorRes;}
+        if (vendorRes?.data?.data) { vList = vendorRes.data.data; }
+        else if (vendorRes?.data?.vendors) { vList = vendorRes.data.vendors; }
+        else if (vendorRes?.data?.results) { vList = vendorRes.data.results; }
+        else if (Array.isArray(vendorRes?.data)) { vList = vendorRes.data; }
+        else if (Array.isArray(vendorRes)) { vList = vendorRes; }
 
         setVendors(Array.isArray(vList) && vList.length > 0 ? vList : []);
       }
@@ -172,103 +173,105 @@ const DistributorHomeScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>
-            {joinStatus === 'accepted' && joinedVendor ? 'Your Vendor' : 'Available Vendors'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {joinStatus === 'accepted' && joinedVendor
-              ? 'Connected vendor details'
-              : 'Find and connect with vendors'}
-          </Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>
+              {joinStatus === 'accepted' && joinedVendor ? 'Your Vendor' : 'Available Vendors'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {joinStatus === 'accepted' && joinedVendor
+                ? 'Connected vendor details'
+                : 'Find and connect with vendors'}
+            </Text>
+          </View>
         </View>
+
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#1976D2" />
+            <Text style={styles.loadingText}>Loading vendors...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={vendors}
+            keyExtractor={(item, index) => item?.id?.toString() || `vendor-${index}`}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <View style={[styles.card, joinedVendor && styles.joinedCard]}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.iconCircle}>
+                    <Ionicons name="business" size={24} color="#1976D2" />
+                  </View>
+                  <View style={styles.cardTitleContainer}>
+                    <Text style={styles.vendorName}>{item.name || 'Vendor'}</Text>
+                    {joinStatus === 'accepted' && joinedVendor && (
+                      <View style={styles.statusBadge}>
+                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                        <Text style={styles.statusText}>{joinStatus}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.infoSection}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="call-outline" size={18} color="#666" />
+                    <Text style={styles.infoText}>{item.contact || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="location-outline" size={18} color="#666" />
+                    <Text style={styles.infoText}>{getVillage(item)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.ratesContainer}>
+                  <View style={styles.rateBox}>
+                    <Text style={styles.rateLabel}>Cow Milk</Text>
+                    <Text style={styles.rateValue}>{getCowRate(item)}</Text>
+                  </View>
+                  <View style={styles.rateDivider} />
+                  <View style={styles.rateBox}>
+                    <Text style={styles.rateLabel}>Buffalo Milk</Text>
+                    <Text style={styles.rateValue}>{getBuffaloRate(item)}</Text>
+                  </View>
+                </View>
+
+                {!(
+                  joinStatus === 'accepted' && joinedVendor
+                ) && (
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        submittingId === item.id.toString() && styles.buttonDisabled,
+                      ]}
+                      onPress={() => sendJoinRequest(item.id)}
+                      disabled={submittingId === item.id.toString()}
+                    >
+                      {submittingId === item.id.toString() ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name="add-circle-outline" size={20} color="#fff" />
+                          <Text style={styles.buttonText}>Join Vendor</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="storefront-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyText}>No vendors available</Text>
+                <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
+              </View>
+            }
+          />
+        )}
       </View>
-
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1976D2" />
-          <Text style={styles.loadingText}>Loading vendors...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={vendors}
-          keyExtractor={(item, index) => item?.id?.toString() || `vendor-${index}`}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <View style={[styles.card, joinedVendor && styles.joinedCard]}>
-              <View style={styles.cardHeader}>
-                <View style={styles.iconCircle}>
-                  <Ionicons name="business" size={24} color="#1976D2" />
-                </View>
-                <View style={styles.cardTitleContainer}>
-                  <Text style={styles.vendorName}>{item.name || 'Vendor'}</Text>
-                  {joinStatus === 'accepted' && joinedVendor && (
-                    <View style={styles.statusBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                      <Text style={styles.statusText}>{joinStatus}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.infoSection}>
-                <View style={styles.infoRow}>
-                  <Ionicons name="call-outline" size={18} color="#666" />
-                  <Text style={styles.infoText}>{item.contact || 'N/A'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={18} color="#666" />
-                  <Text style={styles.infoText}>{getVillage(item)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.ratesContainer}>
-                <View style={styles.rateBox}>
-                  <Text style={styles.rateLabel}>Cow Milk</Text>
-                  <Text style={styles.rateValue}>{getCowRate(item)}</Text>
-                </View>
-                <View style={styles.rateDivider} />
-                <View style={styles.rateBox}>
-                  <Text style={styles.rateLabel}>Buffalo Milk</Text>
-                  <Text style={styles.rateValue}>{getBuffaloRate(item)}</Text>
-                </View>
-              </View>
-
-              {!(
-                joinStatus === 'accepted' && joinedVendor
-              ) && (
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    submittingId === item.id.toString() && styles.buttonDisabled,
-                  ]}
-                  onPress={() => sendJoinRequest(item.id)}
-                  disabled={submittingId === item.id.toString()}
-                >
-                  {submittingId === item.id.toString() ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="add-circle-outline" size={20} color="#fff" />
-                      <Text style={styles.buttonText}>Join Vendor</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="storefront-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No vendors available</Text>
-              <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
-            </View>
-          }
-        />
-      )}
-    </View>
+    </SafeAreaWrapper>
   );
 };
 

@@ -22,6 +22,7 @@ import {
   acceptRequest,
   rejectRequest,
 } from '../apiServices/allApi';
+import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type Request = {
   id: number;
@@ -527,76 +528,78 @@ const PendingRequestsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Animated Header */}
-      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Pending Requests</Text>
-          <Text style={styles.headerSubtitle}>{requests.length} requests waiting</Text>
-        </View>
-
-        <View style={styles.headerIcon}>
-          <Ionicons name="notifications" size={24} color="#007AFF" />
-          {requests.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{requests.length}</Text>
-            </View>
-          )}
-        </View>
-      </Animated.View>
-
-      {/* Error Banner */}
-      {error && (
-        <View style={styles.errorBanner}>
-          <View style={styles.errorContent}>
-            <Ionicons name="warning" size={20} color="#FF3B30" />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-          <TouchableOpacity onPress={fetchRequests} style={styles.retryButton}>
-            <Ionicons name="refresh" size={16} color="#fff" />
-            <Text style={styles.retryButtonText}>Retry</Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Animated Header */}
+        <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-        </View>
-      )}
 
-      {/* Content */}
-      {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <View style={styles.skeletonList}>
-            {[1, 2, 3, 4, 5].map(item => (
-              <SkeletonRequestItem key={item} />
-            ))}
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Pending Requests</Text>
+            <Text style={styles.headerSubtitle}>{requests.length} requests waiting</Text>
           </View>
-        </View>
-      ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={keyExtractor}
-          renderItem={renderRequestItem}
-          contentContainerStyle={
-            requests.length === 0 ? styles.emptyContainer : styles.listContainer
-          }
-          ListEmptyComponent={ListEmptyComponent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={100}
-          windowSize={10}
-        />
-      )}
-    </View>
+
+          <View style={styles.headerIcon}>
+            <Ionicons name="notifications" size={24} color="#007AFF" />
+            {requests.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{requests.length}</Text>
+              </View>
+            )}
+          </View>
+        </Animated.View>
+
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner}>
+            <View style={styles.errorContent}>
+              <Ionicons name="warning" size={20} color="#FF3B30" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+            <TouchableOpacity onPress={fetchRequests} style={styles.retryButton}>
+              <Ionicons name="refresh" size={16} color="#fff" />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Content */}
+        {loading && !refreshing ? (
+          <View style={styles.loadingContainer}>
+            <View style={styles.skeletonList}>
+              {[1, 2, 3, 4, 5].map(item => (
+                <SkeletonRequestItem key={item} />
+              ))}
+            </View>
+          </View>
+        ) : (
+          <FlatList
+            data={requests}
+            keyExtractor={keyExtractor}
+            renderItem={renderRequestItem}
+            contentContainerStyle={
+              requests.length === 0 ? styles.emptyContainer : styles.listContainer
+            }
+            ListEmptyComponent={ListEmptyComponent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#007AFF']}
+                tintColor="#007AFF"
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={100}
+            windowSize={10}
+          />
+        )}
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

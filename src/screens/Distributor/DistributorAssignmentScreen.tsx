@@ -2603,6 +2603,7 @@ import {
   getAcceptedMilkmen,
   assignConsumerToDistributor,
 } from '../../apiServices/allApi';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type Distributor = {
   id: number;
@@ -2910,27 +2911,28 @@ const AssignDistributorScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Assign Distributor</Text>
-          <Text style={styles.headerSubtitle}>For: {getConsumerName()}</Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Assign Distributor</Text>
+            <Text style={styles.headerSubtitle}>For: {getConsumerName()}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Consumer Info */}
-      {/* <View style={styles.consumerCard}>
+        {/* Consumer Info */}
+        {/* <View style={styles.consumerCard}>
         <Text style={styles.consumerName}>{getConsumerName()}</Text>
         <Text style={styles.consumerContact}>{consumer.user_contact}</Text>
         <Text style={styles.assignmentNote}>Select a distributor to assign this consumer</Text>
       </View> */}
 
-      {/* Vendor Info Card */}
-      {/* <View style={styles.vendorInfoCard}>
+        {/* Vendor Info Card */}
+        {/* <View style={styles.vendorInfoCard}>
         <Text style={styles.vendorInfoTitle}>Vendor Information</Text>
         <Text style={styles.vendorInfoText}>
           Consumer Vendor: {consumer.vendor} | Current Vendor: {user?.userID}
@@ -2942,66 +2944,67 @@ const AssignDistributorScreen = () => {
         )}
       </View> */}
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search distributors..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#8E8E93"
-        />
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search distributors..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#8E8E93"
+          />
+        </View>
+
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={fetchDistributors} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text>Loading distributors...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredDistributors}
+            keyExtractor={(item, index) => `distributor_${item.id || index}`}
+            renderItem={renderDistributorItem}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#007AFF']}
+                tintColor="#007AFF"
+              />
+            }
+            ListEmptyComponent={() => (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="business-outline" size={80} color="#E5E5EA" />
+                <Text style={styles.emptyTitle}>No Distributors Available</Text>
+                <Text style={styles.emptyText}>
+                  {searchQuery
+                    ? `No distributors match "${searchQuery}".`
+                    : 'No distributors available for assignment from your vendor account.'
+                  }
+                </Text>
+                <TouchableOpacity onPress={fetchDistributors} style={styles.refreshButton}>
+                  <Ionicons name="refresh-outline" size={20} color="#fff" />
+                  <Text style={styles.refreshButtonText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        )}
       </View>
-
-      {/* Error Banner */}
-      {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchDistributors} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text>Loading distributors...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredDistributors}
-          keyExtractor={(item, index) => `distributor_${item.id || index}`}
-          renderItem={renderDistributorItem}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
-            />
-          }
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="business-outline" size={80} color="#E5E5EA" />
-              <Text style={styles.emptyTitle}>No Distributors Available</Text>
-              <Text style={styles.emptyText}>
-                {searchQuery
-                  ? `No distributors match "${searchQuery}".`
-                  : 'No distributors available for assignment from your vendor account.'
-                }
-              </Text>
-              <TouchableOpacity onPress={fetchDistributors} style={styles.refreshButton}>
-                <Ionicons name="refresh-outline" size={20} color="#fff" />
-                <Text style={styles.refreshButtonText}>Refresh</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      )}
-    </View>
+    </SafeAreaWrapper>
   );
 };
 

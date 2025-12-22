@@ -88,6 +88,9 @@
 //     isTemporary?: boolean;
 //   };
 // };
+
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+
 // Vendor
 type Vendor = {
   id: string;
@@ -101,8 +104,10 @@ export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
-  VerifyOtp: { mobile: string };
-  VendorRegistration: undefined;
+  VerifyOtp: {
+    phoneNumber: string;
+    confirmation: FirebaseAuthTypes.ConfirmationResult;
+  }; VendorRegistration: undefined;
   ConsumerRegistration: undefined;
   DistributorRegistration: undefined;
   VendorHome: undefined;
@@ -112,6 +117,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Splash: undefined;
   Slide: undefined;
+  TermsConditions: undefined;
   CustomerDetail: { customerId: string; customerName: string };
   MilkmanList: undefined;
   VendorList: { onSelectVendor: (vendor: Vendor) => void };

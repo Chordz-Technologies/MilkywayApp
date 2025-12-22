@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { RootState } from "../../store";
 import { getAcceptedMilkmen } from "../../apiServices/allApi";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
     DistributorsList: undefined;
@@ -121,80 +122,82 @@ const DistributorsListScreen = () => {
     }
 
     return (
-        <View style={styles.container}>
-            {/* HEADER BAR */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-                </TouchableOpacity>
+        <SafeAreaWrapper>
+            <View style={styles.container}>
+                {/* HEADER BAR */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                    </TouchableOpacity>
 
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>All Distributors</Text>
-                    <Text style={styles.headerSubtitle}>
-                        View all accepted distributors here
-                    </Text>
-                </View>
-            </View>
-
-            {/* LIST CONTAINER */}
-            <View style={styles.listContainer}>
-                {distributors.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="business-outline" size={48} color="#ccc" />
-                        <Text style={styles.emptyText}>No accepted distributors found.</Text>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitle}>All Distributors</Text>
+                        <Text style={styles.headerSubtitle}>
+                            View all accepted distributors here
+                        </Text>
                     </View>
-                ) : (
-                    <FlatList
-                        data={distributors}
-                        keyExtractor={(item, index) => `distributor_${item.id || index}`}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.listItem}
-                                activeOpacity={0.8}
-                                onPress={() => handleNavigateToUserDetails(item)}
-                            >
-                                <View style={styles.avatarSmall}>
-                                    <Text style={styles.avatarText}>
-                                        {getInitials(item.milkman?.full_name || item.name || 'U')}
-                                    </Text>
-                                </View>
+                </View>
 
-                                <View style={styles.info}>
-                                    <Text style={styles.name}>{item.name}</Text>
-                                    <Text style={styles.contact}>{item.user_contact}</Text>
-                                    {item.assigned_customers_count > 0 && (
-                                        <Text style={styles.assigned}>
-                                            {item.assigned_customers_count} customers assigned
-                                        </Text>
-                                    )}
-                                </View>
-
-                                <View
-                                    style={[
-                                        styles.statusBadge,
-                                        { backgroundColor: getStatusColor(item.status) + "20" },
-                                    ]}
+                {/* LIST CONTAINER */}
+                <View style={styles.listContainer}>
+                    {distributors.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="business-outline" size={48} color="#ccc" />
+                            <Text style={styles.emptyText}>No accepted distributors found.</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={distributors}
+                            keyExtractor={(item, index) => `distributor_${item.id || index}`}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.listItem}
+                                    activeOpacity={0.8}
+                                    onPress={() => handleNavigateToUserDetails(item)}
                                 >
-                                    <Text
+                                    <View style={styles.avatarSmall}>
+                                        <Text style={styles.avatarText}>
+                                            {getInitials(item.milkman?.full_name || item.name || 'U')}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.info}>
+                                        <Text style={styles.name}>{item.name}</Text>
+                                        <Text style={styles.contact}>{item.user_contact}</Text>
+                                        {item.assigned_customers_count > 0 && (
+                                            <Text style={styles.assigned}>
+                                                {item.assigned_customers_count} customers assigned
+                                            </Text>
+                                        )}
+                                    </View>
+
+                                    <View
                                         style={[
-                                            styles.statusText,
-                                            { color: getStatusColor(item.status) },
+                                            styles.statusBadge,
+                                            { backgroundColor: getStatusColor(item.status) + "20" },
                                         ]}
                                     >
-                                        {item.status.toUpperCase()}
-                                    </Text>
-                                </View>
+                                        <Text
+                                            style={[
+                                                styles.statusText,
+                                                { color: getStatusColor(item.status) },
+                                            ]}
+                                        >
+                                            {item.status.toUpperCase()}
+                                        </Text>
+                                    </View>
 
-                                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                            </TouchableOpacity>
-                        )}
-                        refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                        }
-                    />
-                )}
+                                    <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                                </TouchableOpacity>
+                            )}
+                            refreshControl={
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                            }
+                        />
+                    )}
+                </View>
             </View>
-        </View>
+        </SafeAreaWrapper>
     );
 };
 

@@ -1,14 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +13,7 @@ import {
   deleteConsumerAccount
 } from '../../store/consumerProfileSlice';
 import { logout } from '../../store/authSlice';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -35,6 +27,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const deleting = useSelector((state: RootState) => state.consumerProfile?.deleting || false);
   const error = useSelector((state: RootState) => state.consumerProfile?.error);
   const success = useSelector((state: RootState) => state.consumerProfile?.success || false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const toStringSafe = (val: any): string => {
     if (typeof val === 'string') { return val; }
@@ -46,6 +39,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
     first_name: '',
     last_name: '',
     email: '',
+    password: '',
     flat_no: '',
     society_name: '',
     village: '',
@@ -80,6 +74,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
         first_name: toStringSafe(data.first_name),
         last_name: toStringSafe(data.last_name),
         email: toStringSafe(data.email),
+        password: '',
         flat_no: toStringSafe(data.flat_no),
         society_name: toStringSafe(data.society_name),
         village: toStringSafe(data.village),
@@ -255,254 +250,286 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Simple Header */}
-      <View style={styles.header}>
-        <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
-        <Text style={styles.heading}>Edit Profile</Text>
-        <Text style={styles.subheading}>Update your information</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => setIsEditMode(!isEditMode)}
+    <SafeAreaWrapper>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <Ionicons
-          name={isEditMode ? "close-outline" : "pencil-outline"}
-          size={20}
-          color="#007AFF"
-          style={{ marginRight: 8 }}
-        />
-        <Text style={styles.editButtonText}>
-          {isEditMode ? "Cancel" : "Edit Profile"}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Personal Information */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Personal Information</Text>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="First Name *"
-            value={form.first_name}
-            onChangeText={(v) => handleChange('first_name', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Last Name *"
-            value={form.last_name}
-            onChangeText={(v) => handleChange('last_name', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={form.email}
-            onChangeText={(v) => handleChange('email', v)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor="#999"
-            editable={isEditMode}
-          />
-        </View>
-      </View>
-
-      {/* Address Information */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Address</Text>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="home-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Flat/House No"
-            value={form.flat_no}
-            onChangeText={(v) => handleChange('flat_no', v)}
-            maxLength={50}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Society Name"
-            value={form.society_name}
-            onChangeText={(v) => handleChange('society_name', v)}
-            maxLength={200}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Village"
-            value={form.village}
-            onChangeText={(v) => handleChange('village', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Taluka"
-            value={form.tal}
-            onChangeText={(v) => handleChange('tal', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="location-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="District"
-            value={form.dist}
-            onChangeText={(v) => handleChange('dist', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="flag-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="State"
-            value={form.state}
-            onChangeText={(v) => handleChange('state', v)}
-            maxLength={100}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Pincode"
-            value={form.pincode}
-            onChangeText={(v) => handleChange('pincode', v)}
-            keyboardType="numeric"
-            maxLength={6}
-            editable={isEditMode}
-            placeholderTextColor="#999"
-          />
-        </View>
-      </View>
-
-      {/* Milk Requirements */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Daily Milk Requirements</Text>
-
-        <View style={styles.milkContainer}>
-          <View style={styles.milkItem}>
-            <View style={styles.milkHeader}>
-              <Ionicons name="water-outline" size={24} color="#4CAF50" />
-              <Text style={styles.milkTitle}>Cow Milk</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            ref={scrollRef}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.container,
+              { flexGrow: 1, paddingBottom: 85 }
+            ]}
+          >
+            {/* Simple Header */}
+            <View style={styles.header}>
+              <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
+              <Text style={styles.heading}>Edit Profile</Text>
+              <Text style={styles.subheading}>Update your information</Text>
             </View>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, styles.milkInput]}
-                placeholder="0.0"
-                value={form.cow_milk_litre}
-                onChangeText={(v) => handleChange('cow_milk_litre', v)}
-                keyboardType="decimal-pad"
-                placeholderTextColor="#999"
-                editable={isEditMode}
+
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => setIsEditMode(!isEditMode)}
+            >
+              <Ionicons
+                name={isEditMode ? "close-outline" : "pencil-outline"}
+                size={20}
+                color="#007AFF"
+                style={{ marginRight: 8 }}
               />
-              <Text style={styles.unitText}>Litres</Text>
-            </View>
-          </View>
+              <Text style={styles.editButtonText}>
+                {isEditMode ? "Cancel" : "Edit Profile"}
+              </Text>
+            </TouchableOpacity>
 
-          <View style={styles.milkItem}>
-            <View style={styles.milkHeader}>
-              <Ionicons name="water-outline" size={24} color="#FF9800" />
-              <Text style={styles.milkTitle}>Buffalo Milk</Text>
-            </View>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, styles.milkInput]}
-                placeholder="0.0"
-                value={form.buffalo_milk_litre}
-                onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
-                keyboardType="decimal-pad"
-                placeholderTextColor="#999"
-                editable={isEditMode}
-              />
-              <Text style={styles.unitText}>Litres</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+            {/* Personal Information */}
+            <View style={styles.section}>
+              <Text style={styles.title}>Personal Information</Text>
 
-      {/* Save Button */}
-      {isEditMode && (
-        <TouchableOpacity
-          style={[styles.button, updating && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={updating}
-        >
-          {updating ? (
-            <View style={styles.buttonContent}>
-              <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-              <Text style={styles.buttonText}>Updating...</Text>
-            </View>
-          ) : (
-            <Text style={styles.buttonText}>Save Changes</Text>
-          )}
-        </TouchableOpacity>
-      )}
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="First Name *"
+                  value={form.first_name}
+                  onChangeText={(v) => handleChange('first_name', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
 
-      {/* Bottom Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleDeleteAccount}
-        disabled={deleting}   // ⬅ disable when deleting
-      >
-        {deleting ? (
-          <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />
-        ) : (
-          <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
-        )}
-        <Text style={styles.logoutButtonText}>
-          {deleting ? "Deleting..." : "Delete Account"}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Last Name *"
+                  value={form.last_name}
+                  onChangeText={(v) => handleChange('last_name', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  value={form.email}
+                  onChangeText={(v) => handleChange('email', v)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#999"
+                  editable={isEditMode}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={form.password}
+                  onChangeText={(v) => handleChange('password', v)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#999"
+                  editable={isEditMode}
+                />
+              </View>
+            </View>
+
+            {/* Address Information */}
+            <View style={styles.section}>
+              <Text style={styles.title}>Address</Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="home-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Flat/House No"
+                  value={form.flat_no}
+                  onChangeText={(v) => handleChange('flat_no', v)}
+                  maxLength={50}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Society Name"
+                  value={form.society_name}
+                  onChangeText={(v) => handleChange('society_name', v)}
+                  maxLength={200}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Village"
+                  value={form.village}
+                  onChangeText={(v) => handleChange('village', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Taluka"
+                  value={form.tal}
+                  onChangeText={(v) => handleChange('tal', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="location-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="District"
+                  value={form.dist}
+                  onChangeText={(v) => handleChange('dist', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="flag-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="State"
+                  value={form.state}
+                  onChangeText={(v) => handleChange('state', v)}
+                  maxLength={100}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Pincode"
+                  value={form.pincode}
+                  onChangeText={(v) => handleChange('pincode', v)}
+                  keyboardType="numeric"
+                  maxLength={6}
+                  editable={isEditMode}
+                  placeholderTextColor="#999"
+                />
+              </View>
+            </View>
+
+            {/* Milk Requirements */}
+            <View style={styles.section}>
+              <Text style={styles.title}>Daily Milk Requirements</Text>
+
+              <View style={styles.milkContainer}>
+                <View style={styles.milkItem}>
+                  <View style={styles.milkHeader}>
+                    <Ionicons name="water-outline" size={24} color="#4CAF50" />
+                    <Text style={styles.milkTitle}>Cow Milk</Text>
+                  </View>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={[styles.input, styles.milkInput]}
+                      placeholder="0.0"
+                      value={form.cow_milk_litre}
+                      onChangeText={(v) => handleChange('cow_milk_litre', v)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor="#999"
+                      editable={isEditMode}
+                    />
+                    <Text style={styles.unitText}>Litres</Text>
+                  </View>
+                </View>
+
+                <View style={styles.milkItem}>
+                  <View style={styles.milkHeader}>
+                    <Ionicons name="water-outline" size={24} color="#FF9800" />
+                    <Text style={styles.milkTitle}>Buffalo Milk</Text>
+                  </View>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={[styles.input, styles.milkInput]}
+                      placeholder="0.0"
+                      value={form.buffalo_milk_litre}
+                      onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor="#999"
+                      editable={isEditMode}
+                    />
+                    <Text style={styles.unitText}>Litres</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Save Button */}
+            {isEditMode && (
+              <TouchableOpacity
+                style={[styles.button, updating && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={updating}
+              >
+                {updating ? (
+                  <View style={styles.buttonContent}>
+                    <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+                    <Text style={styles.buttonText}>Updating...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Bottom Logout Button */}
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleDeleteAccount}
+              disabled={deleting}   // ⬅ disable when deleting
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.logoutButtonText}>
+                {deleting ? "Deleting..." : "Delete Account"}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 

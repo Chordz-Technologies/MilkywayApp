@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getDistributorLeaveRequestsForVendor, manageDistributorLeave } from '../../apiServices/allApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
   VendorDistributorLeave: undefined;
@@ -308,77 +309,79 @@ const VendorDistributorLeaveScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Reject Reason Modal */}
-      {
-        showRejectModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Reject Request</Text>
-              <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Reject Reason Modal */}
+        {
+          showRejectModal && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Reject Request</Text>
+                <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
 
-              <TextInput
-                style={styles.reasonInput}
-                placeholder="Write reason here..."
-                placeholderTextColor="#999"
-                multiline
-                value={rejectReason}
-                onChangeText={setRejectReason}
-              />
+                <TextInput
+                  style={styles.reasonInput}
+                  placeholder="Write reason here..."
+                  placeholderTextColor="#999"
+                  multiline
+                  value={rejectReason}
+                  onChangeText={setRejectReason}
+                />
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelBtn]}
-                  onPress={() => {
-                    setShowRejectModal(false);
-                    setRejectReason("");
-                  }}
-                >
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelBtn]}
+                    onPress={() => {
+                      setShowRejectModal(false);
+                      setRejectReason("");
+                    }}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.submitBtn]}
-                  onPress={submitRejectReason}
-                >
-                  {processingState.action === "reject" ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.submitText}>Submit</Text>
-                  )}
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.submitBtn]}
+                    onPress={submitRejectReason}
+                  >
+                    {processingState.action === "reject" ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.submitText}>Submit</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
+          )
+        }
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Distributor Leave</Text>
+            <Text style={styles.headerSubtitle}>Manage distributor leave requests</Text>
           </View>
-        )
-      }
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Distributor Leave</Text>
-          <Text style={styles.headerSubtitle}>Manage distributor leave requests</Text>
         </View>
-      </View>
 
-      {groupedRequests.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="calendar-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Pending Leave Requests</Text>
-          <Text style={styles.emptySubtitle}>Distributor leave requests will appear here</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={groupedRequests}
-          keyExtractor={(item) => `leave_${item.milkman_id}_${item.leaves.map(leave => leave.date).join('-')}`}
-          renderItem={renderLeaveRequest}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-    </View>
+        {groupedRequests.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyTitle}>No Pending Leave Requests</Text>
+            <Text style={styles.emptySubtitle}>Distributor leave requests will appear here</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={groupedRequests}
+            keyExtractor={(item) => `leave_${item.milkman_id}_${item.leaves.map(leave => leave.date).join('-')}`}
+            renderItem={renderLeaveRequest}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+    </SafeAreaWrapper>
   );
 };
 

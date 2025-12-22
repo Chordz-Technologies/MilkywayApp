@@ -19,6 +19,7 @@ import { RootState } from '../../store';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCalendarData } from '../../store/calendarSlice';
 import type { AppDispatch } from '../../store';
+import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RootStackParamList = {
   VendorConsumerRequests: undefined;
@@ -368,87 +369,89 @@ const VendorConsumerRequestsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Reject Reason Modal */}
-      {
-        showRejectModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Reject Request</Text>
-              <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+    <SafeAreaWrapper>
+      <View style={styles.container}>
+        {/* Reject Reason Modal */}
+        {
+          showRejectModal && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Reject Request</Text>
+                <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
 
-              <TextInput
-                style={styles.reasonInput}
-                placeholder="Write reason here..."
-                placeholderTextColor="#999"
-                multiline
-                value={rejectReason}
-                onChangeText={setRejectReason}
-              />
+                <TextInput
+                  style={styles.reasonInput}
+                  placeholder="Write reason here..."
+                  placeholderTextColor="#999"
+                  multiline
+                  value={rejectReason}
+                  onChangeText={setRejectReason}
+                />
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelBtn]}
-                  onPress={() => {
-                    setShowRejectModal(false);
-                    setRejectReason("");
-                  }}
-                >
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelBtn]}
+                    onPress={() => {
+                      setShowRejectModal(false);
+                      setRejectReason("");
+                    }}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.submitBtn]}
-                  onPress={submitRejectReason}
-                >
-                  {processingState.action === "reject" ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.submitText}>Submit</Text>
-                  )}
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.submitBtn]}
+                    onPress={submitRejectReason}
+                  >
+                    {processingState.action === "reject" ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.submitText}>Submit</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
+          )
+        }
+
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Consumer Requests</Text>
+            <Text style={styles.headerSubtitle}>
+              Extra milk requests from consumers
+            </Text>
           </View>
-        )
-      }
-
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Consumer Requests</Text>
-          <Text style={styles.headerSubtitle}>
-            Extra milk requests from consumers
-          </Text>
         </View>
+
+        {requests.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="water-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyTitle}>No Pending Requests</Text>
+            <Text style={styles.emptySubtitle}>
+              There are currently no pending extra milk requests from consumers.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={requests}
+            keyExtractor={(item) => `request_${item.request_id}`}
+            renderItem={renderRequestItem}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
-
-      {requests.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="water-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Pending Requests</Text>
-          <Text style={styles.emptySubtitle}>
-            There are currently no pending extra milk requests from consumers.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => `request_${item.request_id}`}
-          renderItem={renderRequestItem}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-    </View>
+    </SafeAreaWrapper>
   );
 };
 
