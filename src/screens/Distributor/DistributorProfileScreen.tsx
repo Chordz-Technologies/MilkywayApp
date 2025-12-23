@@ -207,6 +207,8 @@ const DistributorProfileScreen = ({ navigation }: any) => {
                 'userData',
               ]);
 
+              await AsyncStorage.setItem('isLoggedOut', 'true');
+
               // Reset distributor profile state
               dispatch(resetDistributorProfileState());
 
@@ -259,6 +261,8 @@ const DistributorProfileScreen = ({ navigation }: any) => {
                 "userRole",
                 "userData",
               ]);
+
+              await AsyncStorage.setItem('isLoggedOut', 'true');
 
               // Reset redux
               dispatch(resetDistributorProfileState());

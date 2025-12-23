@@ -89,7 +89,7 @@
 //   };
 // };
 
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 // Vendor
 type Vendor = {
@@ -106,7 +106,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   VerifyOtp: {
     phoneNumber: string;
-    confirmation: FirebaseAuthTypes.ConfirmationResult;
+    // confirmation: FirebaseAuthTypes.ConfirmationResult;
   }; VendorRegistration: undefined;
   ConsumerRegistration: undefined;
   DistributorRegistration: undefined;

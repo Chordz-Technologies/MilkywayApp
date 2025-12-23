@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, checkStoredAuth, clearError } from '../store/authSlice';
 import { RootState, AppDispatch } from '../store';
 import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -63,12 +64,20 @@ const LoginScreen = () => {
   // Navigate based on authentication state
   useEffect(() => {
     if (isAuthenticated && user?.role) {
-      console.log(`User authenticated with role: ${user.role}`);
-      navigateToHome(user.role);
-    } else {
-      console.log('User not authenticated or role missing', { isAuthenticated, user });
+      (async () => {
+        try {
+          // ✅ CLEAR logout flag after successful login
+          await AsyncStorage.removeItem('isLoggedOut');
+          console.log('isLoggedOut flag cleared');
+        } catch (err) {
+          console.error('Failed to clear isLoggedOut flag', err);
+        }
+
+        console.log(`User authenticated with role: ${user.role}`);
+        navigateToHome(user.role);
+      })();
     }
-  }, [isAuthenticated, user, navigateToHome]);
+  }, [isAuthenticated, user?.role, navigateToHome]);
 
   // Show error alerts
   useEffect(() => {

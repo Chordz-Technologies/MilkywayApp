@@ -178,87 +178,91 @@ const AnimatedRequestItem = React.memo(({
   return (
     <Animated.View
       style={[
-        styles.requestItem,
+        styles.requestCard, // ✅ SAME CARD STYLE
         {
           transform: [{ scale: scaleValue }, { translateY }],
           opacity: fadeValue,
         },
       ]}
     >
-      <TouchableOpacity onPress={handlePress} style={styles.requestContent} activeOpacity={0.7}>
-        {/* Avatar Section */}
-        <View style={styles.avatarContainer}>
-          <View style={[
-            styles.avatar,
-            { backgroundColor: item.user_type === 'customer' ? '#007AFF' : '#FF9500' },
-          ]}>
+      {/* HEADER */}
+      <View style={styles.requestHeader}>
+        <View style={styles.distributorInfo}>
+          <View
+            style={[
+              styles.avatarCircle,
+              { backgroundColor: item.user_type === 'customer' ? '#007AFF' : '#FF9500' },
+            ]}
+          >
             <Ionicons
               name={item.user_type === 'customer' ? 'person' : 'business'}
-              size={24}
+              size={22}
               color="#fff"
             />
           </View>
-          <View style={[
-            styles.statusDot,
-            { backgroundColor: getStatusColor(item.status) },
-          ]} />
+
+          <View style={styles.distributorDetails}>
+            <Text style={styles.distributorName}>{displayName}</Text>
+
+            {/* {contactInfo && (
+              <Text style={styles.distributorContact}>{contactInfo}</Text>
+            )} */}
+          </View>
         </View>
 
-        {/* Content Section */}
-        <View style={styles.contentSection}>
-          <Text style={styles.name}>{displayName}</Text>
+        <View style={styles.statusBadge}>
+          <Ionicons name="time-outline" size={14} color={getStatusColor(item.status)} />
+          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+            {(item.status || 'pending').toUpperCase()}
+          </Text>
+        </View>
+      </View>
 
-          <View style={styles.roleContainer}>
-            <Ionicons name="shield-outline" size={14} color="#666" />
-            <Text style={styles.role}>{roleText}</Text>
+      {/* BODY */}
+      <TouchableOpacity activeOpacity={0.7} onPress={handlePress}>
+        <View style={styles.requestBody}>
+          <View style={styles.infoRow}>
+            <Ionicons name="call" size={16} color="#666" />
+            <Text style={styles.distributorContact}>{contactInfo}</Text>
           </View>
-
-          {contactInfo ? (
-            <View style={styles.infoRow}>
-              <Ionicons name="call-outline" size={14} color="#666" />
-              <Text style={styles.contact}>{contactInfo}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.statusContainer}>
-            <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
-              {(item.status || 'pending').toUpperCase()}
-            </Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="person-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{roleText}</Text>
           </View>
         </View>
       </TouchableOpacity>
 
-      {/* Action Buttons */}
+      {/* ACTION BUTTONS */}
       {isPending && (
-        <View style={styles.actionsContainer}>
+        <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.acceptButton]}
+            style={[styles.button, styles.acceptButton]}
             onPress={onAccept}
             disabled={processing}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
             {processingRequestId === item.id ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                <Text style={styles.buttonText}>Accept</Text>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                <Text style={styles.acceptButtonText}>Accept</Text>
               </>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, styles.rejectButton]}
+            style={[styles.button, styles.rejectButton]}
             onPress={onReject}
             disabled={processing}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
             {rejectingRequestId === item.id ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator size="small" color="#FF3B30" />
             ) : (
               <>
-                <Ionicons name="close-circle" size={18} color="#fff" />
-                <Text style={styles.buttonText}>Reject</Text>
+                <Ionicons name="close-circle-outline" size={20} color="#FF3B30" />
+                <Text style={styles.rejectButtonText}>Reject</Text>
               </>
             )}
           </TouchableOpacity>
@@ -533,22 +537,22 @@ const PendingRequestsScreen = () => {
         {/* Animated Header */}
         <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} />
           </TouchableOpacity>
 
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Pending Requests</Text>
-            <Text style={styles.headerSubtitle}>{requests.length} requests waiting</Text>
+            <Text style={styles.headerSubtitle}>Requests from consumers and distributors</Text>
           </View>
 
-          <View style={styles.headerIcon}>
+          {/* <View style={styles.headerIcon}>
             <Ionicons name="notifications" size={24} color="#007AFF" />
             {requests.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{requests.length}</Text>
               </View>
             )}
-          </View>
+          </View> */}
         </Animated.View>
 
         {/* Error Banner */}
@@ -639,7 +643,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
+    // backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -660,22 +664,22 @@ const styles = StyleSheet.create({
   headerIcon: {
     position: 'relative',
   },
-  badge: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+  // badge: {
+  //   position: 'absolute',
+  //   top: -8,
+  //   right: -8,
+  //   backgroundColor: '#FF3B30',
+  //   borderRadius: 10,
+  //   minWidth: 20,
+  //   height: 20,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+  // badgeText: {
+  //   color: '#fff',
+  //   fontSize: 12,
+  //   fontWeight: 'bold',
+  // },
 
   // ERROR BANNER
   errorBanner: {
@@ -785,22 +789,19 @@ const styles = StyleSheet.create({
 
   // LIST STYLES
   listContainer: {
-    paddingTop: 20,
-    paddingBottom: 40,
+    padding: 20,
   },
 
-  // REQUEST ITEM STYLES
-  requestItem: {
+  requestCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    overflow: 'hidden',
+    padding: 16,
+    marginBottom: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
       },
       android: {
@@ -808,110 +809,118 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  requestContent: {
+  requestHeader: {
     flexDirection: 'row',
-    padding: 20,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-
-  // AVATAR STYLES
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 16,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
+  distributorInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  statusDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-
-  // CONTENT STYLES
-  contentSection: {
     flex: 1,
   },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 6,
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FF9500',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  roleContainer: {
+  avatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  distributorDetails: {
+    flex: 1,
+  },
+  distributorName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  distributorContact: {
+    fontSize: 13,
+    color: '#666',
+  },
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    backgroundColor: '#FFF4E6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
   },
-  role: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginLeft: 6,
-    fontWeight: '500',
+  statusText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#FF9500',
+  },
+  requestBody: {
+    marginBottom: 16,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 12,
+    gap: 8,
   },
-  contact: {
+  infoText: {
     fontSize: 14,
-    color: '#007AFF',
-    marginLeft: 6,
+    color: '#666',
     fontWeight: '500',
   },
-  date: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginLeft: 6,
-  },
-  statusContainer: {
-    marginTop: 8,
-  },
-  status: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#F2F2F7',
-    alignSelf: 'flex-start',
-  },
-
-  // ACTION BUTTONS
-  actionsContainer: {
+  remarksContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  remarksText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1a1a1a',
+    lineHeight: 20,
+  },
+  actionButtons: {
+    flexDirection: 'row',
     gap: 12,
   },
-  actionButton: {
+  button: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     gap: 6,
+  },
+  rejectButton: {
+    backgroundColor: '#FFE8E8',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  rejectButtonText: {
+    color: '#FF3B30',
+    fontSize: 15,
+    fontWeight: '600',
   },
   acceptButton: {
     backgroundColor: '#34C759',
   },
-  rejectButton: {
-    backgroundColor: '#FF3B30',
-  },
-  buttonText: {
+  acceptButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   // EMPTY STATE

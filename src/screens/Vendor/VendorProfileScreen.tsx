@@ -294,6 +294,8 @@ const VendorProfileScreen = ({ navigation }: any) => {
               "userData",
             ]);
 
+            await AsyncStorage.setItem('isLoggedOut', 'true');
+
             dispatch(resetVendorProfileState());
             dispatch(logout());
             if (navigation) {
@@ -337,6 +339,8 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 "userRole",
                 "userData",
               ]);
+
+              await AsyncStorage.setItem('isLoggedOut', 'true');
 
               // Reset redux
               dispatch(resetVendorProfileState());

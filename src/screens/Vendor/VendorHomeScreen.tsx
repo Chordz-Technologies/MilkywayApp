@@ -518,7 +518,7 @@ const VendorHomeScreen = () => {
               </View>
               <View>
                 <Text style={styles.pendingTitle}>Pending Requests</Text>
-                <Text style={styles.pendingSubtitle}>Requires your attention</Text>
+                <Text style={styles.pendingSubtitle}>Awaiting approval requests</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>

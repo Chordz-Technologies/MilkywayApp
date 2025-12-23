@@ -202,11 +202,22 @@ const SplashScreen = () => {
   useEffect(() => {
     const decideNext = async () => {
       const hasSeenSlides = await AsyncStorage.getItem('hasSeenSlides');
-      const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
+      const isLoggedOutValue = await AsyncStorage.getItem('isLoggedOut');
+      const isLoggedOut = isLoggedOutValue === 'true';
 
       setTimeout(() => {
-        // USER IS LOGGED IN → GO DIRECTLY TO ROLE HOME
-        if (isAuthenticated && user?.role && !isLoggedOut) {
+
+        // 🔴 USER EXPLICITLY LOGGED OUT
+        if (isLoggedOut) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: hasSeenSlides ? 'Slide' : 'Login' }],
+          });
+          return;
+        }
+
+        // 🟢 USER LOGGED IN
+        if (isAuthenticated && user?.role) {
           if (user.role === 'vendor') {
             navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
           } else if (user.role === 'customer') {
@@ -217,12 +228,12 @@ const SplashScreen = () => {
           return;
         }
 
-        // USER LOGGED OUT OR FIRST INSTALL
-        if (!hasSeenSlides || isLoggedOut) {
-          navigation.reset({ index: 0, routes: [{ name: 'Slide' }] });
-        } else {
-          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-        }
+        // 🟡 FIRST INSTALL / NOT LOGGED IN
+        navigation.reset({
+          index: 0,
+          routes: [{ name: hasSeenSlides ? 'Login' : 'Slide' }],
+        });
+
       }, 1500);
     };
 

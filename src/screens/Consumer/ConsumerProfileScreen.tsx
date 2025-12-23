@@ -219,6 +219,8 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 'userData',
               ]);
 
+              await AsyncStorage.setItem('isLoggedOut', 'true');
+
               // Reset consumer profile state
               dispatch(resetConsumerProfileState());
 
@@ -272,6 +274,8 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 "userRole",
                 "userData",
               ]);
+
+              await AsyncStorage.setItem('isLoggedOut', 'true');
 
               // Reset redux
               dispatch(resetConsumerProfileState());
