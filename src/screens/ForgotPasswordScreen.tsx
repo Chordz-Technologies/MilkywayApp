@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
-// import auth from '@react-native-firebase/auth';
+import { View, Text, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { styles } from '../styles/Forgotstyles';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { requestPasswordReset } from '../apiServices/allApi'; // <-- your service
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
@@ -14,35 +14,31 @@ const ForgotPasswordScreen = () => {
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation<NavigationProp>();
 
-    //   const handleContinue = async () => {
-    //     const cleaned = mobile.replace(/\D/g, '');
+    const sendOTP = async () => {
+        if (mobile.length !== 10) {
+            Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
+            return;
+        }
 
-    //     if (cleaned.length !== 10) {
-    //       Alert.alert('Invalid', 'Enter a valid 10-digit mobile number');
-    //       return;
-    //     }
+        setLoading(true);
 
-    //     const phoneNumber = `+91${cleaned}`;
+        try {
+            const payload = { phone_number: `+91${mobile}` }; // only phone number
+            const response = await requestPasswordReset(payload);
 
-    //     try {
-    //       setLoading(true);
-
-    //       // Firebase OTP
-    //       const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
-
-    //       Alert.alert('OTP Sent', 'OTP sent successfully');
-
-    //       navigation.navigate('VerifyOtp', {
-    //         phoneNumber,
-    //         confirmation, // pass confirmation object
-    //       });
-    //     } catch (error: any) {
-    //       console.log('Firebase OTP Error:', error);
-    //       Alert.alert('Error', error.message || 'Failed to send OTP');
-    //     } finally {
-    //       setLoading(false);
-    //     }
-    //   };
+            if (response.status === 200) {
+                Alert.alert('Success', response.data.message || 'OTP sent successfully');
+                navigation.navigate('VerifyOtp', { mobile }); // navigate without OTP
+            } else {
+                Alert.alert('Error', response.data.Error.error || 'Failed to send OTP');
+            }
+        } catch (error: any) {
+            console.log('Error:', error);
+            Alert.alert('Error', error?.response?.data?.error || 'Something went wrong');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaWrapper>
@@ -58,14 +54,23 @@ const ForgotPasswordScreen = () => {
                         keyboardType="number-pad"
                         maxLength={10}
                         placeholder="Mobile Number"
+                        placeholderTextColor="#888"
                         value={mobile}
                         onChangeText={(text) => setMobile(text.replace(/\D/g, ''))}
                     />
                 </View>
 
-                {/* <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} disabled={loading}>
-          <Text style={styles.btnText}>{loading ? 'Sending...' : 'Reset Password'}</Text>
-        </TouchableOpacity> */}
+                <TouchableOpacity
+                    style={styles.sendOTPButton}
+                    onPress={sendOTP}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.sendOTPText}>Send OTP</Text>
+                    )}
+                </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                     <Text style={styles.backToLogin}>Back to Login</Text>

@@ -6,42 +6,76 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { styles } from '../styles/ResetPasswordStyles';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { resetPassword } from '../apiServices/allApi'; // ✅ import API
+import { resetPassword } from '../apiServices/allApi';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
+type ResetPasswordRouteProp = RouteProp<RootStackParamList, 'ResetPassword'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ResetPassword'>;
 
 const ResetPasswordScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<ResetPasswordRouteProp>();
+  const { mobile, otp } = route.params; // ✅ get OTP also
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const navigation = useNavigation<NavigationProp>();
-  const route = useRoute();
-  const { mobile } = route.params as { mobile: string }; // ✅ Get passed mobile
+  const [loading, setLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleReset = async () => {
     if (!newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'Please fill in all fields');
-    } else if (newPassword !== confirmNewPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-    } else {
-      try {
-        const res = await resetPassword({ mobile, password: newPassword });
+      return;
+    }
 
-        if (res.status === 200) {
-          Alert.alert('Success', 'Password reset successful');
-          navigation.navigate('Login');
-        } else {
-          Alert.alert('Error', 'Unexpected response');
-        }
-      } catch (error: any) {
-        console.error('Password reset error:', error.response?.data);
-        Alert.alert('Error', error.response?.data?.message || 'Reset failed');
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const payload = {
+        phone_number: mobile,
+        otp: otp,
+        new_password: newPassword,
+      };
+
+      const response = await resetPassword(payload);
+
+      if (response?.status === 200) {
+        Alert.alert('Success', 'Password reset successfully', [
+          {
+            text: 'OK',
+            onPress: () =>
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              }),
+          },
+        ]);
+      } else {
+        Alert.alert('Error', 'Failed to reset password');
       }
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.error || 'Something went wrong'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,32 +83,62 @@ const ResetPasswordScreen = () => {
     <SafeAreaWrapper>
       <View style={styles.container}>
         <Image source={require('../assets/newpass.png')} style={styles.logo} />
-        <Text style={styles.title}>Set New Password</Text>
 
+        <Text style={styles.title}>Set New Password</Text>
         <Text style={styles.subLabel}>Enter your new password below</Text>
 
-        <TextInput
-          placeholder="New Password"
-          secureTextEntry
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="New Password"
+            secureTextEntry={!showNewPassword}
+            style={styles.passwordInput}
+            placeholderTextColor="#888"
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
 
-        <TextInput
-          placeholder="Confirm New Password"
-          secureTextEntry
-          style={styles.input}
-          value={confirmNewPassword}
-          onChangeText={setConfirmNewPassword}
-        />
+          <TouchableOpacity
+            onPress={() => setShowNewPassword(!showNewPassword)}
+          >
+            <Icon
+              name={showNewPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#666"
+            />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleReset}>
-          <Text style={styles.buttonText}>Reset Password</Text>
-        </TouchableOpacity>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="Confirm New Password"
+            secureTextEntry={!showConfirmPassword}
+            style={styles.passwordInput}
+            placeholderTextColor="#888"
+            value={confirmNewPassword}
+            onChangeText={setConfirmNewPassword}
+          />
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.backToLogin}>Back to Login</Text>
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Icon
+              name={showConfirmPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#666"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleReset}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Reset Password</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaWrapper>

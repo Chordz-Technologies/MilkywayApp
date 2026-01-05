@@ -207,7 +207,7 @@ const SplashScreen = () => {
 
       setTimeout(() => {
 
-        // 🔴 USER EXPLICITLY LOGGED OUT
+        // USER EXPLICITLY LOGGED OUT
         if (isLoggedOut) {
           navigation.reset({
             index: 0,
@@ -216,7 +216,7 @@ const SplashScreen = () => {
           return;
         }
 
-        // 🟢 USER LOGGED IN
+        // USER LOGGED IN
         if (isAuthenticated && user?.role) {
           if (user.role === 'vendor') {
             navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
@@ -228,7 +228,7 @@ const SplashScreen = () => {
           return;
         }
 
-        // 🟡 FIRST INSTALL / NOT LOGGED IN
+        // FIRST INSTALL / NOT LOGGED IN
         navigation.reset({
           index: 0,
           routes: [{ name: hasSeenSlides ? 'Login' : 'Slide' }],

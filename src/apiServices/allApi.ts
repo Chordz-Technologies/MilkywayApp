@@ -101,16 +101,11 @@ export const addCustomerRegistration = (payload: any) =>
 export const addDistributorRegistration = (payload: any) =>
   publicApiClient.post('/milkman/milkmen/', payload);
 
-//  Forgot password APIs - PUBLIC
-export const forgotPassword = (data: {
-  phone_number: string;
-  firebase_token: string;
-}) => {
-  return publicApiClient.post('/vendor-login/forgot_password/', data);
-};
+export const requestPasswordReset = (payload: { phone_number: string }) =>
+  publicApiClient.post('/vendor-login/request_password_reset/', payload);
 
-export const resetPassword = (payload: { mobile: string; password: string }) =>
-  publicApiClient.post('/vendor-login/reset_password/', payload);
+export const resetPassword = (payload: { phone_number: string; otp: string; new_password: string }) =>
+  publicApiClient.post('/vendor-login/reset_password_with_otp/', payload);
 
 /* ========= PROFILE APIs (Authenticated) ========= */
 
@@ -470,7 +465,4 @@ export const deleteVendorAccountPermanently = (vendorId: string | number) =>
 export const deleteConsumerAccountPermanently = (consumerId: string | number) =>
   apiClient.delete(`/customer/customers/${consumerId}/`);
 
-export const changePassword = (data: {
-  old_password: string;
-  new_password: string;
-}) => apiClient.post('/vendor-login/change_password/', data);
+/* ========= END OF FILE ========= */

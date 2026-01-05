@@ -5,16 +5,14 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 24,
-    paddingTop: 130,
+    paddingTop: 100,
   },
-
   logo: {
     height: 90,
     width: 90,
     alignSelf: 'center',
     marginBottom: 15,
   },
-
   title: {
     fontSize: 27,
     fontWeight: '700',
@@ -28,8 +26,6 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-
-
   input: {
     borderWidth: 1,
     borderColor: '#000',
@@ -39,14 +35,13 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
     backgroundColor: '#f9f9f9',
+    color: '#000',
     elevation: 2,
   },
-
   inputInner: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   button: {
     backgroundColor: '#007BFF',
     paddingVertical: 15,
@@ -54,18 +49,32 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-
   buttonText: {
     color: '#fff',
     fontSize: 17,
     fontWeight: '600',
   },
-   backToLogin: {
+  backToLogin: {
     marginTop: 20,
     textAlign: 'center',
     color: '#1e40af',
     fontSize: 15,
     fontWeight: '500',
     textDecorationLine: 'underline',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    color: '#000',
   },
 });

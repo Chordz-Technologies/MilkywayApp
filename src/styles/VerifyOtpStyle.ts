@@ -38,8 +38,8 @@ export const styles = StyleSheet.create({
   },
 
   otpBox: {
-    width: 65,
-    height: 65,
+    width: 55,
+    height: 55,
     borderWidth: 1,
     borderColor: '#000',
     borderRadius: 12,

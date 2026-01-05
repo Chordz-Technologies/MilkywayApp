@@ -83,5 +83,23 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
     color: '#555',
     alignSelf: 'center',
-  }
+  },
+  sendOTPButton: {
+    backgroundColor: '#007bff', // Blue color, you can change
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#000', // optional shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5, // shadow for Android
+  },
+  sendOTPText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

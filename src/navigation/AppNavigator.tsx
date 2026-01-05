@@ -179,6 +179,8 @@ import DistributorsListScreen from '../screens/Vendor/DistributorsListScreen';
 import MilkRequestDistributorAssignScreen from '../screens/Vendor/MilkRequestDistributorAssignScreen';
 import ExtraMilkListScreen from '../screens/Distributor/ExtraMilkListScreen';
 import TermsConditionScreen from '../screens/TermsConditionScreen';
+import VerifyOtpScreen from '../screens/VerifyOtpScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -200,6 +202,8 @@ const AppNavigator = () => {
         {/* Auth screens */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="ConsumerRegistration" component={ConsumerRegistrationScreen} />
         <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
         <Stack.Screen name="DistributorRegistration" component={DistributorRegistrationScreen} />
