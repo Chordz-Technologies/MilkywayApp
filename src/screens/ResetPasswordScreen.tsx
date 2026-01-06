@@ -47,8 +47,9 @@ const ResetPasswordScreen = () => {
 
     try {
       setLoading(true);
+
       const payload = {
-        phone_number: mobile,
+        phone_number: `+91${mobile}`,
         otp: otp,
         new_password: newPassword,
       };

@@ -24,6 +24,7 @@ const ForgotPasswordScreen = () => {
 
         try {
             const payload = { phone_number: `+91${mobile}` }; // only phone number
+
             const response = await requestPasswordReset(payload);
 
             if (response.status === 200) {

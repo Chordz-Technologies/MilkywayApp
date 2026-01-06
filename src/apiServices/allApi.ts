@@ -122,16 +122,10 @@ export const getDistributorDetailsById = (id: string | number) =>
   apiClient.get(`/milkman/milkmen/${id}/`);
 
 /* ========= UPDATE PROFILE APIs (Authenticated) ========= */
-
-//  Update Vendor Business Registration Profile - AUTHENTICATED (PUT - Full Update)
-// export const updateVendorProfile = (id: number | string, data: any) => {
-//   console.log('📤 PUT /registration/vendor-business-registration/', id, data);
-//   return apiClient.put(`/registration/vendor-business-registration/${id}/`, data);
-// };//  FIXED - Changed from PUT to PATCH
+//  Update Vendor Profile - AUTHENTICATED
 export const updateVendorProfile = (id: number | string, data: any) => {
   return apiClient.patch(`/registration/vendor-business-registration/${id}/`, data);
 };
-
 
 //  Update Milkman Profile - AUTHENTICATED
 export const updateMilkmanProfile = (id: number | string, data: any) =>
@@ -140,6 +134,11 @@ export const updateMilkmanProfile = (id: number | string, data: any) =>
 //  Update Customer Profile - AUTHENTICATED
 export const updateCustomerProfile = (id: number | string, data: any) =>
   apiClient.put(`/customer/customers/${id}/`, data);
+
+export const changePassword = (payload: {
+  old_password: string;
+  new_password: string;
+}) => apiClient.post('/vendor-login/change_password/', payload);
 
 /* ========= JOIN REQUESTS APIs (Authenticated) ========= */
 
