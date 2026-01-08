@@ -456,7 +456,8 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     value={cowCapacity}
                     keyboardType="numeric"
                     onChangeText={setCowCapacity}
-                    placeholder="Enter capacity"
+                    placeholder="0"
+                    placeholderTextColor="#888"
                   />
                   <Text style={styles.cowTypeLabel}>ltrs</Text>
                 </View>
@@ -472,8 +473,8 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     value={buffaloCapacity}
                     keyboardType="numeric"
                     onChangeText={setBuffaloCapacity}
-                    placeholder="Enter capacity"
-                  />
+                    placeholder="0"
+                    placeholderTextColor="#888" />
                   <Text style={styles.cowTypeLabel}>ltrs</Text>
                 </View>
               </View>

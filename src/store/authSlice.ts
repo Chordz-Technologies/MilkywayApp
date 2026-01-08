@@ -44,8 +44,8 @@ export const loginUser = createAsyncThunk(
       // Correct destructuring — your backend wraps this in .data.data
       const { access, refresh, user_id, role, name, contact } = response.data.data;
 
-      if (access) {await AsyncStorage.setItem('access_token', access);}
-      if (refresh) {await AsyncStorage.setItem('refresh_token', refresh);}
+      if (access) { await AsyncStorage.setItem('access_token', access); }
+      if (refresh) { await AsyncStorage.setItem('refresh_token', refresh); }
 
       const userInfo: User = {
         userID: user_id,
@@ -80,10 +80,18 @@ export const registerVendor = createAsyncThunk(
       const response = await registerVendorAPI(payload);
       return response.data;
     } catch (error: any) {
+      console.log('Registration error:', error.response?.data);
+
+      const data = error.response?.data;
+
+      // ✅ Handle nested field errors
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
+        data?.error ||
+        data?.data?.contact?.message ||
+        (Object.values(data?.data || {})[0] as any)?.message ||
+        data?.message ||
         'Vendor registration failed. Please try again';
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -97,10 +105,18 @@ export const registerCustomer = createAsyncThunk(
       const response = await addCustomerRegistration(payload);
       return response.data;
     } catch (error: any) {
+      console.log('Registration error:', error.response?.data);
+
+      const data = error.response?.data;
+
+      // ✅ Handle nested field errors
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
-        'Customer registration failed. Please try again';
+        data?.error ||
+        data?.data?.contact?.message ||
+        (Object.values(data?.data || {})[0] as any)?.message ||
+        data?.message ||
+        'Consumer registration failed. Please try again';
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -114,10 +130,18 @@ export const registerDistributor = createAsyncThunk(
       const response = await addDistributorRegistration(payload);
       return response.data;
     } catch (error: any) {
+      console.log('Registration error:', error.response?.data);
+
+      const data = error.response?.data;
+
+      // ✅ Handle nested field errors
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.detail ||
+        data?.error ||
+        data?.data?.phone_number?.message ||
+        (Object.values(data?.data || {})[0] as any)?.message ||
+        data?.message ||
         'Distributor registration failed. Please try again';
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -129,12 +153,12 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const refresh_token = await AsyncStorage.getItem('refresh_token');
-      if (!refresh_token) {throw new Error('No refresh token available');}
+      if (!refresh_token) { throw new Error('No refresh token available'); }
 
       const response = await refreshTokenAPI({ refresh: refresh_token });
       const { access, refresh: new_refresh_token } = response.data?.data || response.data;
 
-      if (access) {await AsyncStorage.setItem('access_token', access);}
+      if (access) { await AsyncStorage.setItem('access_token', access); }
       if (new_refresh_token) {
         await AsyncStorage.setItem('refresh_token', new_refresh_token);
       }

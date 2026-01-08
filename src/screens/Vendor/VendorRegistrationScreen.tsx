@@ -502,7 +502,8 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                         value={item.capacity}
                         keyboardType="numeric"
                         onChangeText={val => handleCowMilkChange(idx, 'capacity', val)}
-                        placeholder="Capacity"
+                        placeholder="0"
+                        placeholderTextColor="#888"
                       />
                       <Text style={styles.ltrsLabel}>ltrs</Text>
                     </View>
@@ -538,7 +539,8 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                       value={buffaloCapacity}
                       keyboardType="numeric"
                       onChangeText={setBuffaloCapacity}
-                      placeholder="Capacity"
+                      placeholder="0"
+                      placeholderTextColor="#888"
                     />
                     <Text style={styles.ltrsLabel}>ltrs</Text>
                   </View>

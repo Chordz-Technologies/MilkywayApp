@@ -125,26 +125,28 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
       return;
     }
 
-    const payload: DistributorPayload = {
-      full_name: form.name,
-      phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
-      flat_house: form.flat.trim(),
-      society_name: form.society.trim(),
-      village: form.village.trim(),
-      tal: form.tal.trim(),
-      dist: form.dist.trim(),
-      state: form.state.trim(),
-      pincode: form.pincode.trim(),
-      password: form.password,
-      confirm_password: form.confirmPassword,
-    };
-
     try {
+      const payload: DistributorPayload = {
+        full_name: form.name,
+        phone_number: form.phone.trim() ? `+91${form.phone.trim()}` : undefined,
+        flat_house: form.flat.trim(),
+        society_name: form.society.trim(),
+        village: form.village.trim(),
+        tal: form.tal.trim(),
+        dist: form.dist.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        password: form.password,
+        confirm_password: form.confirmPassword,
+      };
+
       console.log('Distributor Payload:', payload);
 
       const result = await dispatch(registerDistributor(payload));
       if (registerDistributor.fulfilled.match(result)) {
-        showSuccessAlert('Distributor registration successful!');
+        Alert.alert('Registration Successful', `Distributor registration successful!\nYou will be redirected to Login.`, [
+          { text: 'OK', onPress: () => navigation.replace('Login') },
+        ]);
       }
     } catch (err: any) {
       console.error('Registration error:', err);
