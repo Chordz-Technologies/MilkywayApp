@@ -347,6 +347,9 @@ export const getJoinAssignmentStatus = async (
 export const assignTemporaryDistributor = (data: {
   customer_id: number;
   milkman_id: number;
+  is_temporary: boolean;
+  start_date?: string;
+  end_date?: string;
 }) => {
   return apiClient.post('/consumer-calendar/vendor-calendar/assign-milkman-to-customer/', data);
 };

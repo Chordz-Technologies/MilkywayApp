@@ -2687,14 +2687,8 @@ const AssignDistributorScreen = () => {
         throw new Error('Vendor ID not found. Please log in again.');
       }
 
-      console.log('🔍 Current vendor ID:', vendorId, typeof vendorId);
-      console.log('🔍 Consumer vendor ID:', consumer.vendor, typeof consumer.vendor);
-
       // Verify vendor match first
       if (Number(vendorId) !== Number(consumer.vendor)) {
-        console.log('⚠️ VENDOR MISMATCH DETECTED!');
-        console.log('Current user vendor:', vendorId);
-        console.log('Consumer vendor:', consumer.vendor);
 
         Alert.alert(
           'Vendor Mismatch',
@@ -2706,7 +2700,6 @@ const AssignDistributorScreen = () => {
 
       // Fetch distributors for the current vendor
       const response = await getAcceptedMilkmen(vendorId);
-      console.log('📦 Distributors API Response:', JSON.stringify(response.data, null, 2));
 
       const data = response.data?.data || response.data || [];
 
@@ -2731,7 +2724,6 @@ const AssignDistributorScreen = () => {
           d.status?.toLowerCase() === 'accepted' || d.status?.toLowerCase() === 'active'
         );
 
-        console.log('✅ Active distributors for assignment:', activeDistributors.length);
         setDistributors(activeDistributors);
         setFilteredDistributors(activeDistributors);
       } else {
@@ -2795,12 +2787,6 @@ const AssignDistributorScreen = () => {
         return;
       }
 
-      // Final vendor validation before assignment
-      console.log('🔍 Final Assignment Validation:');
-      console.log('Current user (vendor) ID:', user?.userID, typeof user?.userID);
-      console.log('Consumer vendor ID:', consumer.vendor, typeof consumer.vendor);
-      console.log('Selected distributor vendor ID:', selectedDistributor.vendor_id, typeof selectedDistributor.vendor_id);
-
       const currentVendorId = Number(user?.userID);
       const consumerVendorId = Number(consumer.vendor);
       const distributorVendorId = Number(selectedDistributor.vendor_id);
@@ -2820,6 +2806,7 @@ const AssignDistributorScreen = () => {
       const assignmentData = {
         customer_id: consumer.object_id,
         milkman_id: distributorId,
+        is_temporary: false,
       };
 
       console.log('🔄 Assignment payload:', assignmentData);
@@ -2923,26 +2910,6 @@ const AssignDistributorScreen = () => {
             <Text style={styles.headerSubtitle}>For: {getConsumerName()}</Text>
           </View>
         </View>
-
-        {/* Consumer Info */}
-        {/* <View style={styles.consumerCard}>
-        <Text style={styles.consumerName}>{getConsumerName()}</Text>
-        <Text style={styles.consumerContact}>{consumer.user_contact}</Text>
-        <Text style={styles.assignmentNote}>Select a distributor to assign this consumer</Text>
-      </View> */}
-
-        {/* Vendor Info Card */}
-        {/* <View style={styles.vendorInfoCard}>
-        <Text style={styles.vendorInfoTitle}>Vendor Information</Text>
-        <Text style={styles.vendorInfoText}>
-          Consumer Vendor: {consumer.vendor} | Current Vendor: {user?.userID}
-        </Text>
-        {Number(user?.userID) === Number(consumer.vendor) ? (
-          <Text style={styles.vendorMatch}>✅ Vendor match - Assignment allowed</Text>
-        ) : (
-          <Text style={styles.vendorMismatch}>❌ Vendor mismatch - Assignment blocked</Text>
-        )}
-      </View> */}
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>

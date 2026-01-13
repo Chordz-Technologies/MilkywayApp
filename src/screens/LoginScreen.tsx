@@ -80,14 +80,14 @@ const LoginScreen = () => {
   }, [isAuthenticated, user?.role, navigateToHome]);
 
   // Show error alerts
-  // useEffect(() => {
-  //   if (error) {
-  //     console.log('Login error received from Redux:', error);
-  //     Alert.alert('Login Error', error, [
-  //       { text: 'OK', onPress: () => dispatch(clearError()) },
-  //     ]);
-  //   }
-  // }, [error, dispatch]);
+  useEffect(() => {
+    if (error) {
+      console.log('Login error received from Redux:', error);
+      Alert.alert('Login Error', error, [
+        { text: 'OK', onPress: () => dispatch(clearError()) },
+      ]);
+    }
+  }, [error, dispatch]);
 
   const handleContactChange = useCallback((text: string) => {
     const cleanedText = text.replace(/[^0-9]/g, '');

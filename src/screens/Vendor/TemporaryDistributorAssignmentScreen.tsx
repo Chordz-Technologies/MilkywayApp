@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Modal
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import {
 } from '../../apiServices/allApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type RouteParams = {
@@ -36,6 +38,114 @@ type Distributor = {
   assigned_customers_count: number;
 };
 
+const TemporaryDistributorModal = ({
+  visible,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (start: Date, end: Date) => void;
+}) => {
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.overlay}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.title}>Temporary Assignment Period</Text>
+
+          {/* Start Date */}
+          <TouchableOpacity
+            style={styles.dateBox}
+            onPress={() => setShowStartPicker(true)}
+          >
+            <Text
+              style={[
+                styles.dateText,
+                !startDate && styles.placeholderText,
+              ]}
+            >
+              {startDate ? startDate.toDateString() : 'Select Start Date'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* End Date */}
+          <TouchableOpacity
+            style={styles.dateBox}
+            onPress={() => setShowEndPicker(true)}
+          >
+            <Text
+              style={[
+                styles.dateText,
+                !endDate && styles.placeholderText,
+              ]}
+            >
+              {endDate ? endDate.toDateString() : 'Select End Date'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Start Date Picker */}
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDate || new Date()}
+              mode="date"
+              minimumDate={new Date()}
+              onChange={(e, date) => {
+                setShowStartPicker(false);
+                if (date) {
+                  setStartDate(date);
+
+                  // Auto-fix end date if needed
+                  if (!endDate || date > endDate) {
+                    setEndDate(date);
+                  }
+                }
+              }}
+            />
+          )}
+
+          {/* End Date Picker */}
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDate || startDate || new Date()}
+              mode="date"
+              minimumDate={startDate || new Date()}
+              onChange={(e, date) => {
+                setShowEndPicker(false);
+                if (date) setEndDate(date);
+              }}
+            />
+          )}
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <Text>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.submitBtn,
+                (!startDate || !endDate) && { backgroundColor: '#B0BEC5' },
+              ]}
+              disabled={!startDate || !endDate}
+              onPress={() => {
+                if (!startDate || !endDate) return;
+                onSubmit(startDate, endDate);
+              }}
+            >
+              <Text style={{ color: '#fff' }}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const TemporaryDistributorAssignmentScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -46,6 +156,7 @@ const TemporaryDistributorAssignmentScreen = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedDistributorId, setSelectedDistributorId] = useState<number | null>(null);
+  const [showTempModal, setShowTempModal] = useState(false);
 
   const fetchDistributors = useCallback(async () => {
     if (!user?.userID) {
@@ -77,7 +188,7 @@ const TemporaryDistributorAssignmentScreen = () => {
     fetchDistributors();
   }, [fetchDistributors]);
 
-  const handleAssignTemporary = async () => {
+  const handleAssignTemporary = async (startDate: Date, endDate: Date) => {
     if (!selectedDistributorId) {
       Alert.alert('Error', 'Please select a distributor');
       return;
@@ -96,6 +207,9 @@ const TemporaryDistributorAssignmentScreen = () => {
               await assignTemporaryDistributor({
                 customer_id: params.consumerId,
                 milkman_id: selectedDistributorId,
+                is_temporary: true,
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0],
               });
 
               Alert.alert('Success', 'Temporary distributor assigned successfully!', [
@@ -109,6 +223,7 @@ const TemporaryDistributorAssignmentScreen = () => {
               Alert.alert('Error', err?.response?.data?.message || 'Failed to assign distributor');
             } finally {
               setSubmitting(false);
+              setShowTempModal(false);
             }
           },
         },
@@ -119,7 +234,7 @@ const TemporaryDistributorAssignmentScreen = () => {
   const handleDeassignTemporary = async () => {
     Alert.alert(
       'Remove Temporary Distributor',
-      `Are you sure you want to remove the temporary distributor and restore ${params.currentDistributorName} for ${params.consumerName}?`,
+      `Are you sure you want to remove the temporary distributor for ${params.consumerName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -308,6 +423,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                 )}
               </View>
 
+
               {/* Assign Button */}
               {distributors.length > 0 && (
                 <View style={styles.section}>
@@ -316,7 +432,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                       styles.assignButton,
                       (!selectedDistributorId || submitting) && styles.buttonDisabled,
                     ]}
-                    onPress={handleAssignTemporary}
+                    onPress={() => setShowTempModal(true)}
                     disabled={!selectedDistributorId || submitting}
                   >
                     {submitting ? (
@@ -337,6 +453,11 @@ const TemporaryDistributorAssignmentScreen = () => {
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
+      <TemporaryDistributorModal
+        visible={showTempModal}
+        onClose={() => setShowTempModal(false)}
+        onSubmit={handleAssignTemporary}
+      />
     </SafeAreaWrapper>
   );
 };
@@ -608,6 +729,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 12,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  dateBox: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  cancelBtn: {
+    padding: 12,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    width: '45%',
+    alignItems: 'center',
+  },
+  submitBtn: {
+    padding: 12,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    width: '45%',
+    alignItems: 'center',
+  },
+  dateText: {
+    fontSize: 15,
+    color: '#000',
+  },
+  placeholderText: {
+    color: '#999',
   },
 });
 
