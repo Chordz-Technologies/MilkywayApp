@@ -5,6 +5,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store, persistor } from "./../MilkywayApp/src/store";
 import AppNavigator from "../MilkywayApp/src/navigation/AppNavigator";
 import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging";
+import analytics from "@react-native-firebase/analytics";
+import crashlytics from "@react-native-firebase/crashlytics";
 
 import {
   requestUserPermission,
@@ -17,13 +19,21 @@ import {
 export default function App() {
   useEffect(() => {
     const initFCM = async () => {
-      // 1. Request permission
+
+      // Firebase Analytics 
+      analytics().logAppOpen();
+      analytics().logEvent("app_launched");
+
+      // Firebase Crashlytics 
+      crashlytics().log("Agriclinic App Mounted");
+
+      // Request notification permission
       await requestUserPermission();
 
-      // 2. Send token to backend
+      // Send token to backend
       await sendFCMTokenToServer();
 
-      // 3. Subscribe ALL users to a topic (optional)
+      // Subscribe ALL users to a topic (optional)
       try {
         await messaging().subscribeToTopic("global");
         console.log("✅ Subscribed to global topic");
@@ -31,10 +41,10 @@ export default function App() {
         console.log("❌ Topic subscribe error:", err);
       }
 
-      // 4. Setup listeners (foreground notifications)
+      // Setup listeners (foreground notifications)
       const unsubscribe = setupNotificationListeners();
 
-      // 5. Background notification handling
+      // Background notification handling
       const unsubscribeOpened = messaging().onNotificationOpenedApp(
         async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
           console.log("📩 Opened from background:", remoteMessage);
@@ -52,7 +62,7 @@ export default function App() {
         }
       );
 
-      // 6. Quit state notification handling
+      // Quit state notification handling
       const initialMessage = await messaging().getInitialNotification();
       if (initialMessage) {
         const notificationRaw = initialMessage.notification ?? {

@@ -186,17 +186,26 @@
 // export default  SplashScreen;
 
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Image,
+  StyleSheet,
+  Dimensions,
+  ImageBackground,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
-import colors from '../theme/colors';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
+const { width, height } = Dimensions.get('window');
+
 const SplashScreen = () => {
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.auth
+  );
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
@@ -206,8 +215,6 @@ const SplashScreen = () => {
       const isLoggedOut = isLoggedOutValue === 'true';
 
       setTimeout(() => {
-
-        // USER EXPLICITLY LOGGED OUT
         if (isLoggedOut) {
           navigation.reset({
             index: 0,
@@ -216,24 +223,24 @@ const SplashScreen = () => {
           return;
         }
 
-        // USER LOGGED IN
         if (isAuthenticated && user?.role) {
           if (user.role === 'vendor') {
             navigation.reset({ index: 0, routes: [{ name: 'VendorHome' }] });
           } else if (user.role === 'customer') {
             navigation.reset({ index: 0, routes: [{ name: 'ConsumerHome' }] });
           } else if (user.role === 'milkman') {
-            navigation.reset({ index: 0, routes: [{ name: 'DistributorHome' }] });
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'DistributorHome' }],
+            });
           }
           return;
         }
 
-        // FIRST INSTALL / NOT LOGGED IN
         navigation.reset({
           index: 0,
           routes: [{ name: hasSeenSlides ? 'Login' : 'Slide' }],
         });
-
       }, 1500);
     };
 
@@ -242,11 +249,36 @@ const SplashScreen = () => {
 
   return (
     <SafeAreaWrapper>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary }}>
-        <ActivityIndicator size="large" color={colors.white} />
-      </View>
+      <ImageBackground
+        source={require('../assets/waves.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        {/* Center Logo */}
+        <Image
+          source={require('../assets/logo.jpeg')}
+          style={styles.logo}
+        />
+      </ImageBackground>
     </SafeAreaWrapper>
   );
 };
 
 export default SplashScreen;
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+  },
+});

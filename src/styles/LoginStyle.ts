@@ -9,9 +9,10 @@ export const styles = StyleSheet.create({
         paddingTop: 100,
     },
     logo: {
-        width: 110,
-        height: 110,
+        width: 130,
+        height: 130,
         marginBottom: 20,
+        borderRadius: 80,
     },
     welcomeText: {
         fontSize: 27,
