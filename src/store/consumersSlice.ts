@@ -4,6 +4,8 @@ import {
   getDistributorAssignedConsumers,
   markDeliveryAsSuccessful,
 } from '../apiServices/allApi';
+import NetInfo from '@react-native-community/netinfo';
+import { saveOfflineDelivery } from '../realm/offlineDeliveryRealm';
 
 export interface EnhancedDeliveryRecord {
   date: string;
@@ -186,15 +188,67 @@ export const markDelivery = createAsyncThunk(
   'consumers/markDelivery',
   async (payload: DeliveryPayload, { rejectWithValue }) => {
     try {
+      // ✅ Check network connectivity first
+      const netState = await NetInfo.fetch();
+      const isConnected = netState.isConnected ?? false;
+
+      if (!isConnected) {
+        // 📱 OFFLINE: Save to Realm instead of trying API
+        console.log('[Delivery] Offline mode - saving to Realm...');
+        saveOfflineDelivery({
+          customer_id: payload.customer_id,
+          date: payload.date,
+          milkman_id: payload.milkman_id,
+          status: payload.status,
+          cow_milk: payload.cow_milk,
+          buffalo_milk: payload.buffalo_milk,
+          reason: payload.reason,
+          remarks: payload.remarks,
+        });
+
+        // Return success with offline flag
+        return {
+          ...payload,
+          timestamp: new Date().toISOString(),
+          isOffline: true,
+          response: { success: true, message: 'Saved offline - will sync when online' },
+        };
+      }
+
+      // 🌐 ONLINE: Call API normally
       const response = await markDeliveryAsSuccessful(payload);
       console.log("Delivery data payload:", payload);
       return {
         ...payload,
         timestamp: new Date().toISOString(),
+        isOffline: false,
         response: response.data,
       };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to mark delivery');
+      // ❌ API Error: Try to save offline as fallback
+      try {
+        console.log('[Delivery] API failed - saving to Realm as fallback...');
+        saveOfflineDelivery({
+          customer_id: payload.customer_id,
+          date: payload.date,
+          milkman_id: payload.milkman_id,
+          status: payload.status,
+          cow_milk: payload.cow_milk,
+          buffalo_milk: payload.buffalo_milk,
+          reason: payload.reason,
+          remarks: payload.remarks,
+        });
+
+        return {
+          ...payload,
+          timestamp: new Date().toISOString(),
+          isOffline: true,
+          response: { success: true, message: 'Saved offline - will sync when online' },
+        };
+      } catch (realmError) {
+        console.log('[Delivery] ❌ Both API and Realm failed:', realmError);
+        return rejectWithValue(error.response?.data?.message || error.message || 'Failed to mark delivery');
+      }
     }
   }
 );

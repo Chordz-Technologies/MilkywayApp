@@ -15,6 +15,7 @@ import {
   clearAllNotifications,
   showLocalNotification,
 } from "../MilkywayApp/src/notifications/FCM";
+import { syncOfflineData } from "./src/utils/syncOfflineData";
 
 export default function App() {
   useEffect(() => {
@@ -40,6 +41,9 @@ export default function App() {
       } catch (err) {
         console.log("❌ Topic subscribe error:", err);
       }
+
+      // 🔥 SYNC OFFLINE DATA
+      await syncOfflineData();
 
       // Setup listeners (foreground notifications)
       const unsubscribe = setupNotificationListeners();

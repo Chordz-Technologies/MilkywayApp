@@ -20,12 +20,14 @@ import {
   checkDailyReset,
   AssignedConsumer,
 } from '../../store/consumersSlice';
+// import { saveExtraMilkRequests, getExtraMilkRequests, } from '../../realm/extraMilkRealm';
 import { getMilkmanExtraMilkRequests } from '../../apiServices/allApi';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { Linking } from 'react-native';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import NetInfo from '@react-native-community/netinfo';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -70,17 +72,30 @@ const ConsumerListScreen = () => {
   const [isMarkingCancelDelivery, setIsMarkingCancelDelivery] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [extraRequests, setExtraRequests] = useState<any[]>([]);
+  // const [isExtraOffline, setIsExtraOffline] = useState(false);
   const [extraLoading, setExtraLoading] = useState(false);
   const [editedMilkMap, setEditedMilkMap] = useState<{ [customerId: number]: { cow_milk: string; buffalo_milk: string } }>({});
   const [isEditingMap, setIsEditingMap] = useState<{ [customerId: number]: boolean }>({});
   const [cancelReasonModal, setCancelReasonModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<AssignedConsumer | any>(null);
   const [searchText, setSearchText] = useState('');
+  const [isOnline, setIsOnline] = useState(true);
 
   const filteredConsumers = consumers.filter(c =>
     c.customer_name?.toLowerCase().includes(searchText.toLowerCase()) ||
     c.customer_contact?.includes(searchText)
   );
+
+  // ✅ Network detection
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected ?? true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const toggleEdit = (customerId: number) => {
     setIsEditingMap(prev => ({ ...prev, [customerId]: !prev[customerId] }));
@@ -233,7 +248,7 @@ const ConsumerListScreen = () => {
     if (isAuthenticated && user?.userID) {
       dispatch(checkDailyReset()).then(() => {
         dispatch(fetchAssignedConsumers(getMilkmanId()));
-        // fetch extra milk requests for this milkman for today
+        // fetch extra milk requests (will fall back to local cache when offline)
         fetchExtraMilkRequests();
       });
     }
@@ -305,7 +320,7 @@ const ConsumerListScreen = () => {
             try {
               setIsMarkingThisDelivery(true);
 
-              await dispatch(markDelivery({
+              const result = await dispatch(markDelivery({
                 customer_id: consumer.customer_id,
                 date: today,
                 milkman_id: milkmanId,
@@ -317,9 +332,14 @@ const ConsumerListScreen = () => {
                 replaceExisting: true,
               })).unwrap();
 
+              // ✅ Show appropriate message based on online/offline
+              const message = result.isOffline
+                ? `Delivery marked offline for ${consumer.customer_name}.\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
+                : `Delivery marked as completed for ${consumer.customer_name}.\n\nButtons are now disabled until tomorrow.`;
+
               Alert.alert(
-                'Success!',
-                `Delivery marked as completed for ${consumer.customer_name}.\n\nButtons are now disabled until tomorrow.`,
+                result.isOffline ? '📱 Offline Mode' : 'Success!',
+                message,
                 [{ text: 'OK' }]
               );
             } catch (error: any) {
@@ -351,7 +371,7 @@ const ConsumerListScreen = () => {
     try {
       setIsMarkingCancelDelivery(true);
 
-      await dispatch(markDelivery({
+      const result = await dispatch(markDelivery({
         customer_id: consumer.customer_id,
         date: today,
         milkman_id: milkmanId,
@@ -363,9 +383,14 @@ const ConsumerListScreen = () => {
         replaceExisting: true,
       })).unwrap();
 
+      // ✅ Show appropriate message based on online/offline
+      const message = result.isOffline
+        ? `Delivery cancelled offline for ${consumer.customer_name}.\nReason: ${reason}\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
+        : `Delivery cancelled for ${consumer.customer_name}.\nReason: ${reason}\n\nButtons are now disabled until tomorrow.`;
+
       Alert.alert(
-        'Delivery Cancelled',
-        `Delivery cancelled for ${consumer.customer_name}.\nReason: ${reason}\n\nButtons are now disabled until tomorrow.`,
+        result.isOffline ? '📱 Offline Mode' : 'Cancelled',
+        message,
         [{ text: 'OK' }]
       );
     } catch (error: any) {
@@ -754,6 +779,14 @@ const ConsumerListScreen = () => {
     <SafeAreaWrapper>
 
       <View style={styles.container}>
+        {/* ✅ Offline indicator banner */}
+        {!isOnline && (
+          <View style={styles.offlineIndicatorBanner}>
+            <Ionicons name="wifi-outline" size={16} color="#fff" />
+            <Text style={styles.offlineIndicatorText}>You're offline - using cached data</Text>
+          </View>
+        )}
+
         <View style={styles.modernHeader}>
 
           <View style={styles.headerContent}>
@@ -863,21 +896,52 @@ const ConsumerListScreen = () => {
           </TouchableOpacity>
         )}
 
-        {error && (
-          <View style={styles.modernErrorBanner}>
-            <Ionicons name="alert-circle" size={20} color="#FF3B30" />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              onPress={() => {
-                dispatch(clearError());
-                handleRefresh();
-              }}
-              style={styles.errorRetryButton}
-            >
-              <Text style={styles.errorRetryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
+        {/* ✅ Smart Error Handling: Show error only if NO data + (NO internet OR API error) */}
+        {
+          (() => {
+            // If we have consumers, don't show error banner
+            if (consumers.length > 0) {
+              return null;
+            }
+
+            // If loading with no data, don't show error yet
+            if (loading) {
+              return null;
+            }
+
+            // If offline with no data, show offline message
+            if (!isOnline && !error) {
+              return (
+                <View style={[styles.modernErrorBanner, { backgroundColor: '#FFF9E6', borderColor: '#FFE5B4' }]}>
+                  <Ionicons name="wifi-outline" size={20} color="#FF9500" />
+                  <Text style={[styles.errorText, { color: '#FF9500' }]}>No internet & no cached data available</Text>
+                </View>
+              );
+            }
+
+            // If API error and no data, show error
+            if (error && consumers.length === 0) {
+              return (
+                <View style={styles.modernErrorBanner}>
+                  <Ionicons name="alert-circle" size={20} color="#FF3B30" />
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      dispatch(clearError());
+                      handleRefresh();
+                    }}
+                    style={styles.errorRetryButton}
+                  >
+                    <Text style={styles.errorRetryText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
+            return null;
+          })()
+        }
 
         <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
           <TextInput
@@ -896,43 +960,45 @@ const ConsumerListScreen = () => {
           />
         </View>
 
-        {loading && consumers.length === 0 ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredConsumers}
-            keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
-            renderItem={renderConsumerItem}
-            contentContainerStyle={styles.modernListContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={['#007AFF']}
-                tintColor="#007AFF"
-              />
-            }
-            ListEmptyComponent={() => (
-              <View style={styles.modernEmptyContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="people-outline" size={60} color="#C7C7CC" />
+        {
+          loading && consumers.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredConsumers}
+              keyExtractor={(item, index) => `consumer_${item.id || item.customer_id || index}`}
+              renderItem={renderConsumerItem}
+              contentContainerStyle={styles.modernListContainer}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={['#007AFF']}
+                  tintColor="#007AFF"
+                />
+              }
+              ListEmptyComponent={() => (
+                <View style={styles.modernEmptyContainer}>
+                  <View style={styles.emptyIconContainer}>
+                    <Ionicons name="people-outline" size={60} color="#C7C7CC" />
+                  </View>
+                  <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
+                  <Text style={styles.emptyText}>
+                    You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
+                  </Text>
+                  <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
+                    <Ionicons name="refresh" size={18} color="#fff" />
+                    <Text style={styles.modernRefreshButtonText}>Refresh</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
-                <Text style={styles.emptyText}>
-                  You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
-                </Text>
-                <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
-                  <Ionicons name="refresh" size={18} color="#fff" />
-                  <Text style={styles.modernRefreshButtonText}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          )
+        }
 
         {/* CANCEL REASON MODAL */}
         <Modal
@@ -1003,8 +1069,8 @@ const ConsumerListScreen = () => {
             </View>
           </View>
         </Modal>
-      </View>
-    </SafeAreaWrapper>
+      </View >
+    </SafeAreaWrapper >
   );
 };
 
@@ -1500,6 +1566,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FF9500',
     marginRight: 8,
+  },
+  offlineIndicatorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9500',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  offlineIndicatorText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+    flex: 1,
   },
 });
 
