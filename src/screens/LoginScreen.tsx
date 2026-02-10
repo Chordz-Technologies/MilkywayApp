@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Alert, Keyboard, TouchableWithoutFeedback, ScrollView, } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -66,7 +65,7 @@ const LoginScreen = () => {
     if (isAuthenticated && user?.role) {
       (async () => {
         try {
-          // ✅ CLEAR logout flag after successful login
+          // CLEAR logout flag after successful login
           await AsyncStorage.removeItem('isLoggedOut');
           console.log('isLoggedOut flag cleared');
         } catch (err) {

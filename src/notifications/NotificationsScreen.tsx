@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from "
 import Icon from "react-native-vector-icons/MaterialIcons";
 import notifee from "@notifee/react-native";
 import { getNotifications, clearNotifications, markAllAsRead } from "../notifications/NotificationService";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"; // ✅ correct import
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"; 
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 
 type RootStackParamList = {

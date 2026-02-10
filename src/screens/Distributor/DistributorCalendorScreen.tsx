@@ -783,32 +783,6 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
           {/* Only show leave requests and actions for distributors, not vendors */}
           {!isVendor && (
             <>
-              {/* <View style={calendarScreenStyles.leavesContainer}>
-              <Text style={calendarScreenStyles.leavesTitle}>Leave Requests</Text>
-              {leavesForDistributor.length === 0 ? (
-                <Text style={calendarScreenStyles.noLeavesText}>No leave requests</Text>
-              ) : (
-                leavesForDistributor.map((leave: LeaveItem) => (
-                  <View key={leave.id} style={calendarScreenStyles.leaveItem}>
-                    <View style={calendarScreenStyles.leaveItemContent}>
-                      <Text style={calendarScreenStyles.leaveDate}>{leave.date}</Text>
-                      <Text style={calendarScreenStyles.leaveReason}>
-                        {leave.reason}
-                      </Text>
-                    </View>
-                    {leave.status !== 'leave' && (
-                      <TouchableOpacity
-                        style={calendarScreenStyles.leaveButton}
-                        onPress={() => handleCancelLeave(leave.id, leave.date)}
-                      >
-                        <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))
-              )}
-            </View> */}
-
               <View style={calendarScreenStyles.actionsContainer}>
                 <Text style={calendarScreenStyles.actionsTitle}>Quick Actions</Text>
 
@@ -861,7 +835,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     position: 'absolute',
-    top: 25,          // 👈 same visual effect as paddingTop
+    top: 25,          // same visual effect as paddingTop
     left: 0,
     right: 0,
     alignItems: 'center',

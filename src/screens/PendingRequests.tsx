@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -178,7 +177,7 @@ const AnimatedRequestItem = React.memo(({
   return (
     <Animated.View
       style={[
-        styles.requestCard, // ✅ SAME CARD STYLE
+        styles.requestCard, // SAME CARD STYLE
         {
           transform: [{ scale: scaleValue }, { translateY }],
           opacity: fadeValue,
@@ -203,10 +202,6 @@ const AnimatedRequestItem = React.memo(({
 
           <View style={styles.distributorDetails}>
             <Text style={styles.distributorName}>{displayName}</Text>
-
-            {/* {contactInfo && (
-              <Text style={styles.distributorContact}>{contactInfo}</Text>
-            )} */}
           </View>
         </View>
 
@@ -544,15 +539,6 @@ const PendingRequestsScreen = () => {
             <Text style={styles.headerTitle}>Pending Requests</Text>
             <Text style={styles.headerSubtitle}>Requests from consumers and distributors</Text>
           </View>
-
-          {/* <View style={styles.headerIcon}>
-            <Ionicons name="notifications" size={24} color="#007AFF" />
-            {requests.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{requests.length}</Text>
-              </View>
-            )}
-          </View> */}
         </Animated.View>
 
         {/* Error Banner */}
@@ -643,7 +629,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    // backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -664,23 +649,6 @@ const styles = StyleSheet.create({
   headerIcon: {
     position: 'relative',
   },
-  // badge: {
-  //   position: 'absolute',
-  //   top: -8,
-  //   right: -8,
-  //   backgroundColor: '#FF3B30',
-  //   borderRadius: 10,
-  //   minWidth: 20,
-  //   height: 20,
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  // },
-  // badgeText: {
-  //   color: '#fff',
-  //   fontSize: 12,
-  //   fontWeight: 'bold',
-  // },
-
   // ERROR BANNER
   errorBanner: {
     flexDirection: 'row',

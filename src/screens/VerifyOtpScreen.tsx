@@ -54,7 +54,7 @@ const VerifyOtpScreen = () => {
         }
     };
 
-    // ✅ NO VERIFICATION — JUST NAVIGATE
+    // NO VERIFICATION — JUST NAVIGATE
     const handleContinue = () => {
         const otp = otpBoxes.join('');
 
@@ -101,14 +101,6 @@ const VerifyOtpScreen = () => {
                 >
                     <Text style={styles.btnText}>Continue</Text>
                 </TouchableOpacity>
-
-                {/* <Text style={styles.timerText}>
-                    {canResend ? (
-                        <Text style={styles.resend}>Resend OTP</Text>
-                    ) : (
-                        <>Resend OTP in {timer}s</>
-                    )}
-                </Text> */}
             </View>
         </SafeAreaWrapper>
     );

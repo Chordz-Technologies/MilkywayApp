@@ -1,10 +1,7 @@
-
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// Import your screens
 import ConsumerCalendarScreen from '../screens/Consumer/ConsumerCalendorScreen';
 import CustomerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
 import ConsumerProfileScreen from '../screens/Consumer/ConsumerProfileScreen';

@@ -1,865 +1,3 @@
-
-// import React, { useEffect, useCallback, useMemo, useState } from 'react';
-// import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-// import {
-//   View,
-//   Text,
-//   ScrollView,
-//   TouchableOpacity,
-//   Alert,
-//   ActivityIndicator,
-//   RefreshControl,
-//   StyleSheet,
-// } from 'react-native';
-// import { Calendar, DateData } from 'react-native-calendars';
-// import Ionicons from 'react-native-vector-icons/Ionicons';
-// import { useSelector, useDispatch } from 'react-redux';
-// import type { RootState, AppDispatch } from '../../store';
-
-// import { calendarScreenStyles, calendarTheme, colors } from '../../styles/CalendorScreenStyle';
-
-// import {
-//   fetchCalendarData,
-//   setCurrentMonth,
-//   clearError,
-//   LeaveItem,
-//   ExtraMilkItem,
-//   submitLeaveRequest,
-//   submitExtraMilk,
-//   cancelLeave,
-// } from '../../store/calendarSlice';
-
-// import { selectConsumers } from '../../store/consumersSlice';
-// import { checkStoredAuth } from '../../store/authSlice';
-
-// interface CalendarViewerProps {
-//   viewerRole?: 'consumer' | 'distributor' | 'vendor';
-//   targetConsumerId?: number;
-//   targetConsumerName?: string;
-//   showBackButton?: boolean;
-// }
-
-// type MarkedDates = Record<
-//   string,
-//   {
-//     selected?: boolean;
-//     marked?: boolean;
-//     selectedColor?: string;
-//     dotColor?: string;
-//     dots?: Array<{
-//       key: string;
-//       color: string;
-//       selectedDotColor?: string;
-//     }>;
-//   }
-// >;
-
-// interface LeaveRequestData {
-//   startDate: string;
-//   endDate: string;
-//   reason: string;
-//   leaveType: 'single' | 'multiple';
-// }
-
-// interface ExtraMilkData {
-//   date: string;
-//   quantity: number;
-//   milkType: 'cow' | 'buffalo' | 'mixed';
-//   reason: string;
-// }
-
-// const statusColors: Record<string, string> = {
-//   delivered: '#4CAF50',
-//   vendor_unavailable: '#F44336',
-//   distributor_unavailable: '#F44336',
-//   cancelled: '#FF5722',
-//   leave: '#9C27B0',
-//   extra_milk: '#FFC107',
-//   customer_paused: '#9C27B0',
-//   missed: '#2196F3',
-//   not_requested: '#FF9800',
-// };
-
-// // Statuses allowed for vendor viewing (delivery-related only)
-// const allowedVendorStatuses = ['delivered', 'vendor_unavailable', 'distributor_unavailable', 'cancelled', 'missed'];
-
-// const monthNames = [
-//   'January', 'February', 'March', 'April', 'May', 'June',
-//   'July', 'August', 'September', 'October', 'November', 'December',
-// ];
-
-// // CONSUMER-ONLY MODALS
-// const ConsumerModals: React.FC<{
-//   showLeaveModal: boolean;
-//   showExtraMilkModal: boolean;
-//   onCloseLeave: () => void;
-//   onCloseExtraMilk: () => void;
-//   onSubmitLeave: (data: LeaveRequestData) => void;
-//   onSubmitExtraMilk: (data: ExtraMilkData) => void;
-//   viewerRole: string;
-// }> = React.memo(({
-//   showLeaveModal,
-//   showExtraMilkModal,
-//   onCloseLeave,
-//   onCloseExtraMilk,
-//   onSubmitLeave,
-//   onSubmitExtraMilk,
-//   viewerRole,
-// }) => {
-//   if (viewerRole !== 'consumer') {return null;}
-
-//   const LazyLeaveRequestModal = React.lazy(() => import('../../components/LeaveRequestModal'));
-//   const LazyExtraMilkModal = React.lazy(() => import('../../components/ExtraMilkModal'));
-
-//   return (
-//     <React.Suspense fallback={null}>
-//       {showLeaveModal && (
-//         <LazyLeaveRequestModal
-//           isVisible={showLeaveModal}
-//           onClose={onCloseLeave}
-//           onSubmit={onSubmitLeave}
-//         />
-//       )}
-
-//       {showExtraMilkModal && (
-//         <LazyExtraMilkModal
-//           isVisible={showExtraMilkModal}
-//           onClose={onCloseExtraMilk}
-//           onSubmit={onSubmitExtraMilk}
-//         />
-//       )}
-//     </React.Suspense>
-//   );
-// });
-
-// ConsumerModals.displayName = 'ConsumerModals';
-
-// // STATUS LEGEND - Role-based filtering
-// const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = React.memo(({ isDistributor, isVendor }) => (
-//   <View style={calendarScreenStyles.legendContainer}>
-//     <Text style={calendarScreenStyles.legendTitle}>
-//       {isDistributor ? 'My Delivery Record' : 'Status Legend'}
-//     </Text>
-//     <View style={calendarScreenStyles.legendGrid}>
-//       <View style={calendarScreenStyles.legendItem}>
-//         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered }]} />
-//         <Text style={calendarScreenStyles.legendText}>Delivered</Text>
-//       </View>
-
-//       <View style={calendarScreenStyles.legendItem}>
-//         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.vendor_unavailable }]} />
-//         <Text style={calendarScreenStyles.legendText}>Unavailable</Text>
-//       </View>
-
-//       <View style={calendarScreenStyles.legendItem}>
-//         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
-//         <Text style={calendarScreenStyles.legendText}>Cancelled</Text>
-//       </View>
-
-//       <View style={calendarScreenStyles.legendItem}>
-//         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.missed }]} />
-//         <Text style={calendarScreenStyles.legendText}>Missed</Text>
-//       </View>
-
-//       {/* Hide leave and extra milk for vendors */}
-//       {!isVendor && (
-//         <>
-//           <View style={calendarScreenStyles.legendItem}>
-//             <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
-//             <Text style={calendarScreenStyles.legendText}>
-//               {isDistributor ? 'Customer Leave' : 'Leave'}
-//             </Text>
-//           </View>
-
-//           <View style={calendarScreenStyles.legendItem}>
-//             <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.extra_milk }]} />
-//             <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
-//           </View>
-//         </>
-//       )}
-//     </View>
-//   </View>
-// ));
-
-// StatusLegend.displayName = 'StatusLegend';
-
-// // MONTHLY SUMMARY
-// const MonthlySummary: React.FC<{
-//   monthlySummary: any;
-//   currentMonth: number;
-//   currentYear: number;
-//   isDistributor: boolean;
-//   isVendor: boolean;
-//   leavesCount: number;
-// }> = React.memo(({ monthlySummary, currentMonth, currentYear, isDistributor, isVendor, leavesCount }) => {
-//   const formatMilkQuantity = (quantity: number | string) => {
-//     const num = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
-//     if (isNaN(num)) {return '0L';}
-//     return `${num}L`;
-//   };
-
-//   const formatCurrency = (amount: number | string) => {
-//     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-//     if (isNaN(num)) {return '₹0';}
-//     return `₹${num}`;
-//   };
-
-//   return (
-//     <View style={calendarScreenStyles.summaryContainer}>
-//       <Text style={calendarScreenStyles.summaryTitle}>
-//         {monthNames[currentMonth]} {currentYear} - {isDistributor ? 'Delivery Summary' : 'Summary'}
-//       </Text>
-//       <View style={calendarScreenStyles.summaryGrid}>
-//         <View style={calendarScreenStyles.summaryItem}>
-//           <Ionicons name="water-outline" size={24} color={colors.primary} />
-//           <Text style={calendarScreenStyles.summaryValue}>
-//             {formatMilkQuantity(monthlySummary?.totalMilk)}
-//           </Text>
-//           <Text style={calendarScreenStyles.summaryLabel}>
-//             {isDistributor ? 'Total Delivered' : 'Total Milk'}
-//           </Text>
-//         </View>
-
-//         <View style={calendarScreenStyles.summaryItem}>
-//           <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
-//           <Text style={calendarScreenStyles.summaryValue}>
-//             {monthlySummary?.totalDeliveries || 0}
-//           </Text>
-//           <Text style={calendarScreenStyles.summaryLabel}>Deliveries</Text>
-//         </View>
-
-//         {/* Hide leaves count for vendors */}
-//         {!isVendor && (
-//           <View style={calendarScreenStyles.summaryItem}>
-//             <Ionicons name="calendar-outline" size={24} color={colors.danger} />
-//             <Text style={calendarScreenStyles.summaryValue}>{leavesCount || 0}</Text>
-//             <Text style={calendarScreenStyles.summaryLabel}>
-//               {isDistributor ? 'Customer Leaves' : 'Leaves'}
-//             </Text>
-//           </View>
-//         )}
-
-//         {!isDistributor && !isVendor && (
-//           <View style={calendarScreenStyles.summaryItem}>
-//             <Ionicons name="receipt-outline" size={24} color={colors.success} />
-//             <Text style={calendarScreenStyles.summaryValue}>
-//               {formatCurrency(monthlySummary?.totalBill)}
-//             </Text>
-//             <Text style={calendarScreenStyles.summaryLabel}>Total Bill</Text>
-//           </View>
-//         )}
-//       </View>
-//     </View>
-//   );
-// });
-
-// MonthlySummary.displayName = 'MonthlySummary';
-
-// const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
-//   viewerRole = 'consumer',
-//   targetConsumerId,
-//   targetConsumerName,
-//   showBackButton = false,
-// }) => {
-//   const dispatch = useDispatch<AppDispatch>();
-//   const navigation = useNavigation();
-//   const route = useRoute();
-
-//   const routeParams = route.params as {
-//     viewerRole?: 'consumer' | 'distributor' | 'vendor';
-//     targetConsumerId?: number;
-//     targetConsumerName?: string;
-//     showBackButton?: boolean;
-//   } || {};
-
-//   const actualViewerRole = routeParams.viewerRole || viewerRole;
-//   const actualTargetConsumerId = routeParams.targetConsumerId || targetConsumerId;
-//   const actualTargetConsumerName = routeParams.targetConsumerName || targetConsumerName;
-//   const actualShowBackButton = routeParams.showBackButton !== undefined
-//     ? routeParams.showBackButton
-//     : showBackButton;
-
-//   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-//   const consumers = useSelector(selectConsumers);
-
-//   const customerId: number | null = useMemo(() => {
-//     return actualTargetConsumerId || (user?.userID ? parseInt(user.userID.toString(), 10) : null);
-//   }, [actualTargetConsumerId, user?.userID]);
-
-//   const consumerName = useMemo(() => {
-//     if (actualTargetConsumerName) {return actualTargetConsumerName;}
-
-//     if (customerId && consumers?.length) {
-//       const consumer = consumers.find(c => c?.customer_id === customerId);
-//       if (consumer?.customer_name) {return consumer.customer_name;}
-//     }
-
-//     return user?.name || 'Consumer';
-//   }, [actualTargetConsumerName, customerId, consumers, user?.name]);
-
-//   const isDistributor = actualViewerRole === 'distributor';
-//   const isVendor = actualViewerRole === 'vendor';
-
-//   const {
-//     deliveryTypes = {},
-//     upcomingLeaves = {},
-//     upcomingMilkRequests = {},
-//     monthlySummary = {},
-//     loading = false,
-//     currentMonth = new Date().getMonth(),
-//     currentYear = new Date().getFullYear(),
-//   } = useSelector((state: RootState) => state.calendar);
-
-//   const [modalState, setModalState] = useState({
-//     showLeaveModal: false,
-//     showExtraMilkModal: false,
-//   });
-//   const [selectedDate, setSelectedDate] = useState('');
-//   const [refreshing, setRefreshing] = useState(false);
-
-//   // Helper to normalize date strings
-//   const normalizeDate = useCallback((dateStr: string) => {
-//     if (!dateStr) {return '';}
-//     try {
-//       const d = new Date(dateStr);
-//       if (isNaN(d.getTime())) {return '';}
-//       return d.toISOString().split('T')[0];
-//     } catch (e) {
-//       console.error('Date normalization error:', e);
-//       return '';
-//     }
-//   }, []);
-
-//   const handleModalToggle = useCallback((modalType: 'leave' | 'extraMilk', isOpen: boolean) => {
-//     if (isDistributor || isVendor) {return;}
-
-//     setModalState(prev => ({
-//       ...prev,
-//       [`show${modalType === 'leave' ? 'Leave' : 'ExtraMilk'}Modal`]: isOpen,
-//     }));
-//   }, [isDistributor, isVendor]);
-
-//   const openLeaveModal = useCallback(() => handleModalToggle('leave', true), [handleModalToggle]);
-//   const openExtraMilkModal = useCallback(() => handleModalToggle('extraMilk', true), [handleModalToggle]);
-//   const closeLeaveModal = useCallback(() => handleModalToggle('leave', false), [handleModalToggle]);
-//   const closeExtraMilkModal = useCallback(() => handleModalToggle('extraMilk', false), [handleModalToggle]);
-
-//   useEffect(() => {
-//     if (isDistributor || isVendor) {
-//       setModalState({ showLeaveModal: false, showExtraMilkModal: false });
-//     }
-//   }, [isDistributor, isVendor]);
-
-//   useEffect(() => {
-//     dispatch(checkStoredAuth());
-//   }, [dispatch]);
-
-//   useFocusEffect(
-//     useCallback(() => {
-//       if (customerId !== null && isAuthenticated) {
-//         const now = new Date();
-//         dispatch(setCurrentMonth({ month: now.getMonth(), year: now.getFullYear() }));
-//         const monthString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-//         dispatch(fetchCalendarData({ customerId, month: monthString }));
-//       }
-//     }, [customerId, isAuthenticated, dispatch])
-//   );
-
-//   // Filter leaves - hide for vendors
-//   const leavesForCustomer = useMemo(() => {
-//     if (!customerId || !upcomingLeaves || isVendor) {return [];}
-//     const value = upcomingLeaves[customerId];
-//     return Array.isArray(value) ? value : [];
-//   }, [upcomingLeaves, customerId, isVendor]);
-
-//   // Filter extra milk - hide for vendors
-//   const milkRequestsForCustomer = useMemo(() => {
-//     if (!customerId || !upcomingMilkRequests || isVendor) {return [];}
-//     const value = upcomingMilkRequests[customerId];
-//     return Array.isArray(value) ? value : [];
-//   }, [upcomingMilkRequests, customerId, isVendor]);
-
-//   // Build marked dates with role-based filtering
-//   const markedDates: MarkedDates = useMemo(() => {
-//     const marks: MarkedDates = {};
-
-//     // Determine allowed statuses based on viewer role
-//     const allowedStatuses = isVendor
-//       ? allowedVendorStatuses
-//       : ['delivered', 'vendor_unavailable', 'distributor_unavailable', 'cancelled', 'leave', 'extra_milk', 'customer_paused', 'missed', 'not_requested'];
-
-//     const allStatusesPerDate: Record<string, string[]> = {};
-
-//     // 1. Delivery status data from Redux store
-//     if (deliveryTypes && typeof deliveryTypes === 'object') {
-//       Object.entries(deliveryTypes).forEach(([dateRaw, status]) => {
-//         const date = normalizeDate(dateRaw);
-//         if (date && allowedStatuses.includes(status)) {
-//           if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
-//           allStatusesPerDate[date].push(status);
-//         }
-//       });
-//     }
-
-//     // 2. Customer leaves - only if not vendor
-//     if (!isVendor && Array.isArray(leavesForCustomer) && leavesForCustomer.length > 0) {
-//       leavesForCustomer.forEach((leave: LeaveItem) => {
-//         const date = normalizeDate(leave?.date);
-//         if (date) {
-//           if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
-//           if (!allStatusesPerDate[date].includes('leave')) {
-//             allStatusesPerDate[date].push('leave');
-//           }
-//         }
-//       });
-//     }
-
-//     // 3. Extra milk requests - only if not vendor
-//     if (!isVendor && Array.isArray(milkRequestsForCustomer) && milkRequestsForCustomer.length > 0) {
-//       milkRequestsForCustomer.forEach((request: ExtraMilkItem) => {
-//         const date = normalizeDate(request?.date);
-//         if (date) {
-//           if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
-//           if (!allStatusesPerDate[date].includes('extra_milk')) {
-//             allStatusesPerDate[date].push('extra_milk');
-//           }
-//         }
-//       });
-//     }
-
-//     // 4. Past delivery history from consumers Redux state
-//     if (customerId && Array.isArray(consumers) && consumers.length > 0) {
-//       const consumerData = consumers.find(c => c?.customer_id === customerId);
-
-//       if (consumerData?.deliveryHistory && Array.isArray(consumerData.deliveryHistory)) {
-//         consumerData.deliveryHistory.forEach((delivery) => {
-//           const date = normalizeDate(delivery?.date);
-//           const status = delivery?.status;
-
-//           if (date && status && allowedStatuses.includes(status)) {
-//             if (!allStatusesPerDate[date]) {allStatusesPerDate[date] = [];}
-//             if (!allStatusesPerDate[date].includes(status)) {
-//               allStatusesPerDate[date].push(status);
-//             }
-//           }
-//         });
-//       }
-//     }
-
-//     // Create dots for each date
-//     Object.entries(allStatusesPerDate).forEach(([date, statuses]) => {
-//       const uniqueStatuses = Array.from(new Set(statuses));
-//       marks[date] = {
-//         dots: uniqueStatuses.map((status) => ({
-//           key: `${status}-${date}`,
-//           color: statusColors[status] || '#757575',
-//           selectedDotColor: statusColors[status] || '#757575',
-//         })),
-//       };
-//     });
-
-//     // Highlight selected date
-//     if (selectedDate) {
-//       marks[selectedDate] = {
-//         ...(marks[selectedDate] || {}),
-//         selected: true,
-//         selectedColor: colors.primary,
-//       };
-//     }
-
-//     return marks;
-//   }, [
-//     deliveryTypes,
-//     leavesForCustomer,
-//     milkRequestsForCustomer,
-//     selectedDate,
-//     consumers,
-//     customerId,
-//     normalizeDate,
-//     isVendor,
-//   ]);
-
-//   const handleDayPress = useCallback((day: DateData) => {
-//     setSelectedDate(day.dateString);
-
-//     if (Array.isArray(consumers) && customerId) {
-//       const consumerData = consumers.find(c => c?.customer_id === customerId);
-//       const deliveryForDate = consumerData?.deliveryHistory?.find(d => d?.date === day.dateString);
-
-//       if (deliveryForDate) {
-//         const getStatusText = (status: string) => {
-//           switch (status) {
-//             case 'delivered':
-//               return isDistributor ? 'You delivered successfully ✅' : 'Delivered ✅';
-//             case 'vendor_unavailable':
-//             case 'distributor_unavailable':
-//               return isDistributor ? 'You were unavailable ❌' : 'Unavailable ❌';
-//             case 'cancelled':
-//               return isDistributor ? 'You cancelled delivery ❌' : 'Cancelled ❌';
-//             default:
-//               return status;
-//           }
-//         };
-
-//         const statusText = getStatusText(deliveryForDate.status);
-//         Alert.alert(
-//           'Delivery Status',
-//           `${statusText} on ${day.dateString}${deliveryForDate.remarks ? `\n\nRemarks: ${deliveryForDate.remarks}` : ''}`,
-//           [{ text: 'OK' }]
-//         );
-//         return;
-//       }
-//     }
-
-//     if (deliveryTypes && typeof deliveryTypes === 'object') {
-//       const status = deliveryTypes[day.dateString];
-//       if (status) {
-//         // Vendors shouldn't see leave or extra milk details
-//         if (isVendor && !allowedVendorStatuses.includes(status)) {return;}
-
-//         const messages: Record<string, string> = isDistributor
-//           ? {
-//             delivered: 'You delivered successfully ✅',
-//             vendor_unavailable: 'You were unavailable ❌',
-//             distributor_unavailable: 'You were unavailable ❌',
-//             cancelled: 'You cancelled delivery ❌',
-//             leave: 'Customer was on leave 🏠',
-//           }
-//           : {
-//             delivered: 'Milk delivered ✅',
-//             vendor_unavailable: 'Vendor unavailable ❌',
-//             distributor_unavailable: 'Distributor unavailable ❌',
-//             cancelled: 'Delivery cancelled ❌',
-//             leave: 'On leave 🏠',
-//             extra_milk: 'Extra milk requested 🥛',
-//             missed: 'Delivery missed ❌',
-//           };
-
-//         if (messages[status]) {
-//           Alert.alert('Status', `${messages[status]} on ${day.dateString}`);
-//         }
-//       }
-//     }
-//   }, [deliveryTypes, consumers, customerId, isDistributor, isVendor]);
-
-//   const handleMonthChange = useCallback((month: any) => {
-//     if (customerId === null) {return;}
-
-//     const newMonth = month.month - 1;
-//     const newYear = month.year;
-
-//     dispatch(setCurrentMonth({ month: newMonth, year: newYear }));
-
-//     const monthString = `${newYear}-${month.month.toString().padStart(2, '0')}`;
-//     dispatch(fetchCalendarData({ customerId, month: monthString }));
-//   }, [customerId, dispatch]);
-
-//   const onRefresh = useCallback(() => {
-//     if (customerId === null) {return;}
-
-//     setRefreshing(true);
-//     dispatch(clearError());
-
-//     const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-//     dispatch(fetchCalendarData({ customerId, month: monthString }))
-//       .finally(() => setRefreshing(false));
-//   }, [customerId, currentMonth, currentYear, dispatch]);
-
-//   const handleLeaveSubmit = useCallback(async (leaveData: LeaveRequestData) => {
-//     if (isDistributor || isVendor || customerId === null) {return;}
-
-//     try {
-//       await dispatch(submitLeaveRequest({ customerId, leaveData }));
-//       const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-//       await dispatch(fetchCalendarData({ customerId, month: monthString }));
-//       Alert.alert('Success', 'Leave request submitted successfully!');
-//       closeLeaveModal();
-//     } catch (err) {
-//       Alert.alert('Error', typeof err === 'string' ? err : 'Failed to submit leave request');
-//     }
-//   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeLeaveModal]);
-
-//   const handleExtraMilkSubmit = useCallback(async (extraMilkData: ExtraMilkData) => {
-//     if (isDistributor || isVendor || customerId === null) {return;}
-
-//     try {
-//       await dispatch(submitExtraMilk({ customerId, milkData: extraMilkData }));
-//       const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-//       await dispatch(fetchCalendarData({ customerId, month: monthString }));
-//       Alert.alert('Success', 'Extra milk request submitted successfully!');
-//       closeExtraMilkModal();
-//     } catch (err) {
-//       Alert.alert('Error', typeof err === 'string' ? err : 'Failed to request extra milk');
-//     }
-//   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeExtraMilkModal]);
-
-//   const handleCancelLeave = useCallback((leaveId: string, leaveDate: string) => {
-//     if (isDistributor || isVendor || customerId === null) {return;}
-
-//     Alert.alert('Cancel Leave', `Cancel leave for ${leaveDate}?`, [
-//       { text: 'No', style: 'cancel' },
-//       {
-//         text: 'Yes',
-//         style: 'destructive',
-//         onPress: () => {
-//           dispatch(cancelLeave({ leaveId, leaveDate, customerId }));
-//           const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-//           dispatch(fetchCalendarData({ customerId, month: monthString }));
-//           Alert.alert('Success', 'Leave cancelled successfully!');
-//         },
-//       },
-//     ]);
-//   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear]);
-
-//   if (!isAuthenticated || loading) {
-//     return (
-//       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color={colors.primary} />
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <View style={styles.container}>
-//       <View style={[calendarScreenStyles.header, actualShowBackButton && styles.headerWithBackButton]}>
-//         {actualShowBackButton && (
-//           <TouchableOpacity
-//             onPress={() => navigation.goBack()}
-//             style={styles.backButtonStyle}
-//             accessibilityLabel="Go back"
-//             accessibilityRole="button"
-//           >
-//             <Ionicons name="arrow-back" size={24} color="#007AFF" />
-//           </TouchableOpacity>
-//         )}
-
-//         <View style={styles.headerContent}>
-//           <Text style={calendarScreenStyles.title}>
-//             {consumerName} - Calendar
-//           </Text>
-
-//           <View style={calendarScreenStyles.monthSelector}>
-//             <Text style={calendarScreenStyles.monthText}>
-//               {monthNames[currentMonth]} {currentYear}
-//             </Text>
-//           </View>
-
-//           {customerId !== null && (
-//             <Text style={calendarScreenStyles.customerIdText}>
-//               Customer ID: {customerId}
-//             </Text>
-//           )}
-//         </View>
-
-//         {/* Notification Icon - Placeholder for future implementation */}
-//         <TouchableOpacity
-//           onPress={() => {
-//             // TODO: Navigate to notifications screen
-//             console.log('Notification icon pressed - Implement later');
-//           }}
-//           style={styles.notificationButton}
-//           accessibilityLabel="View notifications"
-//           accessibilityRole="button"
-//         >
-//           <Ionicons name="notifications-outline" size={24} color="#007AFF" />
-//           {/* Optional: Add badge for notification count */}
-//           {/* <View style={styles.notificationBadge}>
-//             <Text style={styles.notificationBadgeText}>3</Text>
-//           </View> */}
-//         </TouchableOpacity>
-//       </View>
-
-//       <ScrollView
-//         style={calendarScreenStyles.content}
-//         showsVerticalScrollIndicator={false}
-//         refreshControl={
-//           <RefreshControl
-//             refreshing={refreshing}
-//             onRefresh={onRefresh}
-//             colors={[colors.primary]}
-//             tintColor={colors.primary}
-//           />
-//         }
-//       >
-//         <View style={calendarScreenStyles.calendarContainer}>
-//           <Calendar
-//             style={calendarScreenStyles.calendar}
-//             theme={calendarTheme}
-//             onDayPress={handleDayPress}
-//             onMonthChange={handleMonthChange}
-//             markedDates={markedDates}
-//             markingType="multi-dot"
-//             hideExtraDays={true}
-//             disableMonthChange={false}
-//             firstDay={1}
-//             enableSwipeMonths={true}
-//             current={`${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`}
-//           />
-//         </View>
-
-//         <StatusLegend isDistributor={isDistributor} isVendor={isVendor} />
-
-//         <MonthlySummary
-//           monthlySummary={monthlySummary}
-//           currentMonth={currentMonth}
-//           currentYear={currentYear}
-//           isDistributor={isDistributor}
-//           isVendor={isVendor}
-//           leavesCount={leavesForCustomer.length}
-//         />
-
-//         {/* Only show action buttons and lists for actual consumer, not distributor or vendor viewing */}
-//         {!isDistributor && !isVendor && (
-//           <>
-//             {leavesForCustomer.length > 0 && (
-//               <View style={calendarScreenStyles.leavesContainer}>
-//                 <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
-//                 {leavesForCustomer.map((leave, index) => (
-//                   <View key={leave?.id ?? `leave-${index}`} style={calendarScreenStyles.leaveItem}>
-//                     <View style={calendarScreenStyles.leaveItemContent}>
-//                       <Text style={calendarScreenStyles.leaveDate}>{leave?.date ?? 'N/A'}</Text>
-//                       <Text style={calendarScreenStyles.leaveReason}>
-//                         {leave?.reason ?? 'No reason'} • {leave?.status ?? 'Unknown'}
-//                       </Text>
-//                     </View>
-//                     {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
-//                       <TouchableOpacity
-//                         style={calendarScreenStyles.leaveButton}
-//                         onPress={() => handleCancelLeave(leave.id, leave.date)}
-//                         accessibilityLabel={`Cancel leave for ${leave.date}`}
-//                       >
-//                         <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
-//                       </TouchableOpacity>
-//                     )}
-//                   </View>
-//                 ))}
-//               </View>
-//             )}
-
-//             {milkRequestsForCustomer.length > 0 && (
-//               <View style={calendarScreenStyles.leavesContainer}>
-//                 <Text style={calendarScreenStyles.leavesTitle}>Extra Milk Requests</Text>
-//                 {milkRequestsForCustomer.map((request, index) => (
-//                   <View key={request?.id ?? `milk-${index}`} style={calendarScreenStyles.leaveItem}>
-//                     <View style={calendarScreenStyles.leaveItemContent}>
-//                       <Text style={calendarScreenStyles.leaveDate}>{request?.date ?? 'N/A'}</Text>
-//                       <Text style={calendarScreenStyles.leaveReason}>
-//                         {request?.quantity ?? 0}L - {request?.reason ?? 'No reason'} • {request?.status ?? 'Unknown'}
-//                       </Text>
-//                     </View>
-//                   </View>
-//                 ))}
-//               </View>
-//             )}
-
-//             <View style={calendarScreenStyles.actionsContainer}>
-//               <TouchableOpacity
-//                 style={calendarScreenStyles.actionButton}
-//                 onPress={openLeaveModal}
-//                 activeOpacity={0.7}
-//                 accessibilityLabel="Apply for leave"
-//               >
-//                 <View style={calendarScreenStyles.actionIcon}>
-//                   <Ionicons name="calendar-outline" size={22} color={colors.white} />
-//                 </View>
-//                 <View style={calendarScreenStyles.actionTextContainer}>
-//                   <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
-//                 </View>
-//               </TouchableOpacity>
-
-//               <TouchableOpacity
-//                 style={calendarScreenStyles.actionButton}
-//                 onPress={openExtraMilkModal}
-//                 activeOpacity={0.7}
-//                 accessibilityLabel="Request extra milk"
-//               >
-//                 <View style={calendarScreenStyles.actionIcon}>
-//                   <Ionicons name="add-circle-outline" size={22} color={colors.white} />
-//                 </View>
-//                 <View style={calendarScreenStyles.actionTextContainer}>
-//                   <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
-//                 </View>
-//               </TouchableOpacity>
-//             </View>
-//           </>
-//         )}
-//       </ScrollView>
-
-//       {actualViewerRole === 'consumer' && (
-//         <ConsumerModals
-//           viewerRole={actualViewerRole}
-//           showLeaveModal={modalState.showLeaveModal}
-//           showExtraMilkModal={modalState.showExtraMilkModal}
-//           onCloseLeave={closeLeaveModal}
-//           onCloseExtraMilk={closeExtraMilkModal}
-//           onSubmitLeave={handleLeaveSubmit}
-//           onSubmitExtraMilk={handleExtraMilkSubmit}
-//         />
-//       )}
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#F8F9FA',
-//   },
-//   headerWithBackButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     paddingHorizontal: 16,
-//   },
-//   headerContent: {
-//     flex: 1,
-//     marginLeft: 12,
-//   },
-//   backButtonStyle: {
-//     width: 44,
-//     height: 44,
-//     borderRadius: 22,
-//     backgroundColor: '#F0F8FF',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: '#F8F9FA',
-//   },
-//   notificationButton: {
-//     width: 44,
-//     height: 44,
-//     borderRadius: 22,
-//     backgroundColor: '#F0F8FF',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginLeft: 12,
-//     position: 'relative',
-//   },
-//   notificationBadge: {
-//     position: 'absolute',
-//     top: 6,
-//     right: 6,
-//     backgroundColor: '#FF3B30',
-//     borderRadius: 10,
-//     minWidth: 18,
-//     height: 18,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderWidth: 2,
-//     borderColor: '#F0F8FF',
-//   },
-//   notificationBadgeText: {
-//     color: '#fff',
-//     fontSize: 10,
-//     fontWeight: 'bold',
-//     paddingHorizontal: 4,
-//   },
-// });
-
-// export default React.memo(ConsumerCalendarScreen);
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import {
@@ -881,7 +19,6 @@ import {
   fetchCalendarData,
   setCurrentMonth,
   clearError,
-  clearCalendar,
   LeaveItem,
   ExtraMilkItem,
   submitLeaveRequest,
@@ -889,12 +26,10 @@ import {
   fetchConsumerSummary,
   cancelLeave,
 } from '../../store/calendarSlice';
-import { getConsumerCalendar } from '../../apiServices/allApi';
 import { selectConsumers } from '../../store/consumersSlice';
 import { checkStoredAuth } from '../../store/authSlice';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 const SEEN_CUSTOMERS_KEY = 'seen_consumers_v1';
@@ -931,7 +66,6 @@ interface ExtraMilkData {
   date: string;
   quantity: number;
   milkType: 'cow' | 'buffalo' | 'mixed';
-  // reason: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -1019,9 +153,6 @@ const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = Re
         <Text style={calendarScreenStyles.legendText}>Cancel Delivery</Text>
       </View>
 
-      {/* Hide leave and extra milk for vendors */}
-      {/* {!isVendor && (
-        <> */}
       <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
         <Text style={calendarScreenStyles.legendText}>
@@ -1033,8 +164,6 @@ const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = Re
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.extra_milk }]} />
         <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
       </View>
-      {/* </>
-      )} */}
 
       <View style={calendarScreenStyles.legendItem}>
         <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending_extra_milk }]} />
@@ -1096,8 +225,6 @@ const MonthlySummary: React.FC<{
           <Text style={calendarScreenStyles.summaryLabel}>Total Deliveries</Text>
         </View>
 
-        {/* Hide leaves count for vendors */}
-        {/* {!isVendor && ( */}
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="calendar-outline" size={24} color={colors.danger} />
           <Text style={calendarScreenStyles.summaryValue}>{leavesCount || 0}</Text>
@@ -1105,7 +232,6 @@ const MonthlySummary: React.FC<{
             {isDistributor ? 'Customer Leaves' : 'Total Leaves'}
           </Text>
         </View>
-        {/* )} */}
 
         {!isDistributor && (
           <View style={calendarScreenStyles.summaryItem}>
@@ -1259,10 +385,10 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
             try {
               setSummaryLoading(true); // start loader
 
-              // 1️⃣ FIRST: fetch calendar
+              // FIRST: fetch calendar
               await dispatch(fetchCalendarData({ customerId, month: monthString }));
 
-              // 2️⃣ THEN: fetch summary
+              // THEN: fetch summary
               const monthMM = (now.getMonth() + 1).toString().padStart(2, '0');
               const yearYYYY = now.getFullYear().toString();
               await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
@@ -1347,11 +473,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   // Build marked dates with role-based filtering
   const markedDates: MarkedDates = useMemo(() => {
     const marks: MarkedDates = {};
-
-    // Determine allowed statuses based on viewer role
-    // const allowedStatuses = !isVendor
-    //   ? allowedVendorStatuses
-    //   : ['delivered', 'vendor_unavailable', 'pending_extra_milk', 'distributor_unavailable', 'cancelled', 'leave', 'extra_milk', 'delivered_extra_milk', 'customer_paused', 'missed', 'not_requested'];
 
     const allowedStatuses = ['delivered', 'vendor_unavailable', 'pending_extra_milk', 'distributor_unavailable', 'cancelled', 'leave', 'extra_milk', 'delivered_extra_milk', 'customer_paused', 'missed', 'not_requested'];
 
@@ -1462,15 +583,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       (request: ExtraMilkItem) => normalizeDate(request?.date) === day.dateString
     );
 
-    // if (extraMilkForDate) {
-    //   Alert.alert(
-    //     'Extra Milk',
-    //     `${extraMilkForDate.quantity || 0}L extra milk delivered 🥛 on ${day.dateString}`,
-    //     [{ text: 'OK' }]
-    //   );
-    //   return;
-    // }
-
     // Check for leave requests
     const leaveForDate = leavesForCustomer.find(
       (leave: LeaveItem) => normalizeDate(leave?.date) === day.dateString
@@ -1506,14 +618,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
               return status;
           }
         };
-
-        // const statusText = getStatusText(deliveryForDate.status);
-        // Alert.alert(
-        //   'Delivery Status',
-        //   `${statusText} on ${day.dateString}${deliveryForDate.remarks ? `\n\nRemarks: ${deliveryForDate.remarks}` : ''}`,
-        //   [{ text: 'OK' }]
-        // );
-        // return;
       }
     }
 
@@ -1522,12 +626,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       const statusOrArray = deliveryTypes[day.dateString];
       if (statusOrArray) {
         const statuses = Array.isArray(statusOrArray) ? statusOrArray : [statusOrArray as any];
-
-        // Vendors shouldn't see leave or extra milk details
-        // if (isVendor) {
-        //   const allowed = statuses.filter(s => allowedVendorStatuses.includes(s));
-        //   if (allowed.length === 0) { return; }
-        // }
 
         const messageMap: Record<string, string> = isDistributor
           ? {
@@ -1588,10 +686,10 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
       try {
         setSummaryLoading(true);
 
-        // 1️⃣ calendar first
+        // 1.calendar first
         await dispatch(fetchCalendarData({ customerId, month: monthString }));
 
-        // 2️⃣ summary after calendar
+        // 2.summary after calendar
         const monthMM = month.month.toString().padStart(2, '0');
         const yearYYYY = month.year.toString();
         await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
@@ -1806,47 +904,6 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
           {/* Only show action buttons and lists for actual consumer, not distributor or vendor viewing */}
           {!isDistributor && !isVendor && (
             <>
-              {/* {leavesForCustomer.length > 0 && (
-              <View style={calendarScreenStyles.leavesContainer}>
-                <Text style={calendarScreenStyles.leavesTitle}>Upcoming Leaves</Text>
-                {leavesForCustomer.map((leave, index) => (
-                  <View key={leave?.id ?? `leave-${index}`} style={calendarScreenStyles.leaveItem}>
-                    <View style={calendarScreenStyles.leaveItemContent}>
-                      <Text style={calendarScreenStyles.leaveDate}>{leave?.date ?? 'N/A'}</Text>
-                      <Text style={calendarScreenStyles.leaveReason}>
-                        {leave?.reason ?? 'No reason'}
-                      </Text>
-                    </View>
-                    {leave?.status !== 'cancelled' && leave?.id && leave?.date && (
-                      <TouchableOpacity
-                        style={calendarScreenStyles.leaveButton}
-                        onPress={() => handleCancelLeave(leave.id, leave.date)}
-                        accessibilityLabel={`Cancel leave for ${leave.date}`}
-                      >
-                        <Text style={calendarScreenStyles.leaveButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {milkRequestsForCustomer.length > 0 && (
-              <View style={calendarScreenStyles.leavesContainer}>
-                <Text style={calendarScreenStyles.leavesTitle}>Extra Milk Requests</Text>
-                {milkRequestsForCustomer.map((request, index) => (
-                  <View key={request?.id ?? `milk-${index}`} style={calendarScreenStyles.leaveItem}>
-                    <View style={calendarScreenStyles.leaveItemContent}>
-                      <Text style={calendarScreenStyles.leaveDate}>{request?.date ?? 'N/A'}</Text>
-                      <Text style={calendarScreenStyles.leaveReason}>
-                        {request?.quantity ?? 0}L - {request?.reason ?? 'No reason'}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )} */}
-
               <View style={calendarScreenStyles.actionsContainer}>
                 <TouchableOpacity
                   style={calendarScreenStyles.actionButton}
@@ -1908,7 +965,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     position: 'absolute',
-    top: 25,          // 👈 same visual effect as paddingTop
+    top: 25,          // same visual effect as paddingTop
     left: 0,
     right: 0,
     alignItems: 'center',

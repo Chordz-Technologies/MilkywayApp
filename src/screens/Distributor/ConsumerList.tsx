@@ -20,7 +20,6 @@ import {
   checkDailyReset,
   AssignedConsumer,
 } from '../../store/consumersSlice';
-// import { saveExtraMilkRequests, getExtraMilkRequests, } from '../../realm/extraMilkRealm';
 import { getMilkmanExtraMilkRequests } from '../../apiServices/allApi';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
@@ -72,7 +71,6 @@ const ConsumerListScreen = () => {
   const [isMarkingCancelDelivery, setIsMarkingCancelDelivery] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [extraRequests, setExtraRequests] = useState<any[]>([]);
-  // const [isExtraOffline, setIsExtraOffline] = useState(false);
   const [extraLoading, setExtraLoading] = useState(false);
   const [editedMilkMap, setEditedMilkMap] = useState<{ [customerId: number]: { cow_milk: string; buffalo_milk: string } }>({});
   const [isEditingMap, setIsEditingMap] = useState<{ [customerId: number]: boolean }>({});
@@ -86,7 +84,7 @@ const ConsumerListScreen = () => {
     c.customer_contact?.includes(searchText)
   );
 
-  // ✅ Network detection
+  // Network detection
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsOnline(state.isConnected ?? true);
@@ -226,7 +224,7 @@ const ConsumerListScreen = () => {
     ) => {
       if (!requirement) return "No requirement specified";
 
-      // 1️⃣ If edited values are provided, use those
+      // If edited values are provided, use those
       const cow = editedMilk?.cow_milk
         ? Number(editedMilk.cow_milk)
         : safeParseMilkQuantity(requirement.cow_milk_litre);
@@ -259,7 +257,7 @@ const ConsumerListScreen = () => {
       if (isAuthenticated && user?.userID) {
         dispatch(checkDailyReset()).then(() => {
           dispatch(fetchAssignedConsumers(getMilkmanId()));
-          fetchExtraMilkRequests(); // ✅ ALWAYS refresh
+          fetchExtraMilkRequests(); // ALWAYS refresh
         });
       }
     }, [dispatch, isAuthenticated, user?.userID, getMilkmanId])
@@ -332,7 +330,7 @@ const ConsumerListScreen = () => {
                 replaceExisting: true,
               })).unwrap();
 
-              // ✅ Show appropriate message based on online/offline
+              // Show appropriate message based on online/offline
               const message = result.isOffline
                 ? `Delivery marked offline for ${consumer.customer_name}.\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
                 : `Delivery marked as completed for ${consumer.customer_name}.\n\nButtons are now disabled until tomorrow.`;
@@ -383,7 +381,7 @@ const ConsumerListScreen = () => {
         replaceExisting: true,
       })).unwrap();
 
-      // ✅ Show appropriate message based on online/offline
+      // Show appropriate message based on online/offline
       const message = result.isOffline
         ? `Delivery cancelled offline for ${consumer.customer_name}.\nReason: ${reason}\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
         : `Delivery cancelled for ${consumer.customer_name}.\nReason: ${reason}\n\nButtons are now disabled until tomorrow.`;
@@ -779,7 +777,7 @@ const ConsumerListScreen = () => {
     <SafeAreaWrapper>
 
       <View style={styles.container}>
-        {/* ✅ Offline indicator banner */}
+        {/* Offline indicator banner */}
         {!isOnline && (
           <View style={styles.offlineIndicatorBanner}>
             <Ionicons name="wifi-outline" size={16} color="#fff" />
@@ -896,8 +894,7 @@ const ConsumerListScreen = () => {
           </TouchableOpacity>
         )}
 
-
-        {/* ✅ Smart Error Handling: Show error only if NO data + (NO internet OR API error) */}
+        {/* Smart Error Handling: Show error only if NO data + (NO internet OR API error) */}
         {
           (() => {
             // If we have consumers, don't show error banner
@@ -1016,7 +1013,7 @@ const ConsumerListScreen = () => {
             <View style={{
               backgroundColor: 'white',
               borderRadius: 10,
-              maxHeight: '70%',   // <-- makes it scrollable
+              maxHeight: '70%',   // makes it scrollable
               padding: 20
             }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>

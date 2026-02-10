@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -44,7 +43,6 @@ type Vendor = {
 
 const ConsumerHomeScreen = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [joinedVendor, setJoinedVendor] = useState<Vendor | null>(null);

@@ -3,16 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndic
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useSelector, useDispatch } from 'react-redux';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RootState, AppDispatch } from '../../store';
-// import { logout } from '../../store/authSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import {
   getVendorDetailsById,
   getVendorPendingRequests,
-  getConsumerRequests, // <-- NEW
+  getConsumerRequests,
   getDistributorLeaveRequestsForVendor,
-  postDashboardSummaryAPI, // <-- NEW
+  postDashboardSummaryAPI,
 } from '../../apiServices/allApi';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from '../../notifications/NotificationService';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
@@ -24,9 +22,9 @@ type RootStackParamList = {
   VendorHome: undefined;
   VendorProfile: undefined;
   PendingRequests: undefined;
-  VendorConsumerRequests: undefined; // <-- NEW
-  VendorDistributorLeave: undefined; // <-- NEW
-  VendorSubscription: undefined; // <-- NEW
+  VendorConsumerRequests: undefined;
+  VendorDistributorLeave: undefined;
+  VendorSubscription: undefined;
   AllConsumersList: undefined;
   DistributorsList: undefined;
   Notifications: undefined;
@@ -284,24 +282,6 @@ const VendorHomeScreen = () => {
       fetchDashboardSummary(date.getMonth() + 1, date.getFullYear());
     }
   };
-  // const handleLogout = useCallback(() => {
-  //   Alert.alert('Logout', 'Are you sure you want to log out?', [
-  //     { text: 'Cancel', style: 'cancel' },
-  //     {
-  //       text: 'Logout',
-  //       style: 'destructive',
-  //       onPress: async () => {
-  //         try {
-  //           await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'userInfo']);
-  //           dispatch(logout());
-  //           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-  //         } catch (err) {
-  //           console.error('Logout error:', err);
-  //         }
-  //       },
-  //     },
-  //   ]);
-  // }, [dispatch, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -406,7 +386,7 @@ const VendorHomeScreen = () => {
               <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
             </View>
             <View style={styles.headerActions}>
-              {/* ✅ Calendar Button */}
+              {/* Calendar Button */}
               <TouchableOpacity
                 style={styles.notificationButton}
                 onPress={() => setShowMonthPicker(true)}
@@ -458,11 +438,6 @@ const VendorHomeScreen = () => {
                   )}
                 </View>
               </TouchableOpacity>
-
-              {/* Logout Button */}
-              {/* <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
-            </TouchableOpacity> */}
             </View>
           </View>
 
@@ -527,7 +502,7 @@ const VendorHomeScreen = () => {
             </View>
           </TouchableOpacity>
 
-          {/* <-- NEW: CONSUMER EXTRA MILK REQUESTS CARD */}
+          {/* CONSUMER EXTRA MILK REQUESTS CARD */}
           <TouchableOpacity
             style={styles.pendingCard}
             onPress={() => navigation.navigate('VendorConsumerRequests')}
@@ -550,7 +525,7 @@ const VendorHomeScreen = () => {
             </View>
           </TouchableOpacity>
 
-          {/* <-- NEW: DISTRIBUTOR LEAVE REQUESTS CARD */}
+          {/* DISTRIBUTOR LEAVE REQUESTS CARD */}
           <TouchableOpacity
             style={styles.pendingCard}
             onPress={() => navigation.navigate('VendorDistributorLeave')}
@@ -779,23 +754,6 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  // logoutButton: {
-  //   padding: 8,
-  //   borderRadius: 8,
-  //   backgroundColor: '#fff',
-  //   ...Platform.select({
-  //     ios: {
-  //       shadowColor: '#000',
-  //       shadowOpacity: 0.1,
-  //       shadowRadius: 4,
-  //       shadowOffset: { width: 0, height: 2 },
-  //     },
-  //     android: {
-  //       elevation: 2,
-  //     },
-  //   }),
-  // },
-
   // PROFILE CARD
   profileCard: {
     backgroundColor: '#fff',

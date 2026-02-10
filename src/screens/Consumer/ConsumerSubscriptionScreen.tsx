@@ -7,7 +7,6 @@ import {
     ActivityIndicator,
     Alert,
     Platform,
-    RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -51,26 +50,22 @@ const VendorSubscriptionScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    // const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchSubscriptions();
     }, []);
 
-    // ✅ Fetch subscription plans
-    // ✅ Fetch subscription bills (instead of plans)
+    // Fetch subscription bills
     const fetchSubscriptions = async () => {
         try {
             setIsLoading(true);
             const response = await getCustomerBills();
             const json = response.data;
 
-            console.log("✅ API Response:", json);
-
             let billsArray: any[] = [];
 
-            // ✅ Handle both array and single object
+            // Handle both array and single object
             if (json.status === 'success') {
                 if (Array.isArray(json.bills)) {
                     billsArray = json.bills;
@@ -102,27 +97,23 @@ const VendorSubscriptionScreen = () => {
             Alert.alert('Error', 'Failed to load bills.');
         } finally {
             setIsLoading(false);
-            // setRefreshing(false);
         }
     };
 
     const onRefresh = () => {
-        // setRefreshing(true);
         fetchSubscriptions();
     };
 
-    // ✅ Handle Razorpay payment
+    // Handle Razorpay payment
     const handleSubscribe = async (pkg: Subscription) => {
         try {
             setProcessingId(pkg.id);
 
-            // Step 1️⃣: Create order via your backend
+            // Step 1: Create order via your backend
             const orderRes = await createConsumerOrder({
                 amount: pkg.price,        // using the bill amount
                 payment_type: "bill", // your backend expects this
             });
-
-            console.log("✅ Create Order Response:", orderRes.data);
 
             const data = orderRes.data?.data;
 
@@ -136,7 +127,7 @@ const VendorSubscriptionScreen = () => {
             const razorpayKey = data.razorpay_key_id;
             const amount = data.amount
 
-            // Step 2️⃣: Open Razorpay Checkout
+            // Step 2: Open Razorpay Checkout
             const options = {
                 description: "Consumer Payment",
                 currency: data.currency || "INR",
@@ -155,18 +146,16 @@ const VendorSubscriptionScreen = () => {
                 .then(async (paymentData) => {
                     console.log("✅ Razorpay Payment Success:", paymentData);
 
-                    // Step 3️⃣: Verify Payment
+                    // Step 3: Verify Payment
                     const verifyRes = await verifyConsumerPayment({
                         razorpay_order_id: paymentData.razorpay_order_id,
                         razorpay_payment_id: paymentData.razorpay_payment_id,
                         razorpay_signature: paymentData.razorpay_signature,
                     });
 
-                    console.log("✅ Verify Payment Response:", verifyRes.data);
-
                     if (verifyRes.data?.status === "success") {
                         Alert.alert("Success", "Payment verified successfully!");
-                        fetchSubscriptions(); // 🔄 refresh bills after successful payment
+                        fetchSubscriptions(); // refresh bills after successful payment
                     } else {
                         Alert.alert("Error", "Payment verification failed. Please contact support.");
                     }
@@ -176,65 +165,6 @@ const VendorSubscriptionScreen = () => {
                 });
         } catch (error: any) {
             console.error("❌ Error during payment:", error);
-
-            // 🧩 Step 1: Log the payload sent (for debugging)
-            console.log("📦 Payload sent to createConsumerOrder:");
-            console.log(
-                JSON.stringify(
-                    {
-                        amount: pkg.price,
-                        payment_type: "bill",
-                    },
-                    null,
-                    2
-                )
-            );
-
-            // 🧩 Step 2: Log request info if Axios error
-            console.log("🌍 API Endpoint:", error.config?.url || "Unknown URL");
-            console.log("📬 Method:", error.config?.method?.toUpperCase?.() || "Unknown");
-            console.log(
-                "📤 Request Headers:",
-                JSON.stringify(error.config?.headers || {}, null, 2)
-            );
-
-            // 🧩 Step 3: Detailed error analysis
-            if (error.response) {
-                // ✅ Server responded with error
-                console.log("🔴 API Response Error:");
-                console.log("➡️ Status Code:", error.response.status);
-                console.log("➡️ Status Text:", error.response.statusText);
-                console.log(
-                    "➡️ Response Data:",
-                    JSON.stringify(error.response.data, null, 2)
-                );
-            } else if (error.request) {
-                // ⚠️ No response received (network issue)
-                console.log("🟠 Network Error: No response received from server.");
-                console.log("➡️ Request:", error.request);
-            } else if (error.message) {
-                // ⚙️ Some other JS/native error
-                console.log("🟣 JS/Native Error Message:", error.message);
-            } else {
-                // ❓ Unknown error
-                console.log("⚫ Unknown Error Object:", error);
-            }
-
-            // 🧾 Step 4: Log complete object (Hermes-friendly)
-            try {
-                console.log(
-                    "🧾 Full Error Object:",
-                    JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-                );
-            } catch (jsonErr) {
-                console.log("⚠️ Could not stringify full error object:", jsonErr);
-            }
-
-            // 🧩 Step 5: User alert
-            Alert.alert(
-                "Error",
-                "Something went wrong during payment.\n\nPlease check the console for detailed logs."
-            );
         }
         finally {
             setProcessingId(null);
@@ -305,11 +235,7 @@ const VendorSubscriptionScreen = () => {
                     </View>
                 </View>
 
-                {/* <View style={styles.descriptionContainer}>
-                    <Text style={styles.descriptionText}>{item.description}</Text>
-                </View> */}
-
-                {/* ✅ Display additional info: start date, end date, total */}
+                {/* Display additional info: start date, end date, total */}
                 <View style={styles.summaryGrid}>
                     <View style={styles.summaryItem}>
                         <Text style={styles.summaryLabel}>Start Date</Text>
@@ -353,7 +279,7 @@ const VendorSubscriptionScreen = () => {
                     </View>
                 </View>
 
-                {/* 📋 Daily Milk Delivery Table */}
+                {/* Daily Milk Delivery Table */}
                 <View style={styles.tableContainer}>
                     <Text style={styles.tableTitle}>Milk Deliveries :</Text>
 
@@ -434,7 +360,6 @@ const VendorSubscriptionScreen = () => {
                         keyExtractor={(item) => `sub_${item.id}`}
                         renderItem={renderSubscriptionCard}
                         contentContainerStyle={styles.listContainer}
-                        // refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                         showsVerticalScrollIndicator={false}
                     />
                 )}

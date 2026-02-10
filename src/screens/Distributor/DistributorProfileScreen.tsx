@@ -481,7 +481,7 @@ const DistributorProfileScreen = ({ navigation }: any) => {
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={handleDeleteAccount}
-              disabled={deleting}   // ⬅ disable when deleting
+              disabled={deleting}   // disable when deleting
             >
               {deleting ? (
                 <ActivityIndicator size="small" color="#dc3545" style={{ marginRight: 8 }} />

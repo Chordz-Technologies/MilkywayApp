@@ -1,4 +1,3 @@
-// src/notifications/FCM.ts
 import messaging, { AuthorizationStatus, FirebaseMessagingTypes } from "@react-native-firebase/messaging";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import notifee, { EventType, Notification as NotifeeNotification } from "@notifee/react-native";

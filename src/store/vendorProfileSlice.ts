@@ -1,4 +1,3 @@
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { deleteVendorAccountPermanently, getVendorDetailsById, updateVendorProfile } from '../apiServices/allApi';
 

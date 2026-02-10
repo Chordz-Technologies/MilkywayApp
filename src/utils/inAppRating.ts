@@ -2,9 +2,7 @@ import InAppReview from 'react-native-in-app-review';
 import analytics from '@react-native-firebase/analytics';
 import crashlytics from '@react-native-firebase/crashlytics';
 
-/**
- * Triggers Google Play In-App Review flow
- */
+// Triggers Google Play In-App Review flow
 export const requestInAppRating = async (): Promise<void> => {
     try {
         if (InAppReview.isAvailable()) {

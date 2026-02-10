@@ -1,6 +1,5 @@
-// src/Services/NotificationService.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { EventEmitter } from "eventemitter3"; // ✅ use eventemitter3 for TS compatibility
+import { EventEmitter } from "eventemitter3"; // use eventemitter3 for TS compatibility
 import notifee from "@notifee/react-native";
 
 export interface AppNotification {

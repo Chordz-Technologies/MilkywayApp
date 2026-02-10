@@ -59,7 +59,7 @@ const TermsConditionScreen: React.FC<Props> = ({ navigation }) => {
                         • User data is securely stored and will not be shared without consent.
                     </Text>
 
-                    {/* ✅ Checkbox appears immediately after last line */}
+                    {/* Checkbox appears immediately after last line */}
                     <View style={styles.checkboxRow}>
                         <CheckBox
                             value={accepted}
@@ -72,7 +72,7 @@ const TermsConditionScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
 
 
-                    {/* ✅ Button does NOT push content */}
+                    {/* Button does NOT push content */}
                     {accepted && (
                         <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
                             <Text style={styles.loginText}>Login</Text>

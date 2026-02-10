@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store, persistor } from "./../MilkywayApp/src/store";
 import AppNavigator from "../MilkywayApp/src/navigation/AppNavigator";
 import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging";
+import NetInfo from '@react-native-community/netinfo';
 import analytics from "@react-native-firebase/analytics";
 import crashlytics from "@react-native-firebase/crashlytics";
 
@@ -42,8 +43,15 @@ export default function App() {
         console.log("❌ Topic subscribe error:", err);
       }
 
-      // 🔥 SYNC OFFLINE DATA
+      // SYNC OFFLINE DATA (initial)
       await syncOfflineData();
+
+      // Listen for connectivity changes and sync when connection is regained
+      const unsubscribeNet = NetInfo.addEventListener((state) => {
+        if (state.isConnected) {
+          syncOfflineData().catch(e => console.log('Sync on reconnect failed', e));
+        }
+      });
 
       // Setup listeners (foreground notifications)
       const unsubscribe = setupNotificationListeners();
@@ -86,6 +94,7 @@ export default function App() {
         unsubscribe();
         unsubscribeOpened();
         clearAllNotifications();
+        try { unsubscribeNet(); } catch (e) { /* ignore */ }
       };
     };
 

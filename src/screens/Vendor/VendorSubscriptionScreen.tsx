@@ -43,7 +43,7 @@ const VendorSubscriptionScreen = () => {
         fetchSubscriptions();
     }, []);
 
-    // ✅ Fetch subscription plans
+    // Fetch subscription plans
     const fetchSubscriptions = async () => {
         try {
             setIsLoading(true);
@@ -77,12 +77,12 @@ const VendorSubscriptionScreen = () => {
         fetchSubscriptions();
     };
 
-    // ✅ Handle Razorpay payment
+    // Handle Razorpay payment
     const handleSubscribe = async (pkg: Subscription) => {
         try {
             setProcessingId(pkg.id);
 
-            // Step 1️⃣: Create order via your backend
+            // Step 1: Create order via your backend
             const orderRes = await createOrder({
                 subscription_plan_id: pkg.id,
                 // device_id: '12345ABC', // optional
@@ -101,7 +101,7 @@ const VendorSubscriptionScreen = () => {
             const razorpayKey = data.razorpay_key;
             const amount = parseFloat(data.amount) * 100; // amount in paise
 
-            // Step 2️⃣: Open Razorpay Checkout
+            // Step 2: Open Razorpay Checkout
             const options = {
                 description: data.subscription_details?.plan_name || pkg.name,
                 currency: data.currency || 'INR',
@@ -110,7 +110,6 @@ const VendorSubscriptionScreen = () => {
                 name: "Milk Vendor Subscription",
                 order_id: razorpayOrderId,
                 prefill: {
-                    // email: 'vendor@email.com',
                     contact: data.vendor_contact_number || '',
                     name: data.subscription_details?.vendor_name || 'Vendor',
                 },
@@ -121,14 +120,12 @@ const VendorSubscriptionScreen = () => {
                 .then(async (paymentData) => {
                     console.log("✅ Razorpay Payment Success:", paymentData);
 
-                    // Step 3️⃣: Verify Payment
+                    // Step 3: Verify Payment
                     const verifyRes = await verifyPayment({
                         razorpay_order_id: paymentData.razorpay_order_id,
                         razorpay_payment_id: paymentData.razorpay_payment_id,
                         razorpay_signature: paymentData.razorpay_signature,
                     });
-
-                    console.log("✅ Verify Payment Response:", verifyRes.data);
 
                     if (verifyRes.data?.status === "success") {
                         Alert.alert("Success", "Payment verified successfully!");

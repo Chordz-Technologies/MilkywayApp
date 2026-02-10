@@ -1,4 +1,3 @@
-// components/ExtraMilkModal.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-// import { colors } from '../styles/CalendorScreenStyle';
 
 interface ExtraMilkModalProps {
   isVisible: boolean;
@@ -25,7 +23,6 @@ interface ExtraMilkData {
   date: string;
   quantity: number;
   milkType: 'cow' | 'buffalo' | 'mixed';
-  // reason: string;
 }
 
 export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMilkModalProps) {
@@ -54,23 +51,6 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
     }
   };
 
-  // const getTodayDate = () => {
-  //   const today = new Date();
-  //   return today.toISOString().split('T')[0];
-  // };
-
-  // const getTomorrowDate = () => {
-  //   const tomorrow = new Date();
-  //   tomorrow.setDate(tomorrow.getDate() + 1);
-  //   return tomorrow.toISOString().split('T')[0];
-  // };
-
-  // const getNextWeekDate = () => {
-  //   const nextWeek = new Date();
-  //   nextWeek.setDate(nextWeek.getDate() + 7);
-  //   return nextWeek.toISOString().split('T')[0];
-  // };
-
   const handleSubmit = () => {
     if (!selectedDate) {
       Alert.alert('Error', 'Please enter date (YYYY-MM-DD format)');
@@ -93,7 +73,6 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
       date: selectedDate,
       quantity: parseFloat(quantity),
       milkType,
-      // reason: reason.trim() || 'Extra milk request',
     };
 
     onSubmit(extraMilkData);

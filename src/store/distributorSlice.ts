@@ -1,326 +1,3 @@
-
-
-// import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-// import { REHYDRATE } from 'redux-persist';
-// import {
-//   getDistributorCalendar,
-//   applyForDistributorLeave,
-// } from '../apiServices/allApi';
-
-// interface DistributorLeaveCalendarItem {
-//   date: string;
-//   status: string;
-//   remarks?: string;
-//   milkman_id?: number;
-// }
-
-// interface CustomMarking {
-//   marked?: boolean;
-//   dotColor?: string;
-//   dots?: Array<{
-//     key: string;
-//     color: string;
-//     selectedDotColor?: string;
-//   }>;
-//   selected?: boolean;
-//   selectedColor?: string;
-// }
-
-// interface LeaveItem {
-//   id: string;
-//   date: string;
-//   reason: string;
-//   status: 'approved' | 'pending' | 'leave';
-// }
-
-// interface MonthlySummary {
-//   totalLeaves: number;
-//   approvedLeaves: number;
-//   pendingLeaves: number;
-// }
-
-// interface DistributorCalendarState {
-//   calendarData: { [date: string]: CustomMarking };
-//   leaveTypes: Record<string, string>;
-//   upcomingLeaves: Record<number, LeaveItem[]>; // scoped by milkmanId
-//   monthlySummary: MonthlySummary;
-//   calendarDetails: Record<string, any>;
-//   loading: boolean;
-//   error: string | null;
-//   currentMonth: number;
-//   currentYear: number;
-// }
-
-// const initialState: DistributorCalendarState = {
-//   calendarData: {},
-//   leaveTypes: {},
-//   upcomingLeaves: {},
-//   monthlySummary: {
-//     totalLeaves: 0,
-//     approvedLeaves: 0,
-//     pendingLeaves: 0,
-//   },
-//   calendarDetails: {},
-//   loading: false,
-//   error: null,
-//   currentMonth: new Date().getMonth(),
-//   currentYear: new Date().getFullYear(),
-// };
-
-// export const fetchDistributorCalendarData = createAsyncThunk(
-//   'distributorCalendar/fetchCalendarData',
-//   async (params: { milkmanId: number; month: string }, thunkAPI) => {
-//     try {
-//       console.log('📡 Fetching calendar data:', params);
-
-//       const response = await getDistributorCalendar({
-//         milkman_id: params.milkmanId,
-//         month: params.month,
-//       });
-//       console.log('✅ Fetched calendar data:', response.data);
-//       return { data: response.data, month: params.month, milkmanId: params.milkmanId };
-//     } catch (error: any) {
-//       return thunkAPI.rejectWithValue('Failed to fetch distributor calendar data');
-//     }
-//   }
-// );
-
-// interface LeaveRequestInput {
-//   startDate: string;
-//   endDate: string;
-//   reason: string;
-//   leaveType: 'single' | 'multiple';
-//   milkmanId?: number;
-// }
-
-// export const submitDistributorLeaveRequest = createAsyncThunk(
-//   'distributorCalendar/submitLeaveRequest',
-//   async (
-//     { milkmanId, leaveData }: { milkmanId?: number; leaveData: LeaveRequestInput },
-//     thunkAPI,
-//   ) => {
-//     try {
-//       const dates =
-//         leaveData.leaveType === 'single'
-//           ? [leaveData.startDate]
-//           : getDatesBetween(leaveData.startDate, leaveData.endDate);
-
-//       for (const date of dates) {
-//         await applyForDistributorLeave({
-//           milkman_id: leaveData.milkmanId || milkmanId,
-//           date,
-//           remarks: leaveData.reason,
-//         });
-//       }
-//       return { dates, reason: leaveData.reason, milkmanId: leaveData.milkmanId || milkmanId };
-//     } catch (error: any) {
-//       return thunkAPI.rejectWithValue('Failed to submit leave request');
-//     }
-//   }
-// );
-
-// const getDatesBetween = (startDate: string, endDate: string): string[] => {
-//   const dates: string[] = [];
-//   const start = new Date(startDate);
-//   const end = new Date(endDate);
-//   for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
-//     dates.push(dt.toISOString().split('T')[0]);
-//   }
-//   return dates;
-// };
-
-// const getStatusColor = (status: string): string => {
-//   switch (status) {
-//     case 'delivered':
-//       return '#4CAF50'; // green
-//     case 'pending_leave':
-//       return '#FF9800'; // orange
-//     case 'pending':
-//       return '#F44336'; // red
-//     case 'leave':
-//       return '#9C27B0'; // purple
-//     case 'cancelled':
-//       return '#E91E63'; // pink
-//     default:
-//       return '#757575';
-//   }
-// };
-
-// const distributorCalendarSlice = createSlice({
-//   name: 'distributorCalendar',
-//   initialState,
-//   reducers: {
-//     setCurrentMonth: (state, action: PayloadAction<{ month: number; year: number }>) => {
-//       state.currentMonth = action.payload.month;
-//       state.currentYear = action.payload.year;
-//     },
-//     clearError: (state) => {
-//       state.error = null;
-//     },
-//     cancelLeave: (
-//       state,
-//       action: PayloadAction<{ leaveId: string; leaveDate: string; milkmanId: number }>,
-//     ) => {
-//       const { leaveId, leaveDate, milkmanId } = action.payload;
-//       // Remove leave only for given distributor
-//       state.upcomingLeaves[milkmanId] = (state.upcomingLeaves[milkmanId] || []).filter(
-//         (leave) => leave.id !== leaveId,
-//       );
-//       if (state.calendarData[leaveDate]) {
-//         delete state.calendarData[leaveDate];
-//       }
-//       if (state.leaveTypes[leaveDate]) {
-//         delete state.leaveTypes[leaveDate];
-//       }
-//     },
-//     clearDistributorCalendar: (state) => {
-//       state.calendarData = {};
-//       state.leaveTypes = {};
-//       state.upcomingLeaves = {};
-//       state.monthlySummary = {
-//         totalLeaves: 0,
-//         approvedLeaves: 0,
-//         pendingLeaves: 0,
-//       };
-//       state.error = null;
-//     },
-//   },
-//   extraReducers: (builder) => {
-//     builder
-//       .addCase(fetchDistributorCalendarData.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(fetchDistributorCalendarData.fulfilled, (state, action) => {
-//         const { data, milkmanId } = action.payload;
-//         state.loading = false;
-//         const newCalendarData: { [date: string]: CustomMarking } = {};
-//         const newLeaveTypes: Record<string, string> = {};
-//         const newCalendarDetails: Record<string, any> = {};
-//         let approvedCount = 0;
-//         let pendingCount = 0;
-
-//         if (Array.isArray(data)) {
-//           // Group items by date
-//           const grouped: Record<string, any[]> = {};
-//           data.forEach((item: DistributorLeaveCalendarItem) => {
-//             if (!grouped[item.date]) grouped[item.date] = [];
-//             grouped[item.date].push(item);
-//           });
-
-//           Object.entries(grouped).forEach(([date, items]) => {
-//             // collect unique statuses and details
-//             const statuses: Set<string> = new Set();
-//             const countsByStatus: Record<string, number> = {};
-//             const namesByStatus: Record<string, string[]> = {};
-
-//             items.forEach((it: any) => {
-//               const status = it.status || 'pending';
-//               statuses.add(status);
-//               countsByStatus[status] = (countsByStatus[status] || 0) + (it.count || it.customers_count || 1);
-//               // try to collect names if present
-//               if (Array.isArray(it.names)) {
-//                 namesByStatus[status] = (namesByStatus[status] || []).concat(it.names);
-//               } else if (it.customer_name) {
-//                 namesByStatus[status] = (namesByStatus[status] || []).concat([it.customer_name]);
-//               } else if (it.customers && Array.isArray(it.customers)) {
-//                 // maybe API returns array of customer objects
-//                 const names = it.customers.map((c: any) => c.name).filter(Boolean);
-//                 if (names.length) namesByStatus[status] = (namesByStatus[status] || []).concat(names);
-//               }
-
-//               if (status === 'approved' || status === 'distributed' || status === 'delivered') {
-//                 approvedCount += it.count || it.customers_count || 1;
-//               } else if (status === 'pending') {
-//                 pendingCount += it.count || it.customers_count || 1;
-//               }
-//             });
-
-//             const dots = Array.from(statuses).map((s) => ({ key: `${s}_${date}`, color: getStatusColor(s) }));
-
-//             newCalendarData[date] = { marked: true, dots };
-//             // remember the predominant status as leaveTypes for compatibility (pick highest priority)
-//             const priority = ['leave', 'pending', 'cancelled', 'missed', 'delivered', 'distributed', 'approved'];
-//             const chosen = Array.from(statuses).sort((a, b) => priority.indexOf(a) - priority.indexOf(b))[0];
-//             if (chosen) newLeaveTypes[date] = chosen;
-
-//             newCalendarDetails[date] = {
-//               items,
-//               countsByStatus,
-//               namesByStatus,
-//             };
-//           });
-//         }
-
-//         state.calendarData = newCalendarData;
-//         state.leaveTypes = newLeaveTypes;
-//         state.calendarDetails = newCalendarDetails;
-//         state.monthlySummary.totalLeaves = approvedCount + pendingCount;
-//         state.monthlySummary.approvedLeaves = approvedCount;
-//         state.monthlySummary.pendingLeaves = pendingCount;
-
-//         // Initialize leaves array for distributor if missing
-//         if (milkmanId != null && !(milkmanId in state.upcomingLeaves)) {
-//           state.upcomingLeaves[milkmanId] = [];
-//         }
-//       })
-//       .addCase(fetchDistributorCalendarData.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(submitDistributorLeaveRequest.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(submitDistributorLeaveRequest.fulfilled, (state, action) => {
-//         const { dates, reason, milkmanId } = action.payload;
-//         state.loading = false;
-
-//         if (milkmanId == null) { return; }
-
-//         const leaves = state.upcomingLeaves[milkmanId] || [];
-
-//         dates.forEach((date) => {
-//           const uniqueId = `${milkmanId}_${date}_${Date.now()}`;
-//           state.calendarData[date] = { marked: true, dotColor: '#9C27B0' };
-//           state.leaveTypes[date] = 'pending';
-
-//           if (!leaves.some((leave) => leave.id === uniqueId)) {
-//             leaves.push({
-//               id: uniqueId,
-//               date: dates.length === 1 ? dates[0] : `${dates[0]} to ${dates[dates.length - 1]}`,
-//               reason,
-//               status: 'pending',
-//             });
-//           }
-//         });
-
-//         state.upcomingLeaves[milkmanId] = leaves;
-//         state.monthlySummary.totalLeaves += dates.length;
-//         state.monthlySummary.pendingLeaves += dates.length;
-//       })
-//       .addCase(submitDistributorLeaveRequest.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       })
-//       .addCase(REHYDRATE, (state, action: any) => {
-//         if (action.payload?.distributorCalendar) {
-//           return { ...state, ...action.payload.distributorCalendar, loading: false };
-//         }
-//       });
-//   },
-// });
-
-// export const {
-//   setCurrentMonth,
-//   clearError,
-//   cancelLeave,
-//   clearDistributorCalendar,
-// } = distributorCalendarSlice.actions;
-
-// export default distributorCalendarSlice.reducer;
-
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { REHYDRATE } from 'redux-persist';
 import {
@@ -480,6 +157,26 @@ const distributorSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    applySyncedDelivery(state, action: PayloadAction<{ milkmanId: number; date: string; status: string }>) {
+      const { milkmanId, date, status } = action.payload;
+      const key = String(milkmanId);
+      const normalized = normalizeDate(date);
+
+      const existingCalendar = state.calendarDataByMilkman[key] || {};
+      const existingMark = existingCalendar[normalized] || { marked: true, dots: [] } as any;
+      const dots = Array.isArray(existingMark.dots) ? existingMark.dots.slice() : [];
+      const dotKey = `${status}-${normalized}`;
+      if (!dots.find((d: any) => d.key === dotKey)) {
+        const color = getStatusColor(status);
+        dots.push({ key: dotKey, color, selectedDotColor: color });
+      }
+      state.calendarDataByMilkman[key] = { ...(state.calendarDataByMilkman[key] || {}), [normalized]: { ...existingMark, marked: true, dots } };
+
+      const types = state.deliveryTypesByMilkman[key] || {};
+      const arr = types[normalized] ? Array.from(new Set([...types[normalized], status])) : [status];
+      types[normalized] = arr;
+      state.deliveryTypesByMilkman[key] = types;
+    },
     cancelLeave(
       state,
       action: PayloadAction<{ leaveId: string; leaveDate: string; milkmanId: number }>
@@ -603,6 +300,7 @@ export const {
   setCurrentMonth,
   clearError,
   cancelLeave,
+  applySyncedDelivery,
 } = distributorSlice.actions;
 
 export default distributorSlice.reducer;

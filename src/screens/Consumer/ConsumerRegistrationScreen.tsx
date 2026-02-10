@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,7 +17,7 @@ interface UserPayload {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode
+  pincode: string; // Added pincode
   contact?: string;
   password: string;
   confirm_password?: string;
@@ -110,7 +110,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
     if (!form.dist.trim()) { return 'District is required'; }
     if (!form.state.trim()) { return 'State is required'; }
 
-    // ✅ Added pincode validation
+    // Added pincode validation
     if (!form.pincode.trim()) { return 'Pincode is required'; }
     if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
 
@@ -409,7 +409,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
               />
             </View>
 
-            {/* ✅ Added Pincode Field */}
+            {/* Added Pincode Field */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
                 Pincode<Text style={styles.required}> *</Text>
@@ -479,14 +479,6 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                 </View>
               </View>
             )}
-
-            {/* <Text style={styles.terms}>
-              By registering, you agree to our{' '}
-              <Text style={styles.link} onPress={() => Linking.openURL('https://example.com/terms/user')}>
-                Consumer Terms
-              </Text>
-              .
-            </Text> */}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
               <Text style={styles.buttonText}>{isLoading ? 'Registering...' : 'Register'}</Text>

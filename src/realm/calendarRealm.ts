@@ -1,6 +1,6 @@
 import { realm } from './index';
 
-// 🔥 GET CONSUMER DELIVERY SUMMARY FOR A MONTH (OFFLINE)
+// GET CONSUMER DELIVERY SUMMARY FOR A MONTH (OFFLINE)
 export const getConsumerDeliverySummary = (customerId: number, year: number, month: number) => {
     const consumer = realm.objectForPrimaryKey('Consumer', customerId);
 
@@ -32,7 +32,7 @@ export const getConsumerDeliverySummary = (customerId: number, year: number, mon
     }
 };
 
-// 🔥 GET CONSUMER DELIVERY HISTORY FOR A SPECIFIC DATE RANGE (OFFLINE)
+// GET CONSUMER DELIVERY HISTORY FOR A SPECIFIC DATE RANGE (OFFLINE)
 export const getConsumerDeliveryHistory = (customerId: number, startDate?: string, endDate?: string) => {
     const consumer = realm.objectForPrimaryKey('Consumer', customerId);
 
@@ -56,7 +56,7 @@ export const getConsumerDeliveryHistory = (customerId: number, startDate?: strin
     }
 };
 
-// 🔥 GET DELIVERY STATUS FOR A SPECIFIC DATE (OFFLINE)
+// GET DELIVERY STATUS FOR A SPECIFIC DATE (OFFLINE)
 export const getConsumerDeliveryOnDate = (customerId: number, date: string) => {
     const consumer = realm.objectForPrimaryKey('Consumer', customerId);
 
@@ -74,7 +74,7 @@ export const getConsumerDeliveryOnDate = (customerId: number, date: string) => {
     }
 };
 
-// 🔥 GET ALL DELIVERIES FOR A MILKMAN IN A MONTH (OFFLINE)
+// GET ALL DELIVERIES FOR A MILKMAN IN A MONTH (OFFLINE)
 export const getMilkmanMonthSummary = (milkmanId: number, year: number, month: number) => {
     const consumers = realm
         .objects('Consumer')
@@ -113,7 +113,7 @@ export const getMilkmanMonthSummary = (milkmanId: number, year: number, month: n
     };
 };
 
-// 🔥 GET DAILY DELIVERY STATUS FOR CALENDAR VIEW (OFFLINE)
+// GET DAILY DELIVERY STATUS FOR CALENDAR VIEW (OFFLINE)
 export const getDailyDeliveryStatus = (milkmanId: number, date: string) => {
     const consumers = realm
         .objects('Consumer')

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { useDispatch, useSelector } from 'react-redux';
@@ -49,7 +49,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     tal: '',
     dist: '',
     state: '',
-    pincode: '', // ✅ Added pincode initialization
+    pincode: '', // Added pincode initialization
     password: '',
     confirmPassword: '',
   });
@@ -91,7 +91,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
     if (!form.dist.trim()) { return 'District is required'; }
     if (!form.state.trim()) { return 'State is required'; }
 
-    // ✅ Added pincode validation
+    // Added pincode validation
     if (!form.pincode.trim()) { return 'Pincode is required'; }
     if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
 
@@ -139,8 +139,6 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
         password: form.password,
         confirm_password: form.confirmPassword,
       };
-
-      console.log('Distributor Payload:', payload);
 
       const result = await dispatch(registerDistributor(payload));
       if (registerDistributor.fulfilled.match(result)) {
@@ -285,7 +283,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
               />
             </View>
 
-            {/* ✅ Added Pincode Field */}
+            {/* Added Pincode Field */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
               <TextInput
@@ -343,16 +341,6 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* <Text style={styles.terms}>
-              By registering, you agree to our{' '}
-              <Text
-                style={styles.link}
-                onPress={() => Linking.openURL('https://example.com/terms/distributor')}
-              >
-                Distributor Terms
-              </Text>.
-            </Text> */}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
               <Text style={styles.buttonText}>

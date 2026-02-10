@@ -19,7 +19,6 @@ export const syncOfflineDeliveries = async () => {
                 buffalo_milk: (Number(delivery.buffalo_milk)),
                 remarks: (String(delivery.remarks)),
                 reason: (String(delivery.reason)),
-                // replaceExisting: true,
             });
 
             markDeliverySynced((String(delivery.local_id)));

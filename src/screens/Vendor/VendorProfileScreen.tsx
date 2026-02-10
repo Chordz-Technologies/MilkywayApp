@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, Modal } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -51,7 +50,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
     return '';
   };
 
-  // ✅ FIXED: Helper to strip country code from phone
+  // FIXED: Helper to strip country code from phone
   const stripCountryCode = (phone: string): string => {
     if (!phone) { return ''; }
     let cleaned = phone.trim();

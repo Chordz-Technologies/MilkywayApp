@@ -50,7 +50,6 @@ const VendorConsumerRequestsScreen = () => {
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // const [processingId, setProcessingId] = useState<number | null>(null);
   const [processingState, setProcessingState] = useState<{ id: number | null; action: 'approve' | 'reject' | null }>({
     id: null,
     action: null,
@@ -139,7 +138,7 @@ const VendorConsumerRequestsScreen = () => {
           style: action === 'reject' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              // 👇 Track both ID and action
+              // Track both ID and action
               setProcessingState({ id: requestId, action });
 
               const payload = { customer_request_id: requestId, action };
@@ -176,7 +175,7 @@ const VendorConsumerRequestsScreen = () => {
               console.error(`Error ${action}ing request:`, error);
               Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} request`);
             } finally {
-              // ✅ Reset loader state
+              // Reset loader state
               setProcessingState({ id: null, action: null });
             }
           },
@@ -205,8 +204,6 @@ const VendorConsumerRequestsScreen = () => {
         action: "reject" as const,
         rejection_reason: rejectReason,
       };
-
-      console.log("📦 Reject Payload:", payload);
 
       await manageConsumerRequest(payload);
 
@@ -275,21 +272,6 @@ const VendorConsumerRequestsScreen = () => {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.infoText}>{formatDate(item.date)}</Text>
           </View>
-
-          {/* <View style={styles.milkQuantities}>
-            {item.total_quantity > 0 && (
-              <View style={styles.milkItem}>
-                <Ionicons name="water-outline" size={16} color="#007AFF" />
-                <Text style={styles.milkText}>Cow: {item.cow_milk_quantity}L</Text>
-              </View>
-            )}
-            {item.total_quantity > 0 && (
-              <View style={styles.milkItem}>
-                <Ionicons name="water-outline" size={16} color="#34C759" />
-                <Text style={styles.milkText}>Buffalo: {item.buffalo_milk_quantity}L</Text>
-              </View>
-            )}
-          </View> */}
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Cow Milk:</Text>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Linking, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from '../../styles/RegisterStyles';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,7 +27,7 @@ interface VendorPayload {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode
+  pincode: string; // Added pincode
 
   // Individual cow milk fields (exactly as backend expects)
   gir_cow_milk_litre?: number;
@@ -57,7 +57,7 @@ interface FormState {
   tal: string;
   dist: string;
   state: string;
-  pincode: string; // ✅ Added pincode to form state
+  pincode: string; // Added pincode to form state
 }
 
 export default function VendorRegisterScreen({ navigation }: { navigation: any }) {
@@ -89,7 +89,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
     tal: '',
     dist: '',
     state: '',
-    pincode: '', // ✅ Added pincode initialization
+    pincode: '', // Added pincode initialization
   });
 
   const [localError, setLocalError] = useState('');
@@ -187,7 +187,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
         tal: form.tal,
         dist: form.dist,
         state: form.state,
-        pincode: form.pincode.trim(), // ✅ Added pincode to payload
+        pincode: form.pincode.trim(), // Added pincode to payload
 
         // Global rates (cr = cow rate, br = buffalo rate)
         cr: cowMilkRate ? Number(cowMilkRate) : undefined,
@@ -422,7 +422,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
               />
             </View>
 
-            {/* ✅ Added Pincode Field */}
+            {/* Added Pincode Field */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
               <TextInput
@@ -558,13 +558,6 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                 </View>
               </View>
             )}
-
-            {/* <Text style={styles.terms}>
-              By registering, you agree to our{' '}
-              <Text style={styles.link} onPress={() => Linking.openURL('https://example.com/terms/vendor')}>
-                Vendor Terms
-              </Text>.
-            </Text> */}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
               <Text style={styles.buttonText}>{isLoading ? 'Registering...' : 'Register'}</Text>

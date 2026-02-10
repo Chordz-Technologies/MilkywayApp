@@ -1,4 +1,3 @@
-// hooks/useDailyDeliveryReset.ts - Minimal Production Version
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppState } from 'react-native';

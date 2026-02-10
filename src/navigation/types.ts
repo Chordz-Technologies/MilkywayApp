@@ -1,4 +1,3 @@
-// Vendor
 type Vendor = {
   id: string;
   name: string;
