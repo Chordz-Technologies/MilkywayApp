@@ -80,9 +80,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.milkywayapp"
+    namespace "com.chordz.milkyway"
     defaultConfig {
-        applicationId "com.milkywayapp"
+        applicationId "com.chordz.milkyway"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -95,6 +95,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('../milkyway.jks')
+            storePassword '123456'
+            keyAlias 'milkyway'
+            keyPassword '123456'
+        }
     }
     buildTypes {
         debug {
@@ -103,7 +109,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -121,7 +127,7 @@ dependencies {
     }
 
     // 🔹 Add Firebase BOM + Messaging
-    implementation platform('com.google.firebase:firebase-bom:34.3.0')
+    implementation platform('com.google.firebase:firebase-bom:34.9.0')
     implementation 'com.google.firebase:firebase-messaging'
     implementation "com.google.firebase:firebase-crashlytics"
     implementation "com.google.firebase:firebase-analytics"

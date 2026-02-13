@@ -1,4 +1,4 @@
-package com.milkywayapp
+package com.chordz.milkyway
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

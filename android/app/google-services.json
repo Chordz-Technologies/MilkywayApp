@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "277362536827",
-    "project_id": "milkyway-5e3e9",
-    "storage_bucket": "milkyway-5e3e9.firebasestorage.app"
+    "project_number": "139680272008",
+    "project_id": "milkyway-77bb7",
+    "storage_bucket": "milkyway-77bb7.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:277362536827:android:b326ae62b085b4fb728dde",
+        "mobilesdk_app_id": "1:139680272008:android:5a763c26fb3e18bcc0d93d",
         "android_client_info": {
-          "package_name": "com.milkywayapp"
+          "package_name": "com.chordz.milkyway"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCvPMiqnJlzL9HaY6zcAadA-fl37Socf9M"
+          "current_key": "AIzaSyBE-H6Nkt1h0iLJrGC5PjSvu_f9IbBGN5o"
         }
       ],
       "services": {
