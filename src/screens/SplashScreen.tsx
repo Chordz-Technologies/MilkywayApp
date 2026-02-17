@@ -4,7 +4,6 @@ import {
   Image,
   StyleSheet,
   Dimensions,
-  ImageBackground,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
@@ -62,17 +61,12 @@ const SplashScreen = () => {
 
   return (
     <SafeAreaWrapper>
-      <ImageBackground
-        source={require('../assets/waves.jpg')}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        {/* Center Logo */}
+      <View style={styles.container}>
         <Image
-          source={require('../assets/logo.jpeg')}
-          style={styles.logo}
+          source={require('../assets/splash.jpeg')}
+          style={styles.splashImage}
         />
-      </ImageBackground>
+      </View>
     </SafeAreaWrapper>
   );
 };
@@ -80,18 +74,13 @@ const SplashScreen = () => {
 export default SplashScreen;
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
   },
-  logo: {
-    width: 200,
-    height: 200,
-    resizeMode: 'contain',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+  splashImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
