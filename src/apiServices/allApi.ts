@@ -80,7 +80,7 @@ export const loginVendor = (payload: { contact: string; password: string; fcm_to
 
 //  Refresh token API - PUBLIC
 export const refreshTokenAPI = (data: { refresh: string }) =>
-  publicApiClient.post('/token/refresh/', data);
+  publicApiClient.post('/vendor-login/refresh/', data);
 
 //  Backend logout API - AUTHENTICATED
 export const logoutUser = () =>

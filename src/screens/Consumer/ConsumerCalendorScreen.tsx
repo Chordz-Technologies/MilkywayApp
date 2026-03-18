@@ -31,6 +31,11 @@ import { checkStoredAuth } from '../../store/authSlice';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import RatingModal from '../../screens/RatingModal';
+import {
+  incrementAppOpen,
+  shouldShowRating,
+} from '../../utils/ratingManager';
 
 const SEEN_CUSTOMERS_KEY = 'seen_consumers_v1';
 
@@ -332,6 +337,27 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   const [localDeliveryTypes, setLocalDeliveryTypes] = useState<Record<string, string> | null>(null);
   const [localCalendarData, setLocalCalendarData] = useState<Record<string, any> | null>(null);
   const [localMonthlySummary, setLocalMonthlySummary] = useState<any | null>(null);
+  const [showRating, setShowRating] = useState(false);
+
+  useEffect(() => {
+    const checkRating = async () => {
+      try {
+        await incrementAppOpen();
+        const shouldShow = await shouldShowRating();
+
+        if (shouldShow) {
+          setShowRating(true);
+        }
+      } catch (e) {
+        console.log('Rating check error', e);
+      }
+    };
+
+    // slight delay so UI loads first
+    const timer = setTimeout(checkRating, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Helper to normalize date strings
   const normalizeDate = useCallback((dateStr: string) => {
@@ -949,6 +975,12 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
           />
         )}
       </View>
+
+      {/* Rating Modal */}
+      <RatingModal
+        visible={showRating}
+        onClose={() => setShowRating(false)}
+      />
     </SafeAreaWrapper>
   );
 };

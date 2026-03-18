@@ -27,6 +27,11 @@ import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messag
 import { Linking } from 'react-native';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 import NetInfo from '@react-native-community/netinfo';
+import RatingModal from '../../screens/RatingModal';
+import {
+  incrementAppOpen,
+  shouldShowRating,
+} from '../../utils/ratingManager';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -78,11 +83,32 @@ const ConsumerListScreen = () => {
   const [selectedItem, setSelectedItem] = useState<AssignedConsumer | any>(null);
   const [searchText, setSearchText] = useState('');
   const [isOnline, setIsOnline] = useState(true);
+  const [showRating, setShowRating] = useState(false);
 
   const filteredConsumers = consumers.filter(c =>
     c.customer_name?.toLowerCase().includes(searchText.toLowerCase()) ||
     c.customer_contact?.includes(searchText)
   );
+
+  useEffect(() => {
+    const checkRating = async () => {
+      try {
+        await incrementAppOpen();
+        const shouldShow = await shouldShowRating();
+
+        if (shouldShow) {
+          setShowRating(true);
+        }
+      } catch (e) {
+        console.log('Rating check error', e);
+      }
+    };
+
+    // slight delay so UI loads first
+    const timer = setTimeout(checkRating, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Network detection
   useEffect(() => {
@@ -1067,6 +1093,12 @@ const ConsumerListScreen = () => {
           </View>
         </Modal>
       </View >
+
+      {/* Rating Modal */}
+      <RatingModal
+        visible={showRating}
+        onClose={() => setShowRating(false)}
+      />
     </SafeAreaWrapper >
   );
 };

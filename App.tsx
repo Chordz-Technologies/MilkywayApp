@@ -17,8 +17,12 @@ import {
   showLocalNotification,
 } from "../MilkywayApp/src/notifications/FCM";
 import { syncOfflineData } from "./src/utils/syncOfflineData";
+import UpdateModal from './src/screens/UpdateModal';
+import { useAppUpdate } from './src/utils/useAppUpdate';
 
 export default function App() {
+  const { showUpdate, forceUpdate, setShowUpdate } = useAppUpdate();
+
   useEffect(() => {
     const initFCM = async () => {
 
@@ -27,7 +31,7 @@ export default function App() {
       analytics().logEvent("app_launched");
 
       // Firebase Crashlytics 
-      crashlytics().log("Agriclinic App Mounted");
+      crashlytics().log("Milkyway App Mounted");
 
       // Request notification permission
       await requestUserPermission();
@@ -106,6 +110,13 @@ export default function App() {
       <PersistGate loading={null} persistor={persistor}>
         <SafeAreaProvider>
           <AppNavigator />
+
+          <UpdateModal
+            visible={showUpdate}
+            forceUpdate={forceUpdate}   // you are not using force update now
+            onClose={() => setShowUpdate(false)}
+          />
+
         </SafeAreaProvider>
       </PersistGate>
     </Provider>

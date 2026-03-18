@@ -16,6 +16,11 @@ import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitt
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import MonthPicker from "react-native-month-year-picker";
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import RatingModal from '../../screens/RatingModal';
+import {
+  incrementAppOpen,
+  shouldShowRating,
+} from '../../utils/ratingManager';
 
 // Navigation Types
 type RootStackParamList = {
@@ -150,6 +155,27 @@ const VendorHomeScreen = () => {
     consumer_extra_milk_amount: 0,
     distributor_leave_count: 0,
   });
+  const [showRating, setShowRating] = useState(false);
+
+  useEffect(() => {
+    const checkRating = async () => {
+      try {
+        await incrementAppOpen();
+        const shouldShow = await shouldShowRating();
+
+        if (shouldShow) {
+          setShowRating(true);
+        }
+      } catch (e) {
+        console.log('Rating check error', e);
+      }
+    };
+
+    // slight delay so UI loads first
+    const timer = setTimeout(checkRating, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const loadNotificationCount = async () => {
     try {
@@ -382,8 +408,7 @@ const VendorHomeScreen = () => {
           {/* HEADER WITH NOTIFICATION */}
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Vendor Home</Text>
-              <Text style={styles.headerSubtitle}>Welcome back! 👋</Text>
+              <Text style={styles.headerTitle}>Welcome back!</Text>
             </View>
             <View style={styles.headerActions}>
               {/* Calendar Button */}
@@ -459,9 +484,6 @@ const VendorHomeScreen = () => {
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{vendorName}</Text>
               <Text style={styles.profileLocation}>{village}</Text>
-              <View style={styles.profileBadge}>
-                <Text style={styles.profileBadgeText}>Premium ⭐</Text>
-              </View>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
@@ -567,6 +589,12 @@ const VendorHomeScreen = () => {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Rating Modal */}
+        <RatingModal
+          visible={showRating}
+          onClose={() => setShowRating(false)}
+        />
       </ScrollView>
     </SafeAreaWrapper>
   );
@@ -723,7 +751,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: 'bold',
     color: '#1a1a1a',
   },
