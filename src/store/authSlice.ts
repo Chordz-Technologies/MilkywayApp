@@ -8,6 +8,7 @@ import {
   addDistributorRegistration,
   logoutUser,
 } from '../apiServices/allApi';
+import { clearAuthStorage, isTokenExpired } from '../utils/auth';
 
 interface User {
   userID: string | number;
@@ -23,6 +24,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  isAuthChecked: boolean;
 }
 
 const initialState: AuthState = {
@@ -32,6 +34,7 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   isAuthenticated: false,
+  isAuthChecked: false,
 };
 
 //  LOGIN - Reads from backend's role-based login response
@@ -190,13 +193,15 @@ export const checkStoredAuth = createAsyncThunk('auth/checkStored', async () => 
   const token = await AsyncStorage.getItem('access_token');
   const userInfo = await AsyncStorage.getItem('userInfo');
 
-  if (token && userInfo) {
-    return {
-      access_token: token,
-      user: JSON.parse(userInfo),
-    };
+  if (!token || !userInfo || isTokenExpired(token)) {
+    await clearAuthStorage();
+    throw new Error('No stored authentication');
   }
-  throw new Error('No stored authentication');
+
+  return {
+    access_token: token,
+    user: JSON.parse(userInfo),
+  };
 });
 
 const authSlice = createSlice({
@@ -293,13 +298,26 @@ const authSlice = createSlice({
       })
 
       // CHECK STORED AUTH
+      .addCase(checkStoredAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.isAuthenticated = false;
+        state.isAuthChecked = false;
+      })
       .addCase(checkStoredAuth.fulfilled, (state, action) => {
         state.user = action.payload.user;
         state.access_token = action.payload.access_token;
         state.isAuthenticated = true;
+        state.isAuthChecked = true;
+        state.isLoading = false;
       })
       .addCase(checkStoredAuth.rejected, (state) => {
+        state.user = null;
+        state.access_token = null;
+        state.refresh_token = null;
         state.isAuthenticated = false;
+        state.isAuthChecked = true;
+        state.isLoading = false;
       });
   },
 });

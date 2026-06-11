@@ -15,22 +15,35 @@ import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 const { width, height } = Dimensions.get('window');
 
 const SplashScreen = () => {
-  const { isAuthenticated, user } = useSelector(
+  const { isAuthenticated, user, isAuthChecked } = useSelector(
     (state: RootState) => state.auth
   );
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
+    if (!isAuthChecked) {
+      return;
+    }
+
     const decideNext = async () => {
       const hasSeenSlides = await AsyncStorage.getItem('hasSeenSlides');
       const isLoggedOutValue = await AsyncStorage.getItem('isLoggedOut');
+      const accessToken = await AsyncStorage.getItem('access_token');
       const isLoggedOut = isLoggedOutValue === 'true';
 
       setTimeout(() => {
         if (isLoggedOut) {
           navigation.reset({
             index: 0,
-            routes: [{ name: hasSeenSlides ? 'Slide' : 'Login' }],
+            routes: [{ name: 'Login' }],
+          });
+          return;
+        }
+
+        if (accessToken && !isAuthenticated) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
           });
           return;
         }
@@ -57,7 +70,7 @@ const SplashScreen = () => {
     };
 
     decideNext();
-  }, [isAuthenticated, user?.role]);
+  }, [isAuthenticated, isAuthChecked, user?.role, navigation]);
 
   return (
     <SafeAreaWrapper>
