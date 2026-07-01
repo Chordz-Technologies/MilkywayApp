@@ -4,23 +4,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
+import { useTranslation } from '../../i18n/LanguageProvider';
 import { RootState } from '../../store';
-import {
-  getVendorDetailsById,
-  getVendorPendingRequests,
-  getConsumerRequests,
-  getDistributorLeaveRequestsForVendor,
-  postDashboardSummaryAPI,
-} from '../../apiServices/allApi';
+import { getVendorDetailsById, getVendorPendingRequests, getConsumerRequests, getDistributorLeaveRequestsForVendor, postDashboardSummaryAPI, } from '../../apiServices/allApi';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from '../../notifications/NotificationService';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import MonthPicker from "react-native-month-year-picker";
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 import RatingModal from '../../screens/RatingModal';
-import {
-  incrementAppOpen,
-  shouldShowRating,
-} from '../../utils/ratingManager';
+import { incrementAppOpen, shouldShowRating, } from '../../utils/ratingManager';
 
 // Navigation Types
 type RootStackParamList = {
@@ -40,6 +32,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'VendorHome'
 
 // SKELETON LOADER COMPONENT
 const SkeletonLoader = () => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.loadingContainer}>
       <View style={styles.skeletonContainer}>
@@ -68,7 +62,7 @@ const SkeletonLoader = () => {
 
         <View style={styles.loadingIndicatorContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading ...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </View>
     </View>
@@ -133,9 +127,8 @@ const AnimatedStatCard = ({ stat, onPress }: { stat: any; onPress?: () => void }
 
 const VendorHomeScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  // const dispatch = useDispatch<AppDispatch>();
+  const { language, t } = useTranslation();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-
   const [vendorData, setVendorData] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [consumerExtraMilkRequests, setConsumerExtraMilkRequests] = useState<any[]>([]); // <-- NEW
@@ -219,7 +212,7 @@ const VendorHomeScreen = () => {
   const fetchDashboardSummary = useCallback(async (month?: number, year?: number) => {
     try {
       const vendorId = user?.userID;
-      if (!vendorId) throw new Error('Vendor ID not found. Please log in again.');
+      if (!vendorId) throw new Error(t('requests.vendorNotFound'));
       const payload = { vendor_id: vendorId, month: month ?? selectedMonth.getMonth() + 1, year: year ?? selectedMonth.getFullYear() };
       const response = await postDashboardSummaryAPI(payload);
 
@@ -238,10 +231,8 @@ const VendorHomeScreen = () => {
       const vendorId = user?.userID;
 
       if (!vendorId) {
-        throw new Error('Vendor ID not found. Please log in again.');
+        throw new Error(t('requests.vendorNotFound'));
       }
-
-      console.log('🔍 Fetching data for vendor ID:', vendorId);
 
       // Fetch Vendor Profile
       try {
@@ -267,10 +258,8 @@ const VendorHomeScreen = () => {
         const consumerReqRes = await getConsumerRequests(vendorId);
         const consumerReqData = consumerReqRes?.data?.data?.extra_milk_requests || [];
         setConsumerExtraMilkRequests(Array.isArray(consumerReqData) ? consumerReqData : []);
-        console.log('✅ Consumer extra milk requests fetched:', consumerReqData.length);
       } catch (consumerReqError: any) {
         console.error('Consumer requests fetch error:', consumerReqError);
-        console.log('Consumer fetch error:', JSON.stringify(consumerReqError?.response?.data, null, 2));
         setConsumerExtraMilkRequests([]);
       }
 
@@ -279,7 +268,6 @@ const VendorHomeScreen = () => {
         const distributorLeaveRes = await getDistributorLeaveRequestsForVendor(vendorId);
         const distributorLeaveData = distributorLeaveRes?.data?.data || distributorLeaveRes?.data || [];
         setDistributorLeaveRequests(Array.isArray(distributorLeaveData) ? distributorLeaveData : []);
-        console.log('✅ Distributor leave requests fetched:', distributorLeaveData.length);
       } catch (distributorLeaveError) {
         console.error('Distributor leave requests fetch error:', distributorLeaveError);
         setDistributorLeaveRequests([]);
@@ -324,8 +312,8 @@ const VendorHomeScreen = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const village = vendorData?.location?.split(',')[2]?.trim() || vendorData?.village || 'No village provided';
-  const vendorName = vendorData?.name || vendorData?.business_name || 'Vendor Name';
+  const village = vendorData?.location?.split(',')[2]?.trim() || vendorData?.village || t('vendor.noVillageProvided');
+  const vendorName = vendorData?.name || vendorData?.business_name || t('vendor.vendorName');
 
   if (!isAuthenticated || !user?.userID || isLoading) {
     return <SkeletonLoader />;
@@ -337,7 +325,7 @@ const VendorHomeScreen = () => {
         <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
+          <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -345,40 +333,44 @@ const VendorHomeScreen = () => {
 
   const statsData = [
     {
+      id: 'totalConsumers',
       icon: 'people-outline',
-      label: 'Total Consumers',
+      label: t('vendor.totalConsumers'),
       value: dashboardData.total_consumer,
-      subtext: 'Active Today',
+      subtext: t('vendor.activeToday'),
       backgroundColor: '#E8F4FD',
       iconBg: '#007AFF',
       iconColor: '#fff',
       trending: 'up',
     },
     {
+      id: 'totalDistributors',
       icon: 'business-outline',
-      label: 'Total Distributors',
+      label: t('vendor.totalDistributors'),
       value: dashboardData.total_distributor,
-      subtext: 'Working Now',
+      subtext: t('vendor.workingNow'),
       backgroundColor: '#FFF4E6',
       iconBg: '#FF9500',
       iconColor: '#fff',
       trending: 'up',
     },
     {
+      id: 'totalBilledAmount',
       icon: 'cash-outline',
-      label: 'Total Billed Amount',
+      label: t('vendor.totalBilledAmount'),
       value: dashboardData.total_billed_amount,
-      subtext: 'This Month',
+      subtext: t('vendor.thisMonth'),
       backgroundColor: '#E8F8F0',
       iconBg: '#34C759',
       iconColor: '#fff',
       trending: 'up',
     },
     {
+      id: 'totalOverdueAmount',
       icon: 'alert-circle-outline',
-      label: 'Total Overdue Amount',
+      label: t('vendor.totalOverdueAmount'),
       value: dashboardData.total_overdue_amount,
-      subtext: 'Need Action',
+      subtext: t('vendor.needAction'),
       backgroundColor: '#FFE8E8',
       iconBg: '#FF3B30',
       iconColor: '#fff',
@@ -386,13 +378,13 @@ const VendorHomeScreen = () => {
     },
   ];
 
-  const handleCardPress = (label: string) => {
-    if (label === 'Total Consumers') {
+  const handleCardPress = (id: string) => {
+    if (id === 'totalConsumers') {
       navigation.navigate('AllConsumersList');
-    } else if (label === 'Total Distributors') {
+    } else if (id === 'totalDistributors') {
       navigation.navigate('DistributorsList');
     } else {
-      console.log('No navigation for:', label);
+      console.log('No navigation for:', id);
     }
   };
 
@@ -408,7 +400,7 @@ const VendorHomeScreen = () => {
           {/* HEADER WITH NOTIFICATION */}
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Welcome back!</Text>
+              <Text style={styles.headerTitle}>{t('vendor.welcomeBack')}</Text>
             </View>
             <View style={styles.headerActions}>
               {/* Calendar Button */}
@@ -426,7 +418,7 @@ const VendorHomeScreen = () => {
                   value={selectedMonth}
                   minimumDate={new Date(2023, 0)}
                   maximumDate={new Date()}
-                  locale="en"
+                  locale={language}
                 />
               )}
 
@@ -491,13 +483,13 @@ const VendorHomeScreen = () => {
 
           {/* STATS GRID */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Analytics Overview</Text>
+            <Text style={styles.sectionTitle}>{t('vendor.analyticsOverview')}</Text>
             <View style={styles.statsGrid}>
               {statsData.map((stat, index) => (
                 <AnimatedStatCard
                   key={index}
                   stat={stat}
-                  onPress={() => handleCardPress(stat.label)}
+                  onPress={() => handleCardPress(stat.id)}
                 />
               ))}
             </View>
@@ -514,8 +506,8 @@ const VendorHomeScreen = () => {
                 <Ionicons name="notifications" size={24} color="#FF9500" />
               </View>
               <View>
-                <Text style={styles.pendingTitle}>Pending Requests</Text>
-                <Text style={styles.pendingSubtitle}>Awaiting approval requests</Text>
+                <Text style={styles.pendingTitle}>{t('vendor.pendingRequests')}</Text>
+                <Text style={styles.pendingSubtitle}>{t('vendor.awaitingApprovalRequests')}</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>
@@ -535,8 +527,8 @@ const VendorHomeScreen = () => {
                 <Ionicons name="water" size={24} color="#007AFF" />
               </View>
               <View>
-                <Text style={styles.pendingTitle}>Consumer Extra Milk</Text>
-                <Text style={styles.pendingSubtitle}>Extra milk requests from consumers</Text>
+                <Text style={styles.pendingTitle}>{t('vendor.consumerExtraMilkCardTitle')}</Text>
+                <Text style={styles.pendingSubtitle}>{t('vendor.consumerExtraMilkCardSubtitle')}</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>
@@ -558,8 +550,8 @@ const VendorHomeScreen = () => {
                 <Ionicons name="calendar" size={24} color="#FF9500" />
               </View>
               <View>
-                <Text style={styles.pendingTitle}>Distributor Leave</Text>
-                <Text style={styles.pendingSubtitle}>Leave requests from distributors</Text>
+                <Text style={styles.pendingTitle}>{t('vendor.distributorLeaveCardTitle')}</Text>
+                <Text style={styles.pendingSubtitle}>{t('vendor.distributorLeaveCardSubtitle')}</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>
@@ -580,8 +572,8 @@ const VendorHomeScreen = () => {
                 <Ionicons name="cash-outline" size={24} color="#007AFF" />
               </View>
               <View>
-                <Text style={styles.pendingTitle}>Subscriptions</Text>
-                <Text style={styles.pendingSubtitle}>Choose your preferred plan here</Text>
+                <Text style={styles.pendingTitle}>{t('vendor.subscriptionsCardTitle')}</Text>
+                <Text style={styles.pendingSubtitle}>{t('vendor.subscriptionsCardSubtitle')}</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>

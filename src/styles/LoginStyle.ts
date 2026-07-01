@@ -6,7 +6,12 @@ export const styles = StyleSheet.create({
         backgroundColor: '#ffffffff',
         alignItems: 'center',
         paddingHorizontal: 24,
-        paddingTop: 100,
+        paddingTop: 50,
+    },
+    languageRow: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 60,
     },
     logo: {
         width: 130,

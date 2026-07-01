@@ -4,22 +4,17 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState, AppDispatch } from '../../store';
-import {
-  fetchConsumerProfile,
-  updateConsumerProfile,
-  clearError,
-  clearSuccess,
-  resetConsumerProfileState,
-  deleteConsumerAccount
-} from '../../store/consumerProfileSlice';
+import { fetchConsumerProfile, updateConsumerProfile, clearError, clearSuccess, resetConsumerProfileState, deleteConsumerAccount } from '../../store/consumerProfileSlice';
 import { logout } from '../../store/authSlice';
 import { changePassword } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 const ConsumerProfileEditScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
   const [isEditMode, setIsEditMode] = useState(false);
+  const { t } = useTranslation();
 
   // Fixed selectors - each selector returns only what it needs
   const profile = useSelector((state: RootState) => state.consumerProfile?.profile);
@@ -100,7 +95,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (success) {
-      Alert.alert('Success', 'Profile updated successfully!');
+      Alert.alert(t('common.success'), t('profile.profileUpdated'));
       setIsEditMode(false);
       dispatch(clearSuccess());
     }
@@ -108,7 +103,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Error', error);
+      Alert.alert(t('common.error'), error);
       dispatch(clearError());
     }
   }, [error, dispatch]);
@@ -118,35 +113,32 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
   };
 
   const validateForm = () => {
-    if (!form.first_name.trim()) { return 'First name is required'; }
-    if (!form.last_name.trim()) { return 'Last name is required'; }
-    if (form.first_name.length > 100) { return 'First name must be under 100 characters'; }
-    if (form.last_name.length > 100) { return 'Last name must be under 100 characters'; }
-    if (form.email && !form.email.includes('@')) { return 'Please enter a valid email'; }
-    if (form.flat_no.length > 50) { return 'Flat no must be under 50 characters'; }
-    if (form.society_name.length > 200) { return 'Society name must be under 200 characters'; }
-    if (form.village.length > 100) { return 'Village must be under 100 characters'; }
-    if (form.tal.length > 100) { return 'Tal must be under 100 characters'; }
-    if (form.dist.length > 100) { return 'District must be under 100 characters'; }
-    if (form.state.length > 100) { return 'State must be under 100 characters'; }
-    if (form.pincode.trim() && form.pincode.length !== 6) { return 'Pincode must be exactly 6 digits'; }
-
-    // Validate milk quantities
-    if (form.cow_milk_litre && isNaN(Number(form.cow_milk_litre))) { return 'Cow milk quantity must be a number'; }
-    if (form.buffalo_milk_litre && isNaN(Number(form.buffalo_milk_litre))) { return 'Buffalo milk quantity must be a number'; }
-
+    if (!form.first_name.trim()) { return t('validation.firstNameRequired'); }
+    if (!form.last_name.trim()) { return t('validation.lastNameRequired'); }
+    if (form.first_name.length > 100) { return t('validation.firstNameLength'); }
+    if (form.last_name.length > 100) { return t('validation.lastNameLength'); }
+    if (form.email && !form.email.includes('@')) { return t('validation.invalidEmail'); }
+    if (form.flat_no.length > 50) { return t('validation.flatNoLength'); }
+    if (form.society_name.length > 200) { return t('validation.societyLength'); }
+    if (form.village.length > 100) { return t('validation.villageLength'); }
+    if (form.tal.length > 100) { return t('validation.talukaLength'); }
+    if (form.dist.length > 100) { return t('validation.districtLength'); }
+    if (form.state.length > 100) { return t('validation.stateLength'); }
+    if (form.pincode.trim() && form.pincode.length !== 6) { return t('validation.pincodeLength'); }
+    if (form.cow_milk_litre && isNaN(Number(form.cow_milk_litre))) { return t('validation.cowMilkNumber'); }
+    if (form.buffalo_milk_litre && isNaN(Number(form.buffalo_milk_litre))) { return t('validation.buffaloMilkNumber'); }
     return null;
   };
 
   const handleSubmit = () => {
     const validationError = validateForm();
     if (validationError) {
-      Alert.alert('Validation Error', validationError);
+      Alert.alert(t('common.validationError'), validationError);
       return;
     }
 
     if (!user?.userID) {
-      Alert.alert('Error', 'User session expired. Please login again.');
+      Alert.alert(t('common.error'), t('validation.sessionExpired'));
       return;
     }
 
@@ -155,17 +147,17 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setPasswordError('All fields are required');
+      setPasswordError(t('validation.allFieldsRequired'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters');
+      setPasswordError(t('validation.passwordLength'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirm password do not match');
+      setPasswordError(t('validation.passwordMismatch'));
       return;
     }
 
@@ -179,7 +171,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
         new_password: newPassword,
       });
 
-      Alert.alert('Success', 'Password changed successfully');
+      Alert.alert(t('common.success'), t('profile.passwordChanged'));
 
       setShowChangePasswordModal(false);
       setOldPassword('');
@@ -190,7 +182,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
       setPasswordError(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        'Failed to change password'
+        t('validation.passwordChangeFailed')
       );
     } finally {
       setChangingPassword(false);
@@ -199,15 +191,14 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('common.logout'), t('common.confirmlogout'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: t('common.logout'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -235,8 +226,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 });
               }
             } catch (err) {
-              console.error('Logout error:', err);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              Alert.alert(t('common.error'), t('profile.logoutFailed'));
             }
           },
         },
@@ -246,26 +236,25 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      t('profile.deleteAccount'), t('profile.confirmDelete'),
       [
         {
-          text: "Cancel",
+          text: t('common.cancel'),
           style: "cancel",
         },
         {
-          text: "Delete",
+          text: t('common.delete'),
           style: "destructive",
           onPress: async () => {
             if (!user?.userID) {
-              Alert.alert("Error", "User not found.");
+              Alert.alert(t('common.error'), t('common.userNotFound'));
               return;
             }
 
             try {
               await dispatch(deleteConsumerAccount(user.userID)).unwrap();
 
-              Alert.alert("Deleted", "Your account has been permanently deleted.");
+              Alert.alert(t('common.deleted'), t('common.deletedAccount'));
 
               // Clear local storage
               await AsyncStorage.multiRemove([
@@ -288,7 +277,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
               });
 
             } catch (err: any) {
-              Alert.alert("Error", err || "Failed to delete account.");
+              Alert.alert(t('common.error'), err || t('common.failedToDelete'));
             }
           },
         },
@@ -300,7 +289,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loading}>Loading profile...</Text>
+        <Text style={styles.loading}>{t('profile.loadingProfile')}</Text>
       </View>
     );
   }
@@ -325,8 +314,8 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
             {/* Simple Header */}
             <View style={styles.header}>
               <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
-              <Text style={styles.heading}>Edit Profile</Text>
-              <Text style={styles.subheading}>Update your information</Text>
+              <Text style={styles.heading}>{t('profile.editProfile')}</Text>
+              <Text style={styles.subheading}>{t('profile.updateInformation')}</Text>
             </View>
 
             {/* Action Buttons Row */}
@@ -342,7 +331,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                   color="#007AFF"
                   style={{ marginRight: 6 }}
                 />
-                <Text style={styles.editButtonText}>Change Password</Text>
+                <Text style={styles.editButtonText}>{t('profile.changePassword')}</Text>
               </TouchableOpacity>
 
               {/* Edit Profile - RIGHT */}
@@ -357,20 +346,20 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                   style={{ marginRight: 6 }}
                 />
                 <Text style={styles.editButtonText}>
-                  {isEditMode ? 'Cancel' : 'Edit Profile'}
+                  {isEditMode ? t('common.cancel') : t('profile.edit')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Personal Information */}
             <View style={styles.section}>
-              <Text style={styles.title}>Personal Information</Text>
+              <Text style={styles.title}>{t('profile.personalInformation')}</Text>
 
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="First Name *"
+                  placeholder={t('profile.firstName')}
                   value={form.first_name}
                   onChangeText={(v) => handleChange('first_name', v)}
                   maxLength={100}
@@ -383,7 +372,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Last Name *"
+                  placeholder={t('profile.lastName')}
                   value={form.last_name}
                   onChangeText={(v) => handleChange('last_name', v)}
                   maxLength={100}
@@ -396,7 +385,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder={t('profile.email')}
                   value={form.email}
                   onChangeText={(v) => handleChange('email', v)}
                   keyboardType="email-address"
@@ -409,13 +398,13 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
             {/* Address Information */}
             <View style={styles.section}>
-              <Text style={styles.title}>Address</Text>
+              <Text style={styles.title}>{t('profile.address')}</Text>
 
               <View style={styles.inputContainer}>
                 <Ionicons name="home-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Flat/House No"
+                  placeholder={t('profile.flatNo')}
                   value={form.flat_no}
                   onChangeText={(v) => handleChange('flat_no', v)}
                   maxLength={50}
@@ -428,7 +417,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Society Name"
+                  placeholder={t('profile.societyName')}
                   value={form.society_name}
                   onChangeText={(v) => handleChange('society_name', v)}
                   maxLength={200}
@@ -441,7 +430,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Village"
+                  placeholder={t('profile.village')}
                   value={form.village}
                   onChangeText={(v) => handleChange('village', v)}
                   maxLength={100}
@@ -454,7 +443,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Taluka"
+                  placeholder={t('profile.taluka')}
                   value={form.tal}
                   onChangeText={(v) => handleChange('tal', v)}
                   maxLength={100}
@@ -467,7 +456,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="location-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="District"
+                  placeholder={t('profile.district')}
                   value={form.dist}
                   onChangeText={(v) => handleChange('dist', v)}
                   maxLength={100}
@@ -480,7 +469,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="flag-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="State"
+                  placeholder={t('profile.state')}
                   value={form.state}
                   onChangeText={(v) => handleChange('state', v)}
                   maxLength={100}
@@ -493,7 +482,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Pincode"
+                  placeholder={t('profile.pincode')}
                   value={form.pincode}
                   onChangeText={(v) => handleChange('pincode', v)}
                   keyboardType="numeric"
@@ -506,13 +495,13 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
 
             {/* Milk Requirements */}
             <View style={styles.section}>
-              <Text style={styles.title}>Daily Milk Requirements</Text>
+              <Text style={styles.title}>{t('profile.milkRequirements')}</Text>
 
               <View style={styles.milkContainer}>
                 <View style={styles.milkItem}>
                   <View style={styles.milkHeader}>
                     <Ionicons name="water-outline" size={24} color="#4CAF50" />
-                    <Text style={styles.milkTitle}>Cow Milk</Text>
+                    <Text style={styles.milkTitle}>{t('profile.cowMilk')}</Text>
                   </View>
                   <View style={styles.inputContainer}>
                     <TextInput
@@ -524,14 +513,14 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                       placeholderTextColor="#999"
                       editable={isEditMode}
                     />
-                    <Text style={styles.unitText}>Litres</Text>
+                    <Text style={styles.unitText}>{t('profile.litres')}</Text>
                   </View>
                 </View>
 
                 <View style={styles.milkItem}>
                   <View style={styles.milkHeader}>
                     <Ionicons name="water-outline" size={24} color="#FF9800" />
-                    <Text style={styles.milkTitle}>Buffalo Milk</Text>
+                    <Text style={styles.milkTitle}>{t('profile.buffaloMilk')}</Text>
                   </View>
                   <View style={styles.inputContainer}>
                     <TextInput
@@ -543,7 +532,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                       placeholderTextColor="#999"
                       editable={isEditMode}
                     />
-                    <Text style={styles.unitText}>Litres</Text>
+                    <Text style={styles.unitText}>{t('profile.litres')}</Text>
                   </View>
                 </View>
               </View>
@@ -559,10 +548,10 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 {updating ? (
                   <View style={styles.buttonContent}>
                     <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-                    <Text style={styles.buttonText}>Updating...</Text>
+                    <Text style={styles.buttonText}>{t('profile.updating')}</Text>
                   </View>
                 ) : (
-                  <Text style={styles.buttonText}>Save Changes</Text>
+                  <Text style={styles.buttonText}>{t('profile.saveChanges')}</Text>
                 )}
               </TouchableOpacity>
             )}
@@ -570,7 +559,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
             {/* Bottom Logout Button */}
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutButtonText}>Logout</Text>
+              <Text style={styles.logoutButtonText}>{t('profile.logout')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -583,7 +572,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
               )}
               <Text style={styles.logoutButtonText}>
-                {deleting ? "Deleting..." : "Delete Account"}
+                {deleting ? t('profile.deleting') : t('profile.deleteAccount')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -596,7 +585,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
 
-              <Text style={styles.modalTitle}>Change Password</Text>
+              <Text style={styles.modalTitle}>{t('profile.changePassword')}</Text>
 
               {/* Error Message */}
               {passwordError ? (
@@ -607,7 +596,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Old Password"
+                  placeholder={t('profile.oldPassword')}
                   secureTextEntry={!showOldPassword}
                   value={oldPassword}
                   onChangeText={(v) => {
@@ -629,7 +618,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="New Password"
+                  placeholder={t('profile.newPassword')}
                   secureTextEntry={!showNewPassword}
                   value={newPassword}
                   onChangeText={(v) => {
@@ -651,7 +640,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Confirm New Password"
+                  placeholder={t('profile.confirmPassword')}
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
                   onChangeText={(v) => {
@@ -678,7 +667,7 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 {changingPassword ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Update Password</Text>
+                  <Text style={styles.modalButtonText}>{t('profile.updatePassword')}</Text>
                 )}
               </TouchableOpacity>
 
@@ -690,9 +679,8 @@ const ConsumerProfileEditScreen = ({ navigation }: any) => {
                 }}
                 style={{ marginTop: 20 }}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </TouchableWithoutFeedback>

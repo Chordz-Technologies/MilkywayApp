@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 import { requestPasswordReset } from '../apiServices/allApi'; // <-- your service
+import { useTranslation } from '../i18n/LanguageProvider';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
@@ -13,10 +14,11 @@ const ForgotPasswordScreen = () => {
     const [mobile, setMobile] = useState('');
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation<NavigationProp>();
+    const { t } = useTranslation();
 
     const sendOTP = async () => {
         if (mobile.length !== 10) {
-            Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
+            Alert.alert(t('forgotPassword.invalidNumber'), t('forgotPassword.enterValidMobile'));
             return;
         }
 
@@ -28,14 +30,13 @@ const ForgotPasswordScreen = () => {
             const response = await requestPasswordReset(payload);
 
             if (response.status === 200) {
-                Alert.alert('Success', response.data.message || 'OTP sent successfully');
+                Alert.alert(t('common.success'), response.data.message || t('forgotPassword.otpSent'));
                 navigation.navigate('VerifyOtp', { mobile }); // navigate without OTP
             } else {
-                Alert.alert('Error', response.data.Error.error || 'Failed to send OTP');
+                Alert.alert(t('common.error'), response.data.Error.error || t('forgotPassword.failedOtp'));
             }
         } catch (error: any) {
-            console.log('Error:', error);
-            Alert.alert('Error', error?.response?.data?.error || 'Something went wrong');
+            Alert.alert(t('common.error'), error?.response?.data?.error || t('forgotPassword.somethingWrong'));
         } finally {
             setLoading(false);
         }
@@ -45,8 +46,8 @@ const ForgotPasswordScreen = () => {
         <SafeAreaWrapper>
             <View style={styles.container}>
                 <Image source={require('../assets/logopass1.png')} style={styles.logo} />
-                <Text style={styles.title}>Forgot Password?</Text>
-                <Text style={styles.label}>Enter your mobile number to reset password</Text>
+                <Text style={styles.title}>{t('forgotPassword.title')}</Text>
+                <Text style={styles.label}>{t('forgotPassword.label')}</Text>
 
                 <View style={styles.inputWrapper}>
                     <Text style={styles.countryCode}>+91</Text>
@@ -54,7 +55,7 @@ const ForgotPasswordScreen = () => {
                         style={[styles.input, { flex: 1 }]}
                         keyboardType="number-pad"
                         maxLength={10}
-                        placeholder="Mobile Number"
+                        placeholder={t('common.mobileNumber')}
                         placeholderTextColor="#888"
                         value={mobile}
                         onChangeText={(text) => setMobile(text.replace(/\D/g, ''))}
@@ -69,12 +70,12 @@ const ForgotPasswordScreen = () => {
                     {loading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.sendOTPText}>Send OTP</Text>
+                        <Text style={styles.sendOTPText}>{t('forgotPassword.sendOtp')}</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.backToLogin}>Back to Login</Text>
+                    <Text style={styles.backToLogin}>{t('forgotPassword.backToLogin')}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaWrapper>

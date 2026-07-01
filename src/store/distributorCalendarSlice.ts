@@ -1,10 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import {
-    getMilkmanMonthSummary,
-    getConsumerDeliverySummary,
-    getDailyDeliveryStatus,
-    getConsumerDeliveryHistory,
-} from '../realm/calendarRealm';
+import { getMilkmanMonthSummary, getDailyDeliveryStatus, getConsumerDeliveryHistory, } from '../realm/calendarRealm';
 
 export interface MilkmanMonthSummary {
     totalDelivered: number;

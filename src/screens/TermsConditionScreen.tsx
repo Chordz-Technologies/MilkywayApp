@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CheckBox from '@react-native-community/checkbox';
 import { StackNavigationProp } from '@react-navigation/stack';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 import colors from '../theme/colors';
+import { useTranslation } from '../i18n/LanguageProvider';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type RootStackParamList = {
     Login: undefined;
@@ -22,6 +18,7 @@ type Props = {
 
 const TermsConditionScreen: React.FC<Props> = ({ navigation }) => {
     const [accepted, setAccepted] = useState(false);
+    const { t } = useTranslation();
 
     const handleLogin = async () => {
         await AsyncStorage.setItem('hasSeenSlides', 'true');
@@ -36,46 +33,32 @@ const TermsConditionScreen: React.FC<Props> = ({ navigation }) => {
     return (
         <SafeAreaWrapper>
             <View style={styles.container}>
-                <Text style={styles.header}>Terms & Conditions</Text>
+                <View style={styles.languageRow}>
+                    <LanguageSwitcher />
+                </View>
+
+                <Text style={styles.header}>{t('terms.title')}</Text>
 
                 <ScrollView
                     style={styles.content}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text style={styles.text}>
-                        Welcome to our milk delivery service. By using this app, you agree
-                        to the following terms and conditions:
-                    </Text>
+                    <Text style={styles.text}>{t('terms.intro')}</Text>
 
-                    <Text style={styles.text}>
-                        • Milk availability depends on vendor supply and local conditions.{"\n"}
-                        • Delivery timings may vary due to weather, traffic, or operational issues.{"\n"}
-                        • Users must ensure availability at the delivery address to receive orders.{"\n"}
-                        • Payments should be made on time to avoid service interruption.{"\n"}
-                        • Prices may change based on market conditions or vendor updates.{"\n"}
-                        • Extra milk requests are subject to vendor approval and availability.{"\n"}
-                        • Leave requests must be submitted in advance through the app.{"\n"}
-                        • The company is not responsible for delays caused by unforeseen events.{"\n"}
-                        • User data is securely stored and will not be shared without consent.
-                    </Text>
+                    <Text style={styles.text}>{t('terms.points')}</Text>
 
-                    {/* Checkbox appears immediately after last line */}
                     <View style={styles.checkboxRow}>
                         <CheckBox
                             value={accepted}
                             onValueChange={setAccepted}
                             tintColors={{ true: colors.primary, false: '#aaa' }}
                         />
-                        <Text style={styles.checkboxText}>
-                            I agree to the Terms & Conditions
-                        </Text>
+                        <Text style={styles.checkboxText}>{t('terms.accept')}</Text>
                     </View>
 
-
-                    {/* Button does NOT push content */}
                     {accepted && (
                         <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-                            <Text style={styles.loginText}>Login</Text>
+                            <Text style={styles.loginText}>{t('common.login')}</Text>
                         </TouchableOpacity>
                     )}
                 </ScrollView>
@@ -91,6 +74,10 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 30,
         backgroundColor: colors.white,
+    },
+    languageRow: {
+        alignItems: 'flex-end',
+        marginBottom: 12,
     },
     header: {
         fontSize: 22,
@@ -112,9 +99,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 12,
-        paddingBottom: 20, // gives breathing space instead of marginBottom 100
+        paddingBottom: 20,
     },
     checkboxText: {
+        flex: 1,
         fontSize: 15,
         color: '#333',
     },

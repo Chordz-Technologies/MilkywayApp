@@ -1,13 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  loginVendor,
-  refreshTokenAPI,
-  registerVendorAPI,
-  addCustomerRegistration,
-  addDistributorRegistration,
-  logoutUser,
-} from '../apiServices/allApi';
+import { loginVendor, refreshTokenAPI, registerVendorAPI, addCustomerRegistration, addDistributorRegistration, logoutUser, } from '../apiServices/allApi';
 import { clearAuthStorage, isTokenExpired } from '../utils/auth';
 
 interface User {

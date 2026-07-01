@@ -1,27 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  RefreshControl,
-  BackHandler,
-  Animated,
-  Platform,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, RefreshControl, BackHandler, Animated, Platform, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import {
-  getVendorPendingRequests,
-  acceptRequest,
-  rejectRequest,
-} from '../apiServices/allApi';
+import { getVendorPendingRequests, acceptRequest, rejectRequest, } from '../apiServices/allApi';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 type Request = {
   id: number;
@@ -150,23 +135,25 @@ const AnimatedRequestItem = React.memo(({
     ]).start();
   }, [scaleValue]);
 
+  const { t } = useTranslation();
+
   const getDisplayName = useCallback(() => {
-    let displayName = item.name || 'Unknown';
+    let displayName = item.name || t('requests.unknown');
 
     if (item.user_type === 'customer' && item.customer) {
       const firstName = item.customer.first_name || '';
       const lastName = item.customer.last_name || '';
       displayName = `${firstName} ${lastName}`.trim();
     } else if (item.user_type === 'milkman' && item.milkman) {
-      displayName = item.milkman.full_name || 'Unknown Distributor';
+      displayName = item.milkman.full_name || t('requests.unknownDistributor');
     }
 
     return displayName;
-  }, [item]);
+  }, [item, t]);
 
   const displayName = getDisplayName();
   const contactInfo = item.user_contact;
-  const roleText = item.user_type === 'customer' ? 'Consumer' : 'Distributor';
+  const roleText = item.user_type === 'customer' ? t('requests.consumer') : t('requests.distributor');
   const isPending = ['pending', 'requested', 'waiting'].includes(item.status?.toLowerCase());
 
   const translateY = slideValue.interpolate({
@@ -208,7 +195,7 @@ const AnimatedRequestItem = React.memo(({
         <View style={styles.statusBadge}>
           <Ionicons name="time-outline" size={14} color={getStatusColor(item.status)} />
           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {(item.status || 'pending').toUpperCase()}
+            {t(`requests.${(item.status || 'pending').toLowerCase()}`)}
           </Text>
         </View>
       </View>
@@ -241,7 +228,7 @@ const AnimatedRequestItem = React.memo(({
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.acceptButtonText}>Accept</Text>
+                <Text style={styles.acceptButtonText}>{t('requests.accept')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -257,7 +244,7 @@ const AnimatedRequestItem = React.memo(({
             ) : (
               <>
                 <Ionicons name="close-circle-outline" size={20} color="#FF3B30" />
-                <Text style={styles.rejectButtonText}>Reject</Text>
+                <Text style={styles.rejectButtonText}>{t('requests.reject')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -285,13 +272,13 @@ const getStatusColor = (status?: string): string => {
 const PendingRequestsScreen = () => {
   const navigationHook = useNavigation<NavigationProp>();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [processingRequestId, setProcessingRequestId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rejectingRequestId, setRejectingRequestId] = useState<number | null>(null);
+  const { t } = useTranslation();
 
   // Animation values
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -352,13 +339,10 @@ const PendingRequestsScreen = () => {
         const vendorId = user?.userID;
 
         if (!vendorId) {
-          throw new Error('Vendor ID not found. Please log in again.');
+          throw new Error(t('requests.vendorNotFound'));
         }
 
-        console.log(`Attempt ${retryCount + 1}: Fetching requests for vendor ID:`, vendorId);
-
         const response = await getVendorPendingRequests(vendorId);
-        console.log('✅ Pending requests API success:', response.data);
 
         const data = response.data?.data || response.data || [];
 
@@ -379,15 +363,14 @@ const PendingRequestsScreen = () => {
 
       } catch (err: any) {
         retryCount++;
-        console.error(`❌ Attempt ${retryCount} failed:`, err);
 
         if (retryCount >= maxRetries) {
-          let errorMessage = 'Failed to load requests.';
+          let errorMessage = t('requests.failedToLoad');
 
           if (err.response?.status === 500) {
-            errorMessage = 'Server error. Please try again later.';
+            errorMessage = t('requests.serverError');
           } else if (err.response?.status === 401) {
-            errorMessage = 'Authentication failed. Please log in again.';
+            errorMessage = t('requests.authenticationFailed');
           } else if (err.message) {
             errorMessage = err.message;
           }
@@ -415,18 +398,19 @@ const PendingRequestsScreen = () => {
 
   // Helper function to get display name
   const getRequestDisplayName = useCallback((item: Request) => {
-    let displayName = item.name || 'Unknown';
+    let displayName = item.name || t('requests.unknown');
 
     if (item.user_type === 'customer' && item.customer) {
       const firstName = item.customer.first_name || '';
       const lastName = item.customer.last_name || '';
       displayName = `${firstName} ${lastName}`.trim();
     } else if (item.user_type === 'milkman' && item.milkman) {
-      displayName = item.milkman.full_name || 'Unknown Distributor';
+      item.milkman.full_name || t('requests.unknownDistributor');
     }
 
     return displayName;
-  }, []);
+  }, [t]);
+
   // In PendingRequestsScreen.tsx, update the navigation call:
   const handleRequestAction = useCallback(async (
     requestId: number,
@@ -449,28 +433,28 @@ const PendingRequestsScreen = () => {
 
         if (acceptedRequest && acceptedRequest.user_type === 'customer') {
           Alert.alert(
-            'Consumer Request Accepted',
-            `Consumer ${getRequestDisplayName(acceptedRequest)} has been accepted. Please assign a distributor.`,
+            t('requests.consumerRequestAccepted'),
+            t('requests.consumerAcceptedMessage', {
+              name: getRequestDisplayName(acceptedRequest),
+            }),
             [
               {
-                text: 'Assign Distributor',
+                text: t('requests.assignDistributor'),
                 onPress: () => {
-                  // Remove the callback function from navigation params
                   navigationHook.navigate('AssignDistributor', {
                     consumer: acceptedRequest,
-                    // Remove onAssignmentComplete from here
                   });
                 },
               },
             ]
           );
         } else {
-          Alert.alert('Success', 'Request successfully accepted.');
+          Alert.alert(t('common.success'), t('requests.requestAccepted'));
           setTimeout(() => fetchRequests(), 1000);
         }
       } else {
         await rejectRequest(requestId.toString());
-        Alert.alert('Success', 'Request successfully rejected.');
+        Alert.alert(t('common.success'), t('requests.requestRejected'));
         setTimeout(() => fetchRequests(), 1000);
       }
 
@@ -479,8 +463,12 @@ const PendingRequestsScreen = () => {
       const errorMessage = err.response?.data?.detail ||
         err.response?.data?.message ||
         err.message ||
-        `Failed to ${action === 'accepted' ? 'accept' : 'reject'} request.`;
-      Alert.alert('Error', errorMessage);
+        t(
+          action === 'accepted'
+            ? 'requests.failedAcceptRequest'
+            : 'requests.failedRejectRequest'
+        );
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setProcessingRequestId(null);
       setRejectingRequestId(null);
@@ -506,13 +494,13 @@ const PendingRequestsScreen = () => {
       <View style={styles.emptyIconContainer}>
         <Ionicons name="notifications-off-outline" size={80} color="#E5E5EA" />
       </View>
-      <Text style={styles.emptyTitle}>No Pending Requests</Text>
+      <Text style={styles.emptyTitle}>{t('requests.noPendingRequests')}</Text>
       <Text style={styles.emptyText}>
-        Great! You're all caught up. No requests are waiting for your approval.
+        {t('requests.allCaughtUp')}
       </Text>
       <TouchableOpacity onPress={fetchRequests} style={styles.refreshButton}>
         <Ionicons name="refresh-outline" size={20} color="#fff" />
-        <Text style={styles.refreshButtonText}>Check Again</Text>
+        <Text style={styles.refreshButtonText}>{t('requests.checkAgain')}</Text>
       </TouchableOpacity>
     </View>
   ), [fetchRequests]);
@@ -521,7 +509,7 @@ const PendingRequestsScreen = () => {
     return (
       <View style={[styles.container, styles.centerContainer]}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading vendor requests...</Text>
+        <Text style={styles.loadingText}>{t('requests.loadingVendorRequests')}</Text>
       </View>
     );
   }
@@ -536,8 +524,8 @@ const PendingRequestsScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Pending Requests</Text>
-            <Text style={styles.headerSubtitle}>Requests from consumers and distributors</Text>
+            <Text style={styles.headerTitle}>{t('requests.pendingRequests')}</Text>
+            <Text style={styles.headerSubtitle}>{t('requests.requestsSubtitle')}</Text>
           </View>
         </Animated.View>
 
@@ -550,7 +538,7 @@ const PendingRequestsScreen = () => {
             </View>
             <TouchableOpacity onPress={fetchRequests} style={styles.retryButton}>
               <Ionicons name="refresh" size={16} color="#fff" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
             </TouchableOpacity>
           </View>
         )}

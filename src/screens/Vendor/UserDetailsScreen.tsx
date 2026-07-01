@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  getConsumerDetailsById,
-  getDistributorDetailsById,
-  getDistributorAssignedConsumers,
-} from '../../apiServices/allApi';
+import { getConsumerDetailsById, getDistributorDetailsById, getDistributorAssignedConsumers, } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type UserDetailsParams = {
   userId: number;
@@ -38,6 +27,7 @@ const UserDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation<NavigationProp>();
   const params = route.params as UserDetailsParams;
+  const { t } = useTranslation();
 
   const [userData, setUserData] = useState<any>(null);
   const [assignedConsumers, setAssignedConsumers] = useState<AssignedConsumer[]>([]);
@@ -49,12 +39,11 @@ const UserDetailsScreen = () => {
     setLoadingConsumers(true);
     try {
       const response = await getDistributorAssignedConsumers(params.userId);
-      console.log('Assigned consumers response:', JSON.stringify(response.data, null, 2));
 
       const consumers = response?.data?.data?.customers || [];
       setAssignedConsumers(Array.isArray(consumers) ? consumers : []);
     } catch (err: any) {
-      console.error('Error fetching assigned consumers:', err);
+      console.log('Error fetching assigned consumers:', err);
       setAssignedConsumers([]);
     } finally {
       setLoadingConsumers(false);
@@ -73,7 +62,6 @@ const UserDetailsScreen = () => {
       }
 
       const data = response?.data?.data || response?.data;
-      console.log('User details response:', JSON.stringify(data, null, 2));
       setUserData(data);
 
       // If distributor, fetch assigned consumers
@@ -81,12 +69,12 @@ const UserDetailsScreen = () => {
         fetchAssignedConsumers();
       }
     } catch (err: any) {
-      console.error('Error fetching user details:', err);
-      setError(err?.message || 'Failed to load user details');
+      console.log('Error fetching user details:', err);
+      setError(err?.message || t('userDetails.failedToLoadUserDetails'));
     } finally {
       setLoading(false);
     }
-  }, [params.userId, params.userType, fetchAssignedConsumers]);
+  }, [params.userId, params.userType, fetchAssignedConsumers, t]);
 
   useEffect(() => {
     fetchUserDetails();
@@ -96,7 +84,6 @@ const UserDetailsScreen = () => {
   const handleNavigateToCalendar = useCallback(() => {
     try {
       if (params.userType === 'consumer') {
-        console.log('📅 Navigating to Consumer Calendar');
         navigation.navigate('ConsumerCalendar', {
           viewerRole: 'vendor',
           targetConsumerId: params.userId,
@@ -104,7 +91,6 @@ const UserDetailsScreen = () => {
           showBackButton: true,
         });
       } else {
-        console.log('📅 Navigating to Distributor Calendar');
         navigation.navigate('VendorDistributorCalendar', {
           viewerRole: 'vendor',
           targetDistributorId: params.userId,
@@ -113,7 +99,7 @@ const UserDetailsScreen = () => {
         });
       }
     } catch (navError) {
-      console.error('Navigation error:', navError);
+      console.log('Navigation error:', navError);
     }
   }, [params.userType, params.userId, params.userName, navigation]);
 
@@ -127,7 +113,7 @@ const UserDetailsScreen = () => {
   };
 
   const formatAddress = () => {
-    if (!userData) { return 'No address provided'; }
+    if (!userData) { return t('userDetails.noAddressProvided'); }
 
     const parts = [
       userData.flat_house,
@@ -139,14 +125,14 @@ const UserDetailsScreen = () => {
       userData.pincode,
     ].filter(Boolean);
 
-    return parts.join(', ') || 'No address provided';
+    return parts.join(', ') || t('userDetails.noAddressProvided');
   };
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading details...</Text>
+        <Text style={styles.loadingText}>{t('userDetails.loadingDetails')}</Text>
       </View>
     );
   }
@@ -157,7 +143,7 @@ const UserDetailsScreen = () => {
         <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={fetchUserDetails} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
+          <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -167,19 +153,19 @@ const UserDetailsScreen = () => {
     userData?.contact ||
     userData?.phone ||
     userData?.mobile ||
-    'Not provided';
+    t('userDetails.notProvided');
 
   const email = userData?.email ||
     userData?.email_address ||
     userData?.user_email ||
-    'Not provided';
+    t('userDetails.notProvided');
 
   const fullName = params.userName ||
     userData?.full_name ||
     userData?.name ||
     (userData?.first_name && userData?.last_name
       ? `${userData.first_name} ${userData.last_name}`
-      : 'Unknown User');
+      : t('userDetails.unknownUser'));
 
   const hasEmail = userData?.email || userData?.email_address || userData?.user_email;
 
@@ -195,7 +181,7 @@ const UserDetailsScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {params.userType === 'consumer' ? 'Consumer Details' : 'Distributor Details'}
+            {params.userType === 'consumer' ? t('userDetails.consumerDetails') : t('userDetails.distributorDetails')}
           </Text>
 
           {/* Calendar Icon in Header */}
@@ -218,7 +204,7 @@ const UserDetailsScreen = () => {
             <Text style={styles.userName}>{fullName}</Text>
             <View style={styles.userTypeBadge}>
               <Text style={styles.userTypeText}>
-                {params.userType === 'consumer' ? 'Consumer' : 'Distributor'}
+                {params.userType === 'consumer' ? t('userDetails.consumer') : t('userDetails.distributor')}
               </Text>
             </View>
           </View>
@@ -234,11 +220,10 @@ const UserDetailsScreen = () => {
                 <Ionicons name="calendar" size={32} color="#007AFF" />
               </View>
               <View style={styles.calendarContent}>
-                <Text style={styles.calendarTitle}>View Calendar</Text>
+                <Text style={styles.calendarTitle}>{t('userDetails.viewCalendar')}</Text>
                 <Text style={styles.calendarSubtitle}>
                   {params.userType === 'consumer'
-                    ? 'View delivery schedule and history'
-                    : 'View distributor schedule and deliveries'}
+                    ? t('userDetails.consumerCalendarSubtitle') : t('userDetails.distributorCalendarSubtitle')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#007AFF" />
@@ -247,7 +232,7 @@ const UserDetailsScreen = () => {
 
           {/* Contact Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact Information</Text>
+            <Text style={styles.sectionTitle}>{t('userDetails.contactInformation')}</Text>
 
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
@@ -255,7 +240,7 @@ const UserDetailsScreen = () => {
                   <Ionicons name="call-outline" size={20} color="#007AFF" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Phone Number</Text>
+                  <Text style={styles.infoLabel}>{t('userDetails.phoneNumber')}</Text>
                   <Text style={styles.infoValue}>{phoneNumber}</Text>
                 </View>
               </View>
@@ -268,7 +253,7 @@ const UserDetailsScreen = () => {
                       <Ionicons name="mail-outline" size={20} color="#007AFF" />
                     </View>
                     <View style={styles.infoContent}>
-                      <Text style={styles.infoLabel}>Email</Text>
+                      <Text style={styles.infoLabel}>{t('userDetails.email')}</Text>
                       <Text style={styles.infoValue}>{email}</Text>
                     </View>
                   </View>
@@ -279,7 +264,7 @@ const UserDetailsScreen = () => {
 
           {/* Address Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Address</Text>
+            <Text style={styles.sectionTitle}>{t('userDetails.address')}</Text>
 
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
@@ -287,7 +272,7 @@ const UserDetailsScreen = () => {
                   <Ionicons name="location-outline" size={20} color="#007AFF" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Full Address</Text>
+                  <Text style={styles.infoLabel}>{t('userDetails.fullAddress')}</Text>
                   <Text style={styles.infoValue}>{formatAddress()}</Text>
                 </View>
               </View>
@@ -297,7 +282,7 @@ const UserDetailsScreen = () => {
           {/* Work Details for Distributor */}
           {params.userType === 'distributor' && userData?.assigned_customers_count !== undefined && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Work Summary</Text>
+              <Text style={styles.sectionTitle}>{t('userDetails.workSummary')}</Text>
 
               <View style={styles.infoCard}>
                 <View style={styles.infoRow}>
@@ -305,9 +290,9 @@ const UserDetailsScreen = () => {
                     <Ionicons name="people-outline" size={20} color="#007AFF" />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Total Assigned Consumers</Text>
+                    <Text style={styles.infoLabel}>{t('userDetails.totalAssignedConsumers')}</Text>
                     <Text style={styles.infoValue}>
-                      {userData.assigned_customers_count} consumers
+                      {userData.assigned_customers_count} {t('userDetails.consumers')}
                     </Text>
                   </View>
                 </View>
@@ -319,7 +304,7 @@ const UserDetailsScreen = () => {
           {params.userType === 'distributor' && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Assigned Consumers</Text>
+                <Text style={styles.sectionTitle}>{t('userDetails.assignedConsumers')}</Text>
                 {loadingConsumers && (
                   <ActivityIndicator size="small" color="#007AFF" />
                 )}
@@ -328,7 +313,7 @@ const UserDetailsScreen = () => {
               {loadingConsumers ? (
                 <View style={styles.loadingConsumersContainer}>
                   <ActivityIndicator size="small" color="#007AFF" />
-                  <Text style={styles.loadingConsumersText}>Loading consumers...</Text>
+                  <Text style={styles.loadingConsumersText}>{t('userDetails.loadingConsumers')}</Text>
                 </View>
               ) : assignedConsumers.length > 0 ? (
                 <View style={styles.consumerListCard}>
@@ -342,10 +327,10 @@ const UserDetailsScreen = () => {
                         </View>
                         <View style={styles.consumerInfo}>
                           <Text style={styles.consumerName}>
-                            {consumer.customer_name || 'Unknown Consumer'}
+                            {consumer.customer_name || t('userDetails.unknownConsumer')}
                           </Text>
                           <Text style={styles.consumerContact}>
-                            {consumer.customer_contact || 'No contact'}
+                            {consumer.customer_contact || t('userDetails.noContact')}
                           </Text>
                         </View>
                         <View style={styles.consumerStatus}>
@@ -362,7 +347,7 @@ const UserDetailsScreen = () => {
               ) : (
                 <View style={styles.emptyConsumersCard}>
                   <Ionicons name="people-outline" size={48} color="#ccc" />
-                  <Text style={styles.emptyConsumersText}>No consumers assigned yet</Text>
+                  <Text style={styles.emptyConsumersText}>{t('userDetails.noConsumersAssigned')}</Text>
                 </View>
               )}
             </View>
@@ -370,7 +355,7 @@ const UserDetailsScreen = () => {
 
           {/* Account Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account Information</Text>
+            <Text style={styles.sectionTitle}>{t('userDetails.accountInformation')}</Text>
 
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
@@ -378,7 +363,7 @@ const UserDetailsScreen = () => {
                   <Ionicons name="person-outline" size={20} color="#007AFF" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>User ID</Text>
+                  <Text style={styles.infoLabel}>{t('userDetails.userId')}</Text>
                   <Text style={styles.infoValue}>{params.userId}</Text>
                 </View>
               </View>
@@ -391,7 +376,7 @@ const UserDetailsScreen = () => {
                       <Ionicons name="business-outline" size={20} color="#007AFF" />
                     </View>
                     <View style={styles.infoContent}>
-                      <Text style={styles.infoLabel}>Provider ID</Text>
+                      <Text style={styles.infoLabel}>{t('userDetails.providerId')}</Text>
                       <Text style={styles.infoValue}>{userData.provider}</Text>
                     </View>
                   </View>
@@ -405,8 +390,8 @@ const UserDetailsScreen = () => {
                   <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Status</Text>
-                  <Text style={[styles.infoValue, { color: '#34C759' }]}>Active</Text>
+                  <Text style={styles.infoLabel}>{t('userDetails.status')}</Text>
+                  <Text style={[styles.infoValue, { color: '#34C759' }]}>{t('userDetails.active')}</Text>
                 </View>
               </View>
             </View>

@@ -1,17 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Alert,
-    Image,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Image, } from 'react-native';
 import { styles } from '../styles/VerifyOtpStyle';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 type VerifyOtpRouteProp = RouteProp<RootStackParamList, 'VerifyOtp'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'VerifyOtp'>;
@@ -19,6 +13,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'VerifyOtp'>
 const VerifyOtpScreen = () => {
     const route = useRoute<VerifyOtpRouteProp>();
     const navigation = useNavigation<NavigationProp>();
+    const { t } = useTranslation();
 
     const { mobile } = route.params;
 
@@ -59,7 +54,7 @@ const VerifyOtpScreen = () => {
         const otp = otpBoxes.join('');
 
         if (otp.length !== 6) {
-            Alert.alert('Error', 'Please enter 6-digit OTP');
+            Alert.alert(t('common.error'), t('verifyOtp.enterOtp'));
             return;
         }
 
@@ -74,8 +69,8 @@ const VerifyOtpScreen = () => {
             <View style={styles.container}>
                 <Image source={require('../assets/otplogo.png')} style={styles.logo} />
 
-                <Text style={styles.title}>Verify Your Mobile</Text>
-                <Text style={styles.label}>OTP sent to +91-{mobile}</Text>
+                <Text style={styles.title}>{t('verifyOtp.title')}</Text>
+                <Text style={styles.label}>{t('verifyOtp.sentTo', { mobile })}</Text>
 
                 <View style={styles.otpContainer}>
                     {otpBoxes.map((digit, index) => (
@@ -99,7 +94,7 @@ const VerifyOtpScreen = () => {
                     style={styles.continueBtn}
                     onPress={handleContinue}
                 >
-                    <Text style={styles.btnText}>Continue</Text>
+                    <Text style={styles.btnText}>{t('verifyOtp.continue')}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaWrapper>

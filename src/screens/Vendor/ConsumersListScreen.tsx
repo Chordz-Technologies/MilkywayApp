@@ -1,14 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-    RefreshControl,
-    Alert,
-    Platform,
-} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, Platform, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -16,6 +7,7 @@ import { RootState } from '../../store';
 import { getAcceptedCustomers } from '../../apiServices/allApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
     AllConsumersList: undefined;
@@ -63,6 +55,7 @@ const ConsumersListScreen = () => {
     const { user } = useSelector((state: RootState) => state.auth);
     const [acceptedConsumers, setAcceptedConsumers] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
+    const { t } = useTranslation();
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -81,7 +74,7 @@ const ConsumersListScreen = () => {
         try {
             const vendorId = user?.userID;
             if (!vendorId) {
-                throw new Error('Vendor ID not found');
+                throw new Error(t('consumerList.vendorIdNotFound'));
             }
             const consumerRes = await getAcceptedCustomers(vendorId);
             let consumersData = consumerRes?.data?.data || consumerRes?.data || [];
@@ -94,12 +87,12 @@ const ConsumersListScreen = () => {
                 customer: item.customer_name
                     ? {
                         id: item.customer_id || index + 1,
-                        first_name: item.customer_name?.split(' ')[0] || 'Unknown',
+                        first_name: item.customer_name?.split(' ')[0] || '',
                         last_name: item.customer_name?.split(' ').slice(1).join(' ') || '',
                     }
                     : null,
-                name: item.customer_name || item.name || `Consumer ${index + 1}`,
-                user_contact: item.customer_contact || item.contact || 'No contact',
+                name: item.customer_name || item.name || `${t('login.consumer')} ${index + 1}`,
+                user_contact: item.customer_contact || item.contact || t('consumerList.noContact'),
                 assigned_distributor_name:
                     item.assigned_distributor_name || item.permanent_distributor_name,
                 has_temporary_distributor: item.has_temporary_distributor || false,
@@ -107,7 +100,7 @@ const ConsumersListScreen = () => {
 
             setAcceptedConsumers(mapped);
         } catch (err) {
-            console.error('Error fetching consumers:', err);
+            console.log('Error fetching consumers:', err);
             setAcceptedConsumers([]);
         } finally {
             setRefreshing(false);
@@ -129,7 +122,7 @@ const ConsumersListScreen = () => {
         try {
             const userName = item.customer
                 ? `${item.customer.first_name} ${item.customer.last_name}`.trim()
-                : item.name || 'Unknown Consumer';
+                : item.name || t('consumerList.unknownConsumer');
 
             navigation.navigate('UserDetails', {
                 userId: item.user_id,
@@ -137,7 +130,7 @@ const ConsumersListScreen = () => {
                 userName,
             });
         } catch (err) {
-            Alert.alert('Error', 'Cannot navigate to details');
+            Alert.alert(t('common.error'), t('consumerList.navigationError'));
         }
     };
 
@@ -145,14 +138,14 @@ const ConsumersListScreen = () => {
         try {
             navigation.navigate('TemporaryDistributorAssignment', {
                 consumerId: item.user_id,
-                consumerName: item.name || 'Unknown Consumer',
+                consumerName: item.name || t('consumerList.unknownConsumer'),
                 currentDistributorId: item.assigned_distributor_id,
                 currentDistributorName: item.assigned_distributor_name,
                 isTemporary: item.has_temporary_distributor || false,
             });
         } catch (navError) {
-            console.error('Navigation error:', navError);
-            Alert.alert('Error', 'Cannot navigate to temporary assignment');
+            console.log('Navigation error:', navError);
+            Alert.alert(t('common.error'), t('consumerList.assignmentNavigationError'));
         }
     }, [navigation]);
 
@@ -166,9 +159,9 @@ const ConsumersListScreen = () => {
                     </TouchableOpacity>
 
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>All Consumers</Text>
+                        <Text style={styles.headerTitle}>{t('consumerList.allConsumers')}</Text>
                         <Text style={styles.headerSubtitle}>
-                            View all accepted consumers here
+                            {t('consumerList.allConsumersSubtitle')}
                         </Text>
                     </View>
                 </View>
@@ -178,7 +171,7 @@ const ConsumersListScreen = () => {
                     {acceptedConsumers.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Ionicons name="people-outline" size={48} color="#ccc" />
-                            <Text style={styles.emptyText}>No accepted consumers found.</Text>
+                            <Text style={styles.emptyText}>{t('consumerList.noAcceptedConsumers')}</Text>
                         </View>
                     ) : (
                         <FlatList
@@ -211,7 +204,7 @@ const ConsumersListScreen = () => {
                                                 <Text style={styles.contact}>{item.user_contact}</Text>
                                                 {item.assigned_distributor_name && (
                                                     <Text style={styles.assigned}>
-                                                        Assigned: {item.assigned_distributor_name}
+                                                        {t('consumerList.assignedDistributor')}: {item.assigned_distributor_name}
                                                     </Text>
                                                 )}
                                             </View>

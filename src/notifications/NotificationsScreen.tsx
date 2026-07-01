@@ -3,8 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from "
 import Icon from "react-native-vector-icons/MaterialIcons";
 import notifee from "@notifee/react-native";
 import { getNotifications, clearNotifications, markAllAsRead } from "../notifications/NotificationService";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"; 
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 type RootStackParamList = {
     Notifications: undefined;
@@ -21,6 +22,7 @@ interface NotificationItem {
 
 const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const { t } = useTranslation();
 
     const loadNotifications = async () => {
         const data: NotificationItem[] = await getNotifications();
@@ -63,8 +65,8 @@ const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
 
                     {/* Title */}
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Notifications</Text>
-                        <Text style={styles.headerSubtitle}>Your recent updates</Text>
+                        <Text style={styles.headerTitle}>{t('notification.title')}</Text>
+                        <Text style={styles.headerSubtitle}>{t('notification.subtitle')}</Text>
                     </View>
 
                     {/* Clear All */}
@@ -76,13 +78,13 @@ const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
                         }}
                         style={styles.clearButton}
                     >
-                        <Text style={styles.clearBtn}>Clear All</Text>
+                        <Text style={styles.clearBtn}>{t('notification.clearAll')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.content}>
                     {notifications.length === 0 ? (
-                        <Text style={styles.empty}>No notifications yet</Text>
+                        <Text style={styles.empty}>{t('notification.noNotifications')}</Text>
                     ) : (
                         notifications.map((item) => (
                             <View key={item.id} style={styles.card}>

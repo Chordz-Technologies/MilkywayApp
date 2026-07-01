@@ -1,11 +1,5 @@
 import React, { ReactNode } from 'react';
-import {
-    SafeAreaView,
-    StatusBar,
-    Platform,
-    StyleSheet,
-    View,
-} from 'react-native';
+import { SafeAreaView, StatusBar, Platform, StyleSheet, View, } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface SafeAreaWrapperProps {

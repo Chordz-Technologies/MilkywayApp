@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from '../i18n/LanguageProvider';
 import ConsumerCalendarScreen from '../screens/Consumer/ConsumerCalendorScreen';
 import CustomerHomeScreen from '../screens/Consumer/ConsumerHomeScreen';
 import ConsumerProfileScreen from '../screens/Consumer/ConsumerProfileScreen';
@@ -40,7 +41,23 @@ const getTabBarIcon = (routeName: keyof ConsumerTabParamList, focused: boolean, 
 };
 
 export default function ConsumerTabs() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+
+  const getTabLabel = (routeName: keyof ConsumerTabParamList) => {
+    switch (routeName) {
+      case 'Calendar':
+        return t('consumer.calendar');
+      case 'Vendors':
+        return t('consumer.vendors');
+      case 'Payment':
+        return t('common.payment');
+      case 'Profile':
+        return t('consumer.profile');
+      default:
+        return routeName;
+    }
+  };
 
   return (
     <Tab.Navigator
@@ -61,30 +78,26 @@ export default function ConsumerTabs() {
           fontSize: 12,
           fontWeight: '500',
         },
-        //  Use the external function
         tabBarIcon: ({ color, size, focused }) =>
           getTabBarIcon(route.name, focused, color, size),
+        tabBarLabel: getTabLabel(route.name),
       })}
     >
       <Tab.Screen
         name="Calendar"
         component={ConsumerCalendarScreen}
-        options={{ tabBarLabel: 'Calendar' }}
       />
       <Tab.Screen
         name="Vendors"
         component={CustomerHomeScreen}
-        options={{ tabBarLabel: 'Vendors' }}
       />
       <Tab.Screen
         name="Payment"
         component={ConsumerSubscriptionScreen}
-        options={{ tabBarLabel: 'Payment' }}
       />
       <Tab.Screen
         name="Profile"
         component={ConsumerProfileScreen}
-        options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
   );

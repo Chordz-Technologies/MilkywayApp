@@ -1,4 +1,3 @@
-
 import { StyleSheet, Dimensions } from 'react-native';
 import { Theme } from 'react-native-calendars/src/types';
 

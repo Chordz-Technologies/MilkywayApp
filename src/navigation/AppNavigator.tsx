@@ -67,9 +67,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
 
         {/* Vendor Profile Screen */}
-        <Stack.Screen
-          name="VendorProfile"
-          component={VendorProfileScreen}
+        <Stack.Screen name="VendorProfile" component={VendorProfileScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -80,9 +78,7 @@ const AppNavigator = () => {
         {/* Other screens */}
         <Stack.Screen name="PendingRequests" component={PendingRequestsScreen} />
         <Stack.Screen name="AssignDistributor" component={AssignDistributorScreen} />
-        <Stack.Screen
-          name="AllConsumersList"
-          component={ConsumerListScreen}
+        <Stack.Screen name="AllConsumersList" component={ConsumerListScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -90,9 +86,7 @@ const AppNavigator = () => {
           }}
         />
 
-        <Stack.Screen
-          name="DistributorsList"
-          component={DistributorsListScreen}
+        <Stack.Screen name="DistributorsList" component={DistributorsListScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -101,9 +95,7 @@ const AppNavigator = () => {
         />
 
         {/* NEW: Vendor Consumer Requests Screen - Extra milk when distributor on leave */}
-        <Stack.Screen
-          name="VendorConsumerRequests"
-          component={VendorConsumerRequestsScreen}
+        <Stack.Screen name="VendorConsumerRequests" component={VendorConsumerRequestsScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -112,9 +104,7 @@ const AppNavigator = () => {
         />
 
         {/* NEW: Vendor Distributor Leave Screen - Manage distributor leave requests */}
-        <Stack.Screen
-          name="VendorDistributorLeave"
-          component={VendorDistributorLeaveScreen}
+        <Stack.Screen name="VendorDistributorLeave" component={VendorDistributorLeaveScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -122,9 +112,7 @@ const AppNavigator = () => {
           }}
         />
 
-        <Stack.Screen
-          name="VendorSubscription"
-          component={VendorSubscriptionScreen}
+        <Stack.Screen name="VendorSubscription" component={VendorSubscriptionScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -132,9 +120,7 @@ const AppNavigator = () => {
           }}
         />
 
-        <Stack.Screen
-          name="ConsumerCalendar"
-          component={ConsumerCalendarScreen}
+        <Stack.Screen name="ConsumerCalendar" component={ConsumerCalendarScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -142,9 +128,7 @@ const AppNavigator = () => {
           }}
         />
 
-        <Stack.Screen
-          name="DistributorConsumerCalendar"
-          component={ConsumerCalendarScreen}
+        <Stack.Screen name="DistributorConsumerCalendar" component={ConsumerCalendarScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -152,9 +136,7 @@ const AppNavigator = () => {
           }}
         />
 
-        <Stack.Screen
-          name="VendorDistributorCalendar"
-          component={DistributorCalendar}
+        <Stack.Screen name="VendorDistributorCalendar" component={DistributorCalendar}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -163,9 +145,7 @@ const AppNavigator = () => {
         />
 
         {/* User Details screen */}
-        <Stack.Screen
-          name="UserDetails"
-          component={UserDetailsScreen}
+        <Stack.Screen name="UserDetails" component={UserDetailsScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -174,9 +154,7 @@ const AppNavigator = () => {
         />
 
         {/* Temporary Distributor Assignment screen */}
-        <Stack.Screen
-          name="TemporaryDistributorAssignment"
-          component={TemporaryDistributorAssignmentScreen}
+        <Stack.Screen name="TemporaryDistributorAssignment" component={TemporaryDistributorAssignmentScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -185,9 +163,7 @@ const AppNavigator = () => {
         />
 
         {/* Assign distributor for extra milk request screen */}
-        <Stack.Screen
-          name="MilkRequestDistributorAssign"
-          component={MilkRequestDistributorAssignScreen}
+        <Stack.Screen name="MilkRequestDistributorAssign" component={MilkRequestDistributorAssignScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -196,9 +172,7 @@ const AppNavigator = () => {
         />
 
         {/* Extra Milk List for Distributor */}
-        <Stack.Screen
-          name="ExtraMilkList"
-          component={ExtraMilkListScreen}
+        <Stack.Screen name="ExtraMilkList" component={ExtraMilkListScreen}
           options={{
             headerShown: false,
             gestureEnabled: true,

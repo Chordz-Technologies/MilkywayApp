@@ -1,16 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  Platform,
-  TextInput
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Platform, TextInput } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +7,7 @@ import { getDistributorLeaveRequestsForVendor, manageDistributorLeave } from '..
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
   VendorDistributorLeave: undefined;
@@ -59,6 +49,7 @@ const VendorDistributorLeaveScreen = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRejectId, setSelectedRejectId] = useState<number | null>(null);
+  const { t } = useTranslation();
 
   // Group consecutive leaves per milkman
   const groupConsecutiveLeaves = (leaves: LeaveRequest[]): GroupedLeaveRequest[] => {
@@ -93,7 +84,7 @@ const VendorDistributorLeaveScreen = () => {
   const fetchRequests = useCallback(async () => {
     try {
       const vendorId = user?.userID;
-      if (!vendorId) throw new Error('Vendor ID not found');
+      if (!vendorId) throw new Error(t('vendorLeave.vendorIdNotFound'));
 
       setIsLoading(true);
       const response = await getDistributorLeaveRequestsForVendor(vendorId);
@@ -104,10 +95,10 @@ const VendorDistributorLeaveScreen = () => {
           id: item.id || item.request_id || index,
           request_id: item.request_id || item.id || index,
           milkman_id: item.milkman_id || item.distributor_id || 0,
-          milkman_name: item.milkman_name || item.distributor_name || 'Unknown Distributor',
+          milkman_name: item.milkman_name || item.distributor_name || t('vendorLeave.unknownDistributor'),
           milkman_contact: item.milkman_contact || item.contact,
           date: item.start_date || new Date().toISOString().split('T')[0],
-          reason: item.reason || 'No reason provided',
+          reason: item.reason || t('vendorLeave.noReasonProvided'),
           status: item.status || 'pending',
           created_at: item.created_at || new Date().toISOString(),
         }))
@@ -116,8 +107,7 @@ const VendorDistributorLeaveScreen = () => {
       const pendingLeaves = formattedRequests.filter((req) => req.status === 'pending');
       setGroupedRequests(groupConsecutiveLeaves(pendingLeaves));
     } catch (error: any) {
-      console.error('Error fetching distributor leave requests:', error);
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to load leave requests');
+      Alert.alert(t('common.error'), error?.response?.data?.message || t('vendorLeave.failedToLoadRequests'));
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -136,54 +126,59 @@ const VendorDistributorLeaveScreen = () => {
   }, [fetchRequests]);
 
   const handleManageLeave = async (milkman_id: number, leaves: { date: string; request_id: number }[], action: 'approve' | 'reject') => {
-    const actionText = action === 'approve' ? 'Approve' : 'Reject';
+    const actionText = action === 'approve' ? t('vendorLeave.approve') : t('vendorLeave.reject');
 
     Alert.alert(
-      `${actionText} Leave`,
-      `Are you sure you want to ${action} leave for ${leaves.length} day(s)?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: actionText,
-          style: action === 'reject' ? 'destructive' : 'default',
-          onPress: async () => {
-            try {
-              const cardKey = `${milkman_id}_${leaves.map(l => l.date).join('-')}`;
-              setProcessingState({ key: cardKey, action });
+      action === 'approve' ? t('vendorLeave.approveLeave') : t('vendorLeave.rejectLeave'),
+      action === 'approve' ? t('vendorLeave.confirmApprove', { days: leaves.length, })
+        : t('vendorLeave.confirmReject', { days: leaves.length, }),
+      [{
+        text: t('common.cancel'),
+        style: 'cancel',
+      },
+      {
+        text: actionText,
+        style: action === 'reject' ? 'destructive' : 'default',
+        onPress: async () => {
+          try {
+            const cardKey = `${milkman_id}_${leaves.map(l => l.date).join('-')}`;
+            setProcessingState({ key: cardKey, action });
 
-              for (const leave of leaves) {
-                const payload = {
-                  milkman_id,
-                  leave_request_id: leave.request_id, // ✅ dynamic now
-                  action,
-                };
-                console.log('📦 Sending payload:', payload);
-                await manageDistributorLeave(payload);
-              }
-
-              Alert.alert('Success', `Leave request ${action}d successfully!`, [
-                { text: 'OK', onPress: () => fetchRequests() },
-              ]);
-            } catch (error: any) {
-              console.error(`Error ${action}ing leave:`, error);
-              Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} leave request`);
-            } finally {
-              setProcessingState({ key: null, action: null });
+            for (const leave of leaves) {
+              const payload = {
+                milkman_id,
+                leave_request_id: leave.request_id, // ✅ dynamic now
+                action,
+              };
+              await manageDistributorLeave(payload);
             }
-          },
+
+            Alert.alert(
+              t('common.success'),
+              action === 'approve' ? t('vendorLeave.leaveApproved') : t('vendorLeave.leaveRejected'),
+              [{
+                text: 'OK', onPress: () => fetchRequests()
+              },]);
+          } catch (error: any) {
+            Alert.alert(t('common.error'), error?.response?.data?.message ||
+              (action === 'approve' ? t('vendorLeave.failedApprove') : t('vendorLeave.failedReject')));
+          } finally {
+            setProcessingState({ key: null, action: null });
+          }
         },
+      },
       ]
     );
   };
 
   const submitRejectReason = async () => {
     if (!rejectReason.trim()) {
-      Alert.alert("Reason Required", "Please enter a reason for rejecting the request.");
+      Alert.alert(t('vendorLeave.reasonRequired'), t('vendorLeave.enterRejectReason'));
       return;
     }
 
     if (selectedRejectId == null) {
-      Alert.alert("Error", "No request selected to reject.");
+      Alert.alert(t('common.error'), t('vendorLeave.noRequestSelected'));
       return;
     }
 
@@ -196,18 +191,15 @@ const VendorDistributorLeaveScreen = () => {
         rejection_reason: rejectReason,
       };
 
-      console.log("📦 Reject Payload:", payload);
-
       await manageDistributorLeave(payload);
 
-      Alert.alert("Success", "Request rejected successfully!");
+      Alert.alert(t('common.success'), t('vendorLeave.requestRejected'));
 
       setShowRejectModal(false);
       setRejectReason("");
       fetchRequests();
     } catch (error: any) {
-      console.error("Reject error:", error);
-      Alert.alert("Error", error?.response?.data?.message || "Failed to reject request");
+      Alert.alert(t('common.error'), error?.response?.data?.message || t('vendorLeave.failedRejectRequest'));
     } finally {
       setProcessingState({ key: null, action: null });
     }
@@ -227,8 +219,8 @@ const VendorDistributorLeaveScreen = () => {
     const isProcessing = processingState.key === cardKey;
     const singleDay = item.leaves.length === 1;
     const dateText = singleDay
-      ? `Leave Date: ${formatDate(item.leaves[0].date)}`
-      : `Leave Date: ${formatDate(item.leaves[0].date)} To ${formatDate(item.leaves[item.leaves.length - 1].date)}`;
+      ? `${t('vendorLeave.leaveDate')}: ${formatDate(item.leaves[0].date)}`
+      : `${t('vendorLeave.leaveDate')}: ${formatDate(item.leaves[0].date)} ${t('common.to')} ${formatDate(item.leaves[item.leaves.length - 1].date)}`;
 
     return (
       <View style={styles.requestCard}>
@@ -244,7 +236,7 @@ const VendorDistributorLeaveScreen = () => {
           </View>
           <View style={styles.statusBadge}>
             <Ionicons name="time-outline" size={14} color="#FF9500" />
-            <Text style={styles.statusText}>PENDING</Text>
+            <Text style={styles.statusText}>{t('vendorLeave.pending')}</Text>
           </View>
         </View>
 
@@ -274,7 +266,7 @@ const VendorDistributorLeaveScreen = () => {
             ) : (
               <>
                 <Ionicons name="close-circle-outline" size={20} color="#FF3B30" />
-                <Text style={styles.rejectButtonText}>Reject</Text>
+                <Text style={styles.rejectButtonText}>{t('vendorLeave.reject')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -290,7 +282,7 @@ const VendorDistributorLeaveScreen = () => {
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.acceptButtonText}>Approve</Text>
+                <Text style={styles.acceptButtonText}>{t('vendorLeave.approve')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -303,7 +295,7 @@ const VendorDistributorLeaveScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF9500" />
-        <Text style={styles.loadingText}>Loading leave requests...</Text>
+        <Text style={styles.loadingText}>{t('vendorLeave.loadingRequests')}</Text>
       </View>
     );
   }
@@ -316,12 +308,12 @@ const VendorDistributorLeaveScreen = () => {
           showRejectModal && (
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Reject Request</Text>
-                <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+                <Text style={styles.modalTitle}>{t('vendorLeave.rejectRequest')}</Text>
+                <Text style={styles.modalSubtitle}>{t('vendorLeave.rejectReasonSubtitle')}</Text>
 
                 <TextInput
                   style={styles.reasonInput}
-                  placeholder="Write reason here..."
+                  placeholder={t('vendorLeave.writeReason')}
                   placeholderTextColor="#999"
                   multiline
                   value={rejectReason}
@@ -336,7 +328,7 @@ const VendorDistributorLeaveScreen = () => {
                       setRejectReason("");
                     }}
                   >
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -346,7 +338,7 @@ const VendorDistributorLeaveScreen = () => {
                     {processingState.action === "reject" ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.submitText}>Submit</Text>
+                      <Text style={styles.submitText}>{t('vendorLeave.submit')}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -359,16 +351,16 @@ const VendorDistributorLeaveScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Distributor Leave</Text>
-            <Text style={styles.headerSubtitle}>Manage distributor leave requests</Text>
+            <Text style={styles.headerTitle}>{t('vendorLeave.distributorLeave')}</Text>
+            <Text style={styles.headerSubtitle}>{t('vendorLeave.manageDistributorLeave')}</Text>
           </View>
         </View>
 
         {groupedRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No Pending Leave Requests</Text>
-            <Text style={styles.emptySubtitle}>Distributor leave requests will appear here</Text>
+            <Text style={styles.emptyTitle}>{t('vendorLeave.noPendingRequests')}</Text>
+            <Text style={styles.emptySubtitle}>{t('vendorLeave.requestsAppearHere')}</Text>
           </View>
         ) : (
           <FlatList

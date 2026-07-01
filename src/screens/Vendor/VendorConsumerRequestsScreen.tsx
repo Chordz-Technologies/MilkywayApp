@@ -1,16 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  Platform,
-  TextInput
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Platform, TextInput } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,6 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchCalendarData } from '../../store/calendarSlice';
 import type { AppDispatch } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
   VendorConsumerRequests: undefined;
@@ -58,6 +48,7 @@ const VendorConsumerRequestsScreen = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRejectId, setSelectedRejectId] = useState<number | null>(null);
   const [acceptedRequestIds, setAcceptedRequestIds] = useState<Set<number>>(new Set());
+  const { t } = useTranslation();
 
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -65,7 +56,7 @@ const VendorConsumerRequestsScreen = () => {
     try {
       const vendorId = user?.userID;
       if (!vendorId) {
-        throw new Error('Vendor ID not found');
+        throw new Error(t('vendorConsumerRequests.vendorIdNotFound'));
       }
       setIsLoading(true);
       const response = await getConsumerRequests(vendorId);
@@ -76,7 +67,7 @@ const VendorConsumerRequestsScreen = () => {
         id: item.id || item.request_id || index,
         request_id: item.request_id || item.id || index,
         customer_id: item.customer_id || item.consumer_id || 0,
-        customer_name: item.customer.first_name + ' ' + item.customer.last_name || 'Unknown Consumer',
+        customer_name: item.customer.first_name + ' ' + item.customer.last_name || t('assignDistributor.unknownConsumer'),
         customer_contact: item.customer_contact || item.contact,
         date: item.date || item.request_date || new Date().toISOString().split('T')[0],
         cow_milk_quantity: item.cow_milk_extra || 0,
@@ -94,13 +85,12 @@ const VendorConsumerRequestsScreen = () => {
 
       setRequests(activeRequests);
     } catch (error: any) {
-      console.error('Error fetching consumer requests:', error);
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to load consumer requests');
+      Alert.alert(t('common.error'), error?.response?.data?.message || t('vendorConsumerRequests.failedToLoadRequests'));
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.userID, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,73 +116,103 @@ const VendorConsumerRequestsScreen = () => {
   }, [fetchRequests]);
 
   const handleManageRequest = async (requestId: number, action: 'approve' | 'reject') => {
-    const actionText = action === 'approve' ? 'Approve' : 'Reject';
-
+    const isApprove = action === 'approve';
     Alert.alert(
-      `${actionText} Request`,
-      `Are you sure you want to ${action} this extra milk request?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: actionText,
-          style: action === 'reject' ? 'destructive' : 'default',
-          onPress: async () => {
-            try {
-              // Track both ID and action
-              setProcessingState({ id: requestId, action });
+      t(
+        isApprove
+          ? 'vendorConsumerRequests.approveRequest'
+          : 'vendorConsumerRequests.rejectRequest'
+      ),
+      t(
+        isApprove
+          ? 'vendorConsumerRequests.approveConfirmation'
+          : 'vendorConsumerRequests.rejectConfirmation'
+      ),
+      [{
+        text: t('common.cancel'),
+        style: 'cancel',
+      },
+      {
+        text: t(
+          isApprove
+            ? 'vendorConsumerRequests.approve'
+            : 'vendorConsumerRequests.reject'
+        ),
+        style: isApprove ? 'default' : 'destructive',
 
-              const payload = { customer_request_id: requestId, action };
-              console.log("📦 Sending manage request payload:", JSON.stringify(payload, null, 2));
+        onPress: async () => {
+          try {
+            setProcessingState({ id: requestId, action, });
+            await manageConsumerRequest({ customer_request_id: requestId, action, });
+            if (isApprove) {
+              setAcceptedRequestIds(prev => new Set([...prev, requestId]));
+              const consumerRequest = requests.find(
+                r => r.request_id === requestId
+              );
 
-              await manageConsumerRequest(payload);
+              if (consumerRequest?.customer_id) {
+                const now = new Date();
 
-              if (action === 'approve') {
-                // Mark request as accepted locally
-                setAcceptedRequestIds(prev => new Set([...prev, requestId]));
+                const monthString = `${now.getFullYear()}-${String(
+                  now.getMonth() + 1
+                ).padStart(2, '0')}`;
 
-                // Refetch consumer's calendar to show updated status (pending_extra_milk → extra_milk)
-                const consumerRequest = requests.find(r => r.request_id === requestId);
-                if (consumerRequest?.customer_id) {
-                  const now = new Date();
-                  const monthString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-                  dispatch(fetchCalendarData({ customerId: consumerRequest.customer_id, month: monthString }));
-                }
-
-                Alert.alert(
-                  'Request Accepted',
-                  'Now assign a distributor for this extra milk request.',
-                  [{ text: 'OK' }]
-                );
-              } else {
-                // For reject, refresh to remove the card
-                Alert.alert(
-                  'Success',
-                  `Request ${action}ed successfully!`,
-                  [{ text: 'OK', onPress: () => fetchRequests() }]
+                dispatch(fetchCalendarData({
+                  customerId: consumerRequest.customer_id, month: monthString,
+                })
                 );
               }
-            } catch (error: any) {
-              console.error(`Error ${action}ing request:`, error);
-              Alert.alert('Error', error?.response?.data?.message || `Failed to ${action} request`);
-            } finally {
-              // Reset loader state
-              setProcessingState({ id: null, action: null });
+
+              Alert.alert(
+                t('vendorConsumerRequests.requestAccepted'),
+                t('vendorConsumerRequests.assignDistributorMessage'),
+                [
+                  {
+                    text: 'OK',
+                  },
+                ]
+              );
+            } else {
+              Alert.alert(
+                t('common.success'),
+                t('vendorConsumerRequests.requestRejected'),
+                [
+                  {
+                    text: 'OK',
+                    onPress: fetchRequests,
+                  },
+                ]
+              );
             }
-          },
+          } catch (error: any) {
+            Alert.alert(
+              t('common.error'), error?.response?.data?.message || t(
+                isApprove
+                  ? 'vendorConsumerRequests.failedApprove'
+                  : 'vendorConsumerRequests.failedReject'
+              )
+            );
+          } finally {
+            setProcessingState({
+              id: null,
+              action: null,
+            });
+          }
         },
+      },
       ]
     );
   };
 
   const submitRejectReason = async () => {
     if (!rejectReason.trim()) {
-      Alert.alert("Reason Required", "Please enter a reason for rejecting the request.");
+      Alert.alert(t('vendorConsumerRequests.reasonRequired'), t('vendorConsumerRequests.enterRejectReason'));
       return;
     }
 
     // Ensure we have a valid selected ID before proceeding
     if (selectedRejectId == null) {
-      Alert.alert("Error", "No request selected to reject.");
+      Alert.alert(t('common.error'), t('vendorConsumerRequests.noRequestSelected'));
       return;
     }
 
@@ -207,14 +227,13 @@ const VendorConsumerRequestsScreen = () => {
 
       await manageConsumerRequest(payload);
 
-      Alert.alert("Success", "Request rejected successfully!");
+      Alert.alert(t('common.success'), t('vendorConsumerRequests.requestRejected'));
 
       setShowRejectModal(false);
       setRejectReason("");
       fetchRequests();
     } catch (error: any) {
-      console.error("Reject error:", error);
-      Alert.alert("Error", error?.response?.data?.message || "Failed to reject request");
+      Alert.alert(t('common.error'), error?.response?.data?.message || t('vendorConsumerRequests.failedReject'));
     } finally {
       setProcessingState({ id: null, action: null });
     }
@@ -254,7 +273,8 @@ const VendorConsumerRequestsScreen = () => {
               )}
               {item.distributor_name && (
                 <Text style={styles.distributorText}>
-                  Distributor: {item.distributor_name} (On Leave)
+                  {t('vendorConsumerRequests.distributor')}:{' '}
+                  {item.distributor_name} ({t('vendorConsumerRequests.onLeave')})
                 </Text>
               )}
             </View>
@@ -262,7 +282,7 @@ const VendorConsumerRequestsScreen = () => {
           <View style={[styles.statusBadge, isAccepted && styles.statusBadgeAccepted]}>
             <Ionicons name={isAccepted ? "checkmark-circle" : "time-outline"} size={14} color={isAccepted ? "#34C759" : "#FF9500"} />
             <Text style={[styles.statusText, isAccepted && styles.statusTextAccepted]}>
-              {isAccepted ? 'ACCEPTED' : 'PENDING'}
+              {isAccepted ? t('vendorConsumerRequests.accepted') : t('vendorConsumerRequests.pending')}
             </Text>
           </View>
         </View>
@@ -274,12 +294,12 @@ const VendorConsumerRequestsScreen = () => {
           </View>
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Cow Milk:</Text>
+            <Text style={styles.totalLabel}>{t('vendorConsumerRequests.cowMilk')}</Text>
             <Text style={styles.totalValue}>{item.cow_milk_quantity}L</Text>
           </View>
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Buffalo Milk:</Text>
+            <Text style={styles.totalLabel}>{t('vendorConsumerRequests.buffaloMilk')}</Text>
             <Text style={styles.totalValue}>{item.buffalo_milk_quantity}L</Text>
           </View>
         </View>
@@ -299,7 +319,7 @@ const VendorConsumerRequestsScreen = () => {
             ) : (
               <>
                 <Ionicons name="close-circle-outline" size={20} color="#FF3B30" />
-                <Text style={styles.rejectButtonText}>Reject</Text>
+                <Text style={styles.rejectButtonText}>{t('vendorConsumerRequests.reject')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -315,7 +335,7 @@ const VendorConsumerRequestsScreen = () => {
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.acceptButtonText}>{isAccepted ? 'Accepted' : 'Accept'}</Text>
+                <Text style={styles.acceptButtonText}>{isAccepted ? t('vendorConsumerRequests.accepted') : t('vendorConsumerRequests.accept')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -325,7 +345,7 @@ const VendorConsumerRequestsScreen = () => {
           <>
             <View style={styles.pendingAssignmentBar}>
               <Ionicons name="alert-circle-outline" size={18} color="#FF9500" />
-              <Text style={styles.pendingAssignmentText}>Awaiting Distributor Assignment</Text>
+              <Text style={styles.pendingAssignmentText}>{t('vendorConsumerRequests.awaitingDistributorAssignment')}</Text>
             </View>
 
             <TouchableOpacity
@@ -333,7 +353,7 @@ const VendorConsumerRequestsScreen = () => {
               onPress={() => navigation.navigate("MilkRequestDistributorAssign", { consumerId: item.customer_id, consumerName: item.customer_name, requestId: item.request_id })}
             >
               <Ionicons name="person-add-outline" size={18} color="#fff" />
-              <Text style={styles.assignDistributorText}>Assign Distributor</Text>
+              <Text style={styles.assignDistributorText}>{t('vendorConsumerRequests.assignDistributor')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -345,7 +365,7 @@ const VendorConsumerRequestsScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading requests...</Text>
+        <Text style={styles.loadingText}>{t('vendorConsumerRequests.loadingRequests')}</Text>
       </View>
     );
   }
@@ -358,12 +378,12 @@ const VendorConsumerRequestsScreen = () => {
           showRejectModal && (
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Reject Request</Text>
-                <Text style={styles.modalSubtitle}>Please enter the reason for rejecting:</Text>
+                <Text style={styles.modalTitle}>{t('vendorConsumerRequests.rejectRequest')}</Text>
+                <Text style={styles.modalSubtitle}>{t('vendorConsumerRequests.enterRejectReason')}</Text>
 
                 <TextInput
                   style={styles.reasonInput}
-                  placeholder="Write reason here..."
+                  placeholder={t('vendorConsumerRequests.writeReason')}
                   placeholderTextColor="#999"
                   multiline
                   value={rejectReason}
@@ -378,7 +398,7 @@ const VendorConsumerRequestsScreen = () => {
                       setRejectReason("");
                     }}
                   >
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -388,7 +408,7 @@ const VendorConsumerRequestsScreen = () => {
                     {processingState.action === "reject" ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.submitText}>Submit</Text>
+                      <Text style={styles.submitText}>{t('common.submit')}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -405,9 +425,9 @@ const VendorConsumerRequestsScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Consumer Requests</Text>
+            <Text style={styles.headerTitle}>{t('vendorConsumerRequests.consumerRequests')}</Text>
             <Text style={styles.headerSubtitle}>
-              Extra milk requests from consumers
+              {t('vendorConsumerRequests.consumerRequestsSubtitle')}
             </Text>
           </View>
         </View>
@@ -415,9 +435,9 @@ const VendorConsumerRequestsScreen = () => {
         {requests.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="water-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No Pending Requests</Text>
+            <Text style={styles.emptyTitle}>{t('vendorConsumerRequests.noPendingRequests')}</Text>
             <Text style={styles.emptySubtitle}>
-              There are currently no pending extra milk requests from consumers.
+              {t('vendorConsumerRequests.noPendingRequestsDescription')}
             </Text>
           </View>
         ) : (

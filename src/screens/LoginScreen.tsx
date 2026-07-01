@@ -11,12 +11,15 @@ import { RootState, AppDispatch } from '../store';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
 
   // Redux state
   const { isLoading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -28,7 +31,6 @@ const LoginScreen = () => {
 
   // Wrap navigateToHome with useCallback to fix exhaustive-deps warning
   const navigateToHome = useCallback((role: string) => {
-    console.log('Navigating based on role:', role);
     switch (role.toLowerCase()) {
       case 'vendor':
         navigation.reset({
@@ -49,14 +51,12 @@ const LoginScreen = () => {
         });
         break;
       default:
-        console.log('Unknown user role:', role);
-        Alert.alert('Error', 'Unknown user role.');
+        Alert.alert(t('common.error'), t('login.unknownRole'));
     }
-  }, [navigation]);
+  }, [navigation, t]);
 
   // Auto-login effect - check for stored tokens
   useEffect(() => {
-    console.log('Checking stored auth on mount');
     dispatch(checkStoredAuth());
   }, [dispatch]);
 
@@ -67,12 +67,9 @@ const LoginScreen = () => {
         try {
           // CLEAR logout flag after successful login
           await AsyncStorage.removeItem('isLoggedOut');
-          console.log('isLoggedOut flag cleared');
         } catch (err) {
           console.error('Failed to clear isLoggedOut flag', err);
         }
-
-        console.log(`User authenticated with role: ${user.role}`);
         navigateToHome(user.role);
       })();
     }
@@ -81,12 +78,11 @@ const LoginScreen = () => {
   // Show error alerts
   useEffect(() => {
     if (error) {
-      console.log('Login error received from Redux:', error);
-      Alert.alert('Login Error', error, [
-        { text: 'OK', onPress: () => dispatch(clearError()) },
+      Alert.alert(t('login.loginError'), error, [
+        { onPress: () => dispatch(clearError()) },
       ]);
     }
-  }, [error, dispatch]);
+  }, [error, dispatch, t]);
 
   const handleContactChange = useCallback((text: string) => {
     const cleanedText = text.replace(/[^0-9]/g, '');
@@ -98,17 +94,14 @@ const LoginScreen = () => {
   const handleLogin = useCallback(async () => {
     const trimmedContact = contact.trim();
     const trimmedPassword = password.trim();
-    console.log('handleLogin called with:', { trimmedContact, trimmedPassword });
 
     if (!trimmedContact || !trimmedPassword) {
-      console.log('Login validation failed: empty fields');
-      Alert.alert('Error', 'Please enter contact number and password');
+      Alert.alert(t('common.error'), t('login.enterContactAndPassword'));
       return;
     }
 
     if (trimmedContact.length !== 10) {
-      console.log('Login validation failed: invalid contact length', trimmedContact.length);
-      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+      Alert.alert(t('common.error'), t('login.enterValidPhone'));
       return;
     }
 
@@ -119,10 +112,9 @@ const LoginScreen = () => {
       password: trimmedPassword,
       fcm_token: fcmToken
     };
-    console.log('Dispatching loginUser with payload:', payload);
 
     dispatch(loginUser(payload));
-  }, [contact, password, dispatch]);
+  }, [contact, password, dispatch, t]);
 
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword(!showPassword);
@@ -148,6 +140,10 @@ const LoginScreen = () => {
               }}
             >
               <View style={styles.container}>
+                <View style={styles.languageRow}>
+                  <LanguageSwitcher />
+                </View>
+
                 <Image
                   source={require('../assets/logo.jpeg')}
                   style={styles.logo}
@@ -161,7 +157,7 @@ const LoginScreen = () => {
                   <Icon name="phone" size={20} color="#555" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Mobile Number"
+                    placeholder={t('common.mobileNumber')}
                     placeholderTextColor="#888"
                     keyboardType="phone-pad"
                     autoCapitalize="none"
@@ -176,7 +172,7 @@ const LoginScreen = () => {
                   <Icon name="lock" size={20} color="#555" style={styles.icon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Password"
+                    placeholder={t('common.password')}
                     placeholderTextColor="#888"
                     secureTextEntry={!showPassword}
                     value={password}
@@ -196,7 +192,7 @@ const LoginScreen = () => {
                   style={styles.forgotWrapper}
                   onPress={() => navigation.navigate('ForgotPassword')}
                 >
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                  <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -205,22 +201,22 @@ const LoginScreen = () => {
                   disabled={isLoading}
                 >
                   <Text style={styles.loginText}>
-                    {isLoading ? 'Logging in...' : 'Login'}
+                    {isLoading ? t('login.loggingIn') : t('common.login')}
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={styles.registerText}>Register as:</Text>
+                <Text style={styles.registerText}>{t('login.registerAs')}</Text>
                 <View style={styles.registerContainer}>
                   <TouchableOpacity onPress={() => navigation.navigate('VendorRegistration')}>
-                    <Text style={styles.link}>Vendor</Text>
+                    <Text style={styles.link}>{t('login.vendor')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.registerText}>/</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('ConsumerRegistration')}>
-                    <Text style={styles.link}>Consumer</Text>
+                    <Text style={styles.link}>{t('login.consumer')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.registerText}>/</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('DistributorRegistration')}>
-                    <Text style={styles.link}>Distributor</Text>
+                    <Text style={styles.link}>{t('login.distributor')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

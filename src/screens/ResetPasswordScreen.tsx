@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator, } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { styles } from '../styles/ResetPasswordStyles';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -15,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { resetPassword } from '../apiServices/allApi';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 type ResetPasswordRouteProp = RouteProp<RootStackParamList, 'ResetPassword'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ResetPassword'>;
@@ -28,20 +21,21 @@ const ResetPasswordScreen = () => {
   const [loading, setLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { t } = useTranslation();
 
   const handleReset = async () => {
     if (!newPassword || !confirmNewPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('resetPassword.fillAllFields'));
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('common.error'), t('resetPassword.minLength'));
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('resetPassword.passwordMismatch'));
       return;
     }
 
@@ -57,9 +51,8 @@ const ResetPasswordScreen = () => {
       const response = await resetPassword(payload);
 
       if (response?.status === 200) {
-        Alert.alert('Success', 'Password reset successfully', [
+        Alert.alert(t('common.success'), t('resetPassword.resetSuccess'), [
           {
-            text: 'OK',
             onPress: () =>
               navigation.reset({
                 index: 0,
@@ -68,12 +61,12 @@ const ResetPasswordScreen = () => {
           },
         ]);
       } else {
-        Alert.alert('Error', 'Failed to reset password');
+        Alert.alert(t('common.error'), t('resetPassword.resetFailed'));
       }
     } catch (error: any) {
       Alert.alert(
-        'Error',
-        error?.response?.data?.error || 'Something went wrong'
+        t('common.error'),
+        error?.response?.data?.error || t('forgotPassword.somethingWrong')
       );
     } finally {
       setLoading(false);
@@ -85,12 +78,12 @@ const ResetPasswordScreen = () => {
       <View style={styles.container}>
         <Image source={require('../assets/newpass.png')} style={styles.logo} />
 
-        <Text style={styles.title}>Set New Password</Text>
-        <Text style={styles.subLabel}>Enter your new password below</Text>
+        <Text style={styles.title}>{t('resetPassword.title')}</Text>
+        <Text style={styles.subLabel}>{t('resetPassword.label')}</Text>
 
         <View style={styles.passwordContainer}>
           <TextInput
-            placeholder="New Password"
+            placeholder={t('common.newPassword')}
             secureTextEntry={!showNewPassword}
             style={styles.passwordInput}
             placeholderTextColor="#888"
@@ -111,7 +104,7 @@ const ResetPasswordScreen = () => {
 
         <View style={styles.passwordContainer}>
           <TextInput
-            placeholder="Confirm New Password"
+            placeholder={t('common.confirmNewPassword')}
             secureTextEntry={!showConfirmPassword}
             style={styles.passwordInput}
             placeholderTextColor="#888"
@@ -138,7 +131,7 @@ const ResetPasswordScreen = () => {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Reset Password</Text>
+            <Text style={styles.buttonText}>{t('resetPassword.resetPassword')}</Text>
           )}
         </TouchableOpacity>
       </View>

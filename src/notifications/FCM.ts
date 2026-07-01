@@ -61,8 +61,8 @@ export async function showLocalNotification(notification: {
 
     // display notification
     await notifee.displayNotification({
-        title: notification.title || "New notification",
-        body: notification.body || "No content available",
+        title: notification.title,
+        body: notification.body,
         android: { channelId: "default", smallIcon: "ic_launcher" },
     });
 }

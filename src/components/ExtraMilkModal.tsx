@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  Modal,
-  StyleSheet,
-  ScrollView,
-  Platform
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Modal, StyleSheet, ScrollView, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 interface ExtraMilkModalProps {
   isVisible: boolean;
@@ -32,7 +23,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
   const [reason, setReason] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateObj, setSelectedDateObj] = useState<Date | null>(null);
-
+  const { t } = useTranslation();
   const quantities = [0.5, 1, 1.5, 2, 2.5, 3];
 
   const resetForm = () => {
@@ -53,19 +44,19 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
   const handleSubmit = () => {
     if (!selectedDate) {
-      Alert.alert('Error', 'Please enter date (YYYY-MM-DD format)');
+      Alert.alert(t('common.error'), t('extraMilk.invalidDate'));
       return;
     }
 
     if (!quantity || parseFloat(quantity) <= 0) {
-      Alert.alert('Error', 'Please enter valid quantity');
+      Alert.alert(t('common.error'), t('extraMilk.invalidQuantity'));
       return;
     }
 
     // Basic date validation
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(selectedDate)) {
-      Alert.alert('Error', 'Please enter date in YYYY-MM-DD format');
+      Alert.alert(t('common.error'), t('extraMilk.invalidDate'));
       return;
     }
 
@@ -96,7 +87,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
         <View style={styles.modalContainer}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Apply for Extra Milk</Text>
+              <Text style={styles.modalTitle}>{t('extraMilk.title')}</Text>
               <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close-outline" size={24} color="#333" />
               </TouchableOpacity>
@@ -104,7 +95,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
             {/* Date Selection */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Select Date</Text>
+              <Text style={styles.sectionTitle}>{t('extraMilk.deliveryDate')}</Text>
 
               <TouchableOpacity
                 style={styles.dateButton}
@@ -115,7 +106,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
                 <Text style={styles.dateButtonText}>
                   {selectedDateObj
                     ? selectedDateObj.toDateString()
-                    : 'Select Date'}
+                    : t('extraMilk.selectDate')}
                 </Text>
               </TouchableOpacity>
 
@@ -132,7 +123,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
             {/* Quantity Selection */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Quantity (Liters)</Text>
+              <Text style={styles.sectionTitle}>{t('extraMilk.quantity')}</Text>
               <View style={styles.quantityContainer}>
                 {quantities.map((qty) => (
                   <TouchableOpacity
@@ -154,7 +145,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
               </View>
               <TextInput
                 style={styles.customQuantityInput}
-                placeholder="Custom quantity (e.g., 2.5)"
+                placeholder={t('extraMilk.enterQuantity')}
                 value={quantity}
                 onChangeText={setQuantity}
                 keyboardType="numeric"
@@ -164,7 +155,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
             {/* Milk Type Selection */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Milk Type</Text>
+              <Text style={styles.sectionTitle}>{t('extraMilk.milkType')}</Text>
               <View style={styles.milkTypeContainer}>
                 {['cow', 'buffalo', 'mixed'].map((type) => (
                   <TouchableOpacity
@@ -179,7 +170,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
                       styles.milkTypeText,
                       milkType === type && styles.milkTypeTextSelected,
                     ]}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {t(`extraMilk.${type}`)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -188,10 +179,10 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
             {/* Reason Input */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Reason (Optional)</Text>
+              <Text style={styles.sectionTitle}>{t('extraMilk.reason')}</Text>
               <TextInput
                 style={styles.reasonInput}
-                placeholder="e.g., Guests visiting, Festival celebration"
+                placeholder={t('extraMilk.enterReason')}
                 value={reason}
                 onChangeText={setReason}
                 multiline
@@ -202,7 +193,7 @@ export default function ExtraMilkModal({ isVisible, onClose, onSubmit }: ExtraMi
 
             {/* Submit Button */}
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Request Extra Milk</Text>
+              <Text style={styles.submitButtonText}>{t('extraMilk.submit')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

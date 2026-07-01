@@ -1,15 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    RefreshControl,
-    Platform,
-    Alert,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Platform, Alert, } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +7,7 @@ import { RootState } from "../../store";
 import { getAcceptedMilkmen } from "../../apiServices/allApi";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
     DistributorsList: undefined;
@@ -27,10 +18,7 @@ type RootStackParamList = {
     };
 };
 
-type NavigationProp = NativeStackNavigationProp<
-    RootStackParamList,
-    "DistributorsList"
->;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "DistributorsList">;
 
 const DistributorsListScreen = () => {
     const navigation = useNavigation<NavigationProp>();
@@ -38,6 +26,7 @@ const DistributorsListScreen = () => {
     const [distributors, setDistributors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const { t } = useTranslation();
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -65,14 +54,14 @@ const DistributorsListScreen = () => {
                 id: item.join_request_id || item.milkman_id || index + 1,
                 user_id: item.milkman_id || item.user_id || index + 1,
                 status: item.status || "accepted",
-                name: item.milkman_name || item.name || `Distributor ${index + 1}`,
-                user_contact: item.milkman_contact || "No contact",
+                name: item.milkman_name || item.name || `${t('distributorsList.distributor')} ${index + 1}`,
+                user_contact: item.milkman_contact || t('distributorsList.noContact'),
                 assigned_customers_count: item.assigned_customers_count || 0,
             }));
 
             setDistributors(mapped);
         } catch (err) {
-            console.error("Distributor fetch error:", err);
+            console.log("Distributor fetch error:", err);
             setDistributors([]);
         } finally {
             setLoading(false);
@@ -101,7 +90,7 @@ const DistributorsListScreen = () => {
     const handleNavigateToUserDetails = (item: any) => {
         try {
             const userName =
-                item.name || item.milkman_name || "Unknown Distributor";
+                item.name || item.milkman_name || t('distributorsList.unknownDistributor');
 
             navigation.navigate("UserDetails", {
                 userId: item.user_id,
@@ -109,7 +98,7 @@ const DistributorsListScreen = () => {
                 userName,
             });
         } catch (err) {
-            Alert.alert("Error", "Cannot navigate to details");
+            Alert.alert(t('common.error'), t('distributorsList.navigationError'));
         }
     };
 
@@ -117,6 +106,7 @@ const DistributorsListScreen = () => {
         return (
             <View style={styles.center}>
                 <ActivityIndicator size="large" color="#007AFF" />
+                <Text>{t('distributorsList.loadingDistributors')}</Text>
             </View>
         );
     }
@@ -131,9 +121,9 @@ const DistributorsListScreen = () => {
                     </TouchableOpacity>
 
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>All Distributors</Text>
+                        <Text style={styles.headerTitle}>{t('distributorsList.allDistributors')}</Text>
                         <Text style={styles.headerSubtitle}>
-                            View all accepted distributors here
+                            {t('distributorsList.allDistributorsSubtitle')}
                         </Text>
                     </View>
                 </View>
@@ -143,7 +133,7 @@ const DistributorsListScreen = () => {
                     {distributors.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Ionicons name="business-outline" size={48} color="#ccc" />
-                            <Text style={styles.emptyText}>No accepted distributors found.</Text>
+                            <Text style={styles.emptyText}>{t('distributorsList.noAcceptedDistributors')}</Text>
                         </View>
                     ) : (
                         <FlatList
@@ -166,7 +156,7 @@ const DistributorsListScreen = () => {
                                         <Text style={styles.contact}>{item.user_contact}</Text>
                                         {item.assigned_customers_count > 0 && (
                                             <Text style={styles.assigned}>
-                                                {item.assigned_customers_count} customers assigned
+                                                {item.assigned_customers_count}{' '}{t('distributorsList.customersAssigned')}
                                             </Text>
                                         )}
                                     </View>

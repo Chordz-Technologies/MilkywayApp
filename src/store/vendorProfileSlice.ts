@@ -57,9 +57,7 @@ export const fetchVendorProfile = createAsyncThunk<
       return rejectWithValue('User ID is required');
     }
     try {
-      console.log('🔍 Fetching vendor profile for ID:', userID);
       const response = await getVendorDetailsById(userID);
-      console.log('✅ Vendor profile fetched:', response.data);
 
       if (!response?.data) {
         throw new Error('No profile data received');
@@ -95,8 +93,6 @@ export const updateVendorProfileData = createAsyncThunk<
       return rejectWithValue('User ID is required');
     }
     try {
-      console.log('📤 Updating vendor profile - RAW DATA:', { id, data });
-
       // Get current profile from state
       const state = getState() as { vendorProfile: VendorProfileState };
       const currentProfile = state.vendorProfile.profile;
@@ -104,14 +100,10 @@ export const updateVendorProfileData = createAsyncThunk<
       // Extract the actual data object (handle nested structure)
       const profileData = currentProfile?.data || currentProfile;
 
-      console.log('📋 Current profile data:', profileData);
-
       // Format contact number
       let formattedContact = data.contact;
       if (data.contact) {
         let cleaned = data.contact.trim();
-
-        console.log('🔍 RAW contact received:', cleaned);
 
         // Remove +91 prefix if exists
         if (cleaned.startsWith('+91')) {
@@ -125,9 +117,6 @@ export const updateVendorProfileData = createAsyncThunk<
         // Remove any non-digit characters
         cleaned = cleaned.replace(/\D/g, '');
 
-        console.log('🧹 Cleaned contact:', cleaned);
-        console.log('📏 Contact length:', cleaned.length);
-
         if (cleaned.length === 10) {
           formattedContact = `+91${cleaned}`;
         } else if (cleaned.length > 0) {
@@ -135,8 +124,6 @@ export const updateVendorProfileData = createAsyncThunk<
           return rejectWithValue('Contact must be exactly 10 digits');
         }
       }
-
-      console.log('📞 Final formatted contact:', formattedContact);
 
       // ✅ Build submit data - ONLY send fields that are being updated (PATCH behavior)
       const submitData: any = {};
@@ -162,10 +149,7 @@ export const updateVendorProfileData = createAsyncThunk<
       if (data.deshi_cow_rate !== undefined) { submitData.deshi_cow_rate = data.deshi_cow_rate; }
       if (data.cr !== undefined) { submitData.cr = data.cr; }
 
-      console.log('📦 PATCH data (only updated fields):', submitData);
-
       const response = await updateVendorProfile(id, submitData);
-      console.log('✅ Vendor profile updated successfully:', response.data);
 
       if (!response?.data) {
         throw new Error('Update failed - no data returned');
@@ -179,14 +163,6 @@ export const updateVendorProfileData = createAsyncThunk<
       if (error?.response) {
         const status = error.response.status;
         const detail = error.response.data?.detail || error.response.data?.message;
-
-        console.log('❌ Error response:', {
-          status,
-          detail,
-          fullError: error.response.data,
-        });
-
-        console.log('❌ Request payload that failed:', error.config?.data);
 
         switch (status) {
           case 400:
@@ -260,7 +236,6 @@ const vendorProfileSlice = createSlice({
         state.error = null;
         state.profile = action.payload;
         state.lastUpdated = Date.now();
-        console.log('✅ Profile saved to Redux state:', action.payload);
       })
       .addCase(fetchVendorProfile.rejected, (state, action) => {
         state.loading = false;
@@ -283,7 +258,6 @@ const vendorProfileSlice = createSlice({
           ...action.payload,
         };
 
-        console.log('✅ Profile updated in Redux state:', state.profile);
       })
       .addCase(updateVendorProfileData.rejected, (state, action) => {
         state.updating = false;

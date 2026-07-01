@@ -4,20 +4,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState, AppDispatch } from '../../store/index';
-import {
-  fetchVendorProfile,
-  updateVendorProfileData,
-  clearError,
-  clearSuccess,
-  resetVendorProfileState,
-  deleteVendorAccount
-} from '../../store/vendorProfileSlice';
+import { fetchVendorProfile, updateVendorProfileData, clearError, clearSuccess, resetVendorProfileState, deleteVendorAccount } from '../../store/vendorProfileSlice';
 import { logout } from '../../store/authSlice';
 import { changePassword } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 const VendorProfileScreen = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
   const user = useSelector((state: RootState) => state.auth.user);
   const [isEditMode, setIsEditMode] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -91,7 +86,6 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (user?.userID) {
-      console.log('🔍 Fetching profile for vendor ID:', user.userID);
       dispatch(fetchVendorProfile(user.userID));
     }
   }, [dispatch, user]);
@@ -106,8 +100,6 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (profile) {
-      console.log('📦 Raw Profile Response:', JSON.stringify(profile, null, 2));
-
       let data = profile;
 
       if (profile.data) {
@@ -117,10 +109,6 @@ const VendorProfileScreen = ({ navigation }: any) => {
       if (data.data) {
         data = data.data;
       }
-
-      console.log('📋 Final Data Object:', JSON.stringify(data, null, 2));
-      console.log('🔍 Pincode value:', data.pincode, 'Type:', typeof data.pincode);
-      console.log('📞 Original contact:', data.contact);
 
       const formData = {
         name: toStringSafe(data.name),
@@ -143,17 +131,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
         deshi_cow_rate: toStringSafe(data.deshi_cow_rate),
         cr: toStringSafe(data.cr),
       };
-
-      console.log('✅ Form Data to Set:', formData);
-      console.log('✅ Pincode in form:', formData.pincode);
-      console.log('📞 Cleaned contact:', formData.contact);
       setForm(formData);
     }
   }, [profile]);
 
   useEffect(() => {
     if (success) {
-      Alert.alert('Success', 'Profile updated successfully!');
+      Alert.alert(t('common.success'), t('profile.profileUpdated'));
       setIsEditMode(false);
       dispatch(clearSuccess());
       if (user?.userID) {
@@ -164,46 +148,44 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Error', error);
+      Alert.alert(t('common.error'), error);
       dispatch(clearError());
     }
   }, [error, dispatch]);
 
   const handleChange = (key: keyof typeof form, value: string) => {
-    console.log(`📝 Field changed: ${key} = ${value}`);
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const validateForm = () => {
-    if (!form.name.trim()) { return 'Name is required'; }
-    if (form.name.length > 100) { return 'Name must be under 100 characters'; }
-    if (!form.contact.trim()) { return 'Contact is required'; }
+    if (!form.name.trim()) { return t('validation.fullNameRequired'); }
+    if (form.name.length > 100) { return t('validation.fullNameLength'); }
+    if (!form.contact.trim()) return t('validation.contactRequired');
 
     // Contact should be 10 digits (slice will add +91 when submitting)
     const cleanContact = stripCountryCode(form.contact);
-    if (cleanContact.length !== 10) { return 'Contact must be exactly 10 digits'; }
-    if (!/^\d{10}$/.test(cleanContact)) { return 'Contact must contain only digits'; }
-
-    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) { return 'Invalid email format'; }
-    if (form.email.length > 255) { return 'Email must be under 255 characters'; }
-    if (form.flat_house.length > 100) { return 'Flat/House must be under 100 characters'; }
-    if (form.society_area.length > 100) { return 'Society area must be under 100 characters'; }
-    if (form.village.length > 100) { return 'Village must be under 100 characters'; }
-    if (form.tal.length > 100) { return 'Taluka must be under 100 characters'; }
-    if (form.dist.length > 100) { return 'District must be under 100 characters'; }
-    if (form.state.length > 100) { return 'State must be under 100 characters'; }
-    if (form.pincode.trim() && form.pincode.length !== 6) { return 'Pincode must be exactly 6 digits'; }
+    if (cleanContact.length !== 10) return t('validation.contactLength');
+    if (!/^\d{10}$/.test(cleanContact)) return t('validation.contactDigits');
+    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) return t('validation.invalidEmailFormat');
+    if (form.email.length > 255) return t('validation.emailLength');
+    if (form.flat_house.length > 100) { return t('validation.flatHouseLength'); }
+    if (form.society_area.length > 100) { return t('validation.societyLength'); }
+    if (form.village.length > 100) { return t('validation.villageLength'); }
+    if (form.tal.length > 100) { return t('validation.talukaLength'); }
+    if (form.dist.length > 100) { return t('validation.districtLength'); }
+    if (form.state.length > 100) { return t('validation.stateLength'); }
+    if (form.pincode.trim() && form.pincode.length !== 6) { return t('validation.pincodeLength'); }
     return null;
   };
 
   const handleSubmit = () => {
     const validationError = validateForm();
     if (validationError) {
-      Alert.alert('Validation Error', validationError);
+      Alert.alert(t('common.validationError'), validationError);
       return;
     }
     if (!user?.userID) {
-      Alert.alert('Error', 'User session expired. Please login again.');
+      Alert.alert(t('common.error'), t('validation.sessionExpired'));
       return;
     }
 
@@ -230,23 +212,22 @@ const VendorProfileScreen = ({ navigation }: any) => {
       cr: form.cr || '',
     };
 
-    console.log('📤 Sending data to slice:', submitData);
     dispatch(updateVendorProfileData({ id: user.userID, data: submitData }));
   };
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setPasswordError('All fields are required');
+      setPasswordError(t('validation.allFieldsRequired'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters');
+      setPasswordError(t('validation.passwordLength'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirm password do not match');
+      setPasswordError(t('validation.passwordMismatch'));
       return;
     }
 
@@ -260,7 +241,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
         new_password: newPassword,
       });
 
-      Alert.alert('Success', 'Password changed successfully');
+      Alert.alert(t('common.success'), t('profile.passwordChanged'));
 
       setShowChangePasswordModal(false);
       setOldPassword('');
@@ -271,7 +252,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
       setPasswordError(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        'Failed to change password'
+        t('validation.passwordChangeFailed')
       );
     } finally {
       setChangingPassword(false);
@@ -279,57 +260,61 @@ const VendorProfileScreen = ({ navigation }: any) => {
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await AsyncStorage.multiRemove([
-              "userToken",
-              "userID",
-              "userRole",
-              "userData",
-            ]);
-
-            await AsyncStorage.setItem('isLoggedOut', 'true');
-
-            dispatch(resetVendorProfileState());
-            dispatch(logout());
-            if (navigation) {
-              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            }
-          } catch (err) {
-            Alert.alert('Error', 'Failed to logout. Please try again.');
-          }
+    Alert.alert(
+      t('common.logout'), t('common.confirmlogout'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
         },
-      },
-    ]);
+        {
+          text: t('common.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([
+                "userToken",
+                "userID",
+                "userRole",
+                "userData",
+              ]);
+
+              await AsyncStorage.setItem('isLoggedOut', 'true');
+
+              dispatch(resetVendorProfileState());
+              dispatch(logout());
+              if (navigation) {
+                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              }
+            } catch (err) {
+              Alert.alert(t('common.error'), t('profile.logoutFailed'));
+            }
+          },
+        },
+      ]);
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      t('profile.deleteAccount'), t('profile.confirmDelete'),
       [
         {
-          text: "Cancel",
+          text: t('common.cancel'),
           style: "cancel",
         },
         {
-          text: "Delete",
+          text: t('common.delete'),
           style: "destructive",
           onPress: async () => {
             if (!user?.userID) {
-              Alert.alert("Error", "User not found.");
+              Alert.alert(t('common.error'), t('common.userNotFound'));
               return;
             }
 
             try {
               await dispatch(deleteVendorAccount(user.userID)).unwrap();
 
-              Alert.alert("Deleted", "Your account has been permanently deleted.");
+              Alert.alert(t('common.deleted'), t('common.deletedAccount'));
 
               // Clear local storage
               await AsyncStorage.multiRemove([
@@ -352,7 +337,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
               });
 
             } catch (err: any) {
-              Alert.alert("Error", err || "Failed to delete account.");
+              Alert.alert(t('common.error'), err || t('common.failedToDelete'));
             }
           },
         },
@@ -364,7 +349,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loading}>Loading profile...</Text>
+        <Text style={styles.loading}>{t('profile.loadingProfile')}</Text>
       </View>
     );
   }
@@ -388,8 +373,8 @@ const VendorProfileScreen = ({ navigation }: any) => {
           >
             <View style={styles.header}>
               <Ionicons name="person-circle-outline" size={60} color="#007AFF" />
-              <Text style={styles.heading}>Edit Profile</Text>
-              <Text style={styles.subheading}>Update your business information</Text>
+              <Text style={styles.heading}>{t('profile.editProfile')}</Text>
+              <Text style={styles.subheading}>{t('profile.updateInformation')}</Text>
             </View>
 
             {/* Action Buttons Row */}
@@ -405,7 +390,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                   color="#007AFF"
                   style={{ marginRight: 6 }}
                 />
-                <Text style={styles.editButtonText}>Change Password</Text>
+                <Text style={styles.editButtonText}>{t('profile.changePassword')}</Text>
               </TouchableOpacity>
 
               {/* Edit Profile - RIGHT */}
@@ -420,19 +405,19 @@ const VendorProfileScreen = ({ navigation }: any) => {
                   style={{ marginRight: 6 }}
                 />
                 <Text style={styles.editButtonText}>
-                  {isEditMode ? 'Cancel' : 'Edit Profile'}
+                  {isEditMode ? t('common.cancel') : t('profile.edit')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Personal Information */}
             <View style={styles.section}>
-              <Text style={styles.title}>Personal Information</Text>
+              <Text style={styles.title}>{t('profile.personalInformation')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Full Name *"
+                  placeholder={t('profile.fullName')}
                   value={form.name}
                   onChangeText={(v) => handleChange('name', v)}
                   maxLength={100}
@@ -446,7 +431,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                   <Text style={styles.countryCode}>+91</Text>
                   <TextInput
                     style={styles.phoneInput}
-                    placeholder="Contact No *"
+                    placeholder={t('profile.contactNo')}
                     value={form.contact}
                     onChangeText={(v) => {
                       // Only allow digits and limit to 10
@@ -464,7 +449,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder={t('profile.email')}
                   value={form.email}
                   onChangeText={(v) => handleChange('email', v)}
                   keyboardType="email-address"
@@ -478,12 +463,12 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Address Information */}
             <View style={styles.section}>
-              <Text style={styles.title}>Address</Text>
+              <Text style={styles.title}>{t('profile.address')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="home-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Flat/House"
+                  placeholder={t('profile.flatNo')}
                   value={form.flat_house}
                   onChangeText={(v) => handleChange('flat_house', v)}
                   maxLength={100}
@@ -495,7 +480,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="business-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Society Area"
+                  placeholder={t('profile.societyName')}
                   value={form.society_area}
                   onChangeText={(v) => handleChange('society_area', v)}
                   maxLength={100}
@@ -507,7 +492,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="map-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Village"
+                  placeholder={t('profile.village')}
                   value={form.village}
                   onChangeText={(v) => handleChange('village', v)}
                   maxLength={100}
@@ -519,7 +504,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="navigate-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Taluka"
+                  placeholder={t('profile.taluka')}
                   value={form.tal}
                   onChangeText={(v) => handleChange('tal', v)}
                   maxLength={100}
@@ -531,7 +516,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="location-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="District"
+                  placeholder={t('profile.district')}
                   value={form.dist}
                   onChangeText={(v) => handleChange('dist', v)}
                   maxLength={100}
@@ -543,7 +528,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="flag-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="State"
+                  placeholder={t('profile.state')}
                   value={form.state}
                   onChangeText={(v) => handleChange('state', v)}
                   maxLength={100}
@@ -555,7 +540,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="keypad-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Pincode (6 digits)"
+                  placeholder={t('profile.pincode')}
                   value={form.pincode}
                   onChangeText={(v) => {
                     // Only allow digits and limit to 6
@@ -572,13 +557,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Buffalo Milk Details */}
             <View style={styles.section}>
-              <Text style={styles.title}>Buffalo Milk</Text>
-              <Text style={styles.sectionInfo}>Set daily supply capacity and rate per litre</Text>
+              <Text style={styles.title}>{t('profile.buffaloMilk')}</Text>
+              <Text style={styles.sectionInfo}>{t('profile.setDailySupply')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Daily Capacity (Litres)"
+                  placeholder={t('profile.dailyCapacity')}
                   value={form.buffalo_milk_litre}
                   onChangeText={(v) => handleChange('buffalo_milk_litre', v)}
                   keyboardType="numeric"
@@ -590,7 +575,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Rate per Litre (₹)"
+                  placeholder={t('profile.ratePerLitre')}
                   value={form.br}
                   onChangeText={(v) => handleChange('br', v)}
                   keyboardType="decimal-pad"
@@ -602,13 +587,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Cow Milk Rate (CR) - General/Mixed */}
             <View style={styles.section}>
-              <Text style={styles.title}>Cow Milk</Text>
-              <Text style={styles.sectionInfo}>Standard rate per litre for regular/mixed cow milk</Text>
+              <Text style={styles.title}>{t('profile.cowMilk')}</Text>
+              <Text style={styles.sectionInfo}>{t('profile.standardCowRate')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Cow Milk Rate per Litre (₹)"
+                  placeholder={t('profile.cowMilkRate')}
                   value={form.cr}
                   onChangeText={(v) => handleChange('cr', v)}
                   keyboardType="decimal-pad"
@@ -620,13 +605,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Gir Cow Milk Details */}
             <View style={styles.section}>
-              <Text style={styles.title}>Gir Cow Milk</Text>
-              <Text style={styles.sectionInfo}>Premium breed - Set daily supply capacity and rate per litre</Text>
+              <Text style={styles.title}>{t('profile.girCowMilk')}</Text>
+              <Text style={styles.sectionInfo}>{t('profile.girCowInfo')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Daily Capacity (Litres)"
+                  placeholder={t('profile.dailyCapacity')}
                   value={form.gir_cow_milk_litre}
                   onChangeText={(v) => handleChange('gir_cow_milk_litre', v)}
                   keyboardType="numeric"
@@ -638,7 +623,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Rate per Litre (₹)"
+                  placeholder={t('profile.ratePerLitre')}
                   value={form.gir_cow_rate}
                   onChangeText={(v) => handleChange('gir_cow_rate', v)}
                   keyboardType="decimal-pad"
@@ -650,13 +635,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Jarshi Cow Milk Details */}
             <View style={styles.section}>
-              <Text style={styles.title}>Jarshi Cow Milk</Text>
-              <Text style={styles.sectionInfo}>Local breed - Set daily supply capacity and rate per litre</Text>
+              <Text style={styles.title}>{t('profile.jarshiCowMilk')}</Text>
+              <Text style={styles.sectionInfo}>{t('profile.jarshiCowInfo')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Daily Capacity (Litres)"
+                  placeholder={t('profile.dailyCapacity')}
                   value={form.jarshi_cow_milk_litre}
                   onChangeText={(v) => handleChange('jarshi_cow_milk_litre', v)}
                   keyboardType="numeric"
@@ -668,7 +653,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Rate per Litre (₹)"
+                  placeholder={t('profile.ratePerLitre')}
                   value={form.jarshi_cow_rate}
                   onChangeText={(v) => handleChange('jarshi_cow_rate', v)}
                   keyboardType="decimal-pad"
@@ -680,13 +665,13 @@ const VendorProfileScreen = ({ navigation }: any) => {
 
             {/* Deshi Cow Milk Details */}
             <View style={styles.section}>
-              <Text style={styles.title}>Deshi Cow Milk</Text>
-              <Text style={styles.sectionInfo}>Indigenous breed - Set daily supply capacity and rate per litre</Text>
+              <Text style={styles.title}>{t('profile.deshiCowMilk')}</Text>
+              <Text style={styles.sectionInfo}>{t('profile.deshiCowInfo')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="water-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Daily Capacity (Litres)"
+                  placeholder={t('profile.dailyCapacity')}
                   value={form.deshi_milk_litre}
                   onChangeText={(v) => handleChange('deshi_milk_litre', v)}
                   keyboardType="numeric"
@@ -698,7 +683,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="cash-outline" size={20} color="#666" style={styles.icon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Rate per Litre (₹)"
+                  placeholder={t('profile.ratePerLitre')}
                   value={form.deshi_cow_rate}
                   onChangeText={(v) => handleChange('deshi_cow_rate', v)}
                   keyboardType="decimal-pad"
@@ -717,17 +702,17 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 {updating ? (
                   <View style={styles.buttonContent}>
                     <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
-                    <Text style={styles.buttonText}>Updating...</Text>
+                    <Text style={styles.buttonText}>{t('profile.updating')}</Text>
                   </View>
                 ) : (
-                  <Text style={styles.buttonText}>Save Changes</Text>
+                  <Text style={styles.buttonText}>{t('profile.saveChanges')}</Text>
                 )}
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutButtonText}>Logout</Text>
+              <Text style={styles.logoutButtonText}>{t('profile.logout')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -741,7 +726,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 <Ionicons name="lock-closed-outline" size={20} color="#dc3545" style={{ marginRight: 8 }} />
               )}
               <Text style={styles.logoutButtonText}>
-                {deleting ? "Deleting..." : "Delete Account"}
+                {deleting ? t('profile.deleting') : t('profile.deleteAccount')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -754,7 +739,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
 
-              <Text style={styles.modalTitle}>Change Password</Text>
+              <Text style={styles.modalTitle}>{t('profile.changePassword')}</Text>
 
               {/* Error Message */}
               {passwordError ? (
@@ -765,7 +750,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Old Password"
+                  placeholder={t('profile.oldPassword')}
                   secureTextEntry={!showOldPassword}
                   value={oldPassword}
                   onChangeText={(v) => {
@@ -787,7 +772,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="New Password"
+                  placeholder={t('profile.newPassword')}
                   secureTextEntry={!showNewPassword}
                   value={newPassword}
                   onChangeText={(v) => {
@@ -809,7 +794,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Confirm New Password"
+                  placeholder={t('profile.confirmPassword')}
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
                   onChangeText={(v) => {
@@ -836,7 +821,7 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 {changingPassword ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Update Password</Text>
+                  <Text style={styles.modalButtonText}>{t('profile.updatePassword')}</Text>
                 )}
               </TouchableOpacity>
 
@@ -848,9 +833,8 @@ const VendorProfileScreen = ({ navigation }: any) => {
                 }}
                 style={{ marginTop: 20 }}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </TouchableWithoutFeedback>

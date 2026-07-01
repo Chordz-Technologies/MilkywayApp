@@ -1,17 +1,10 @@
 import React from 'react';
-import {
-    Modal,
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Linking,
-    Alert,
-} from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, Linking, Alert, } from 'react-native';
 import analytics from '@react-native-firebase/analytics';
 import crashlytics from '@react-native-firebase/crashlytics';
 import InAppReview from 'react-native-in-app-review';
 import { markDismissed, markRated } from '../utils/ratingManager';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 interface RatingModalProps {
     visible: boolean;
@@ -24,15 +17,16 @@ interface RatingItem {
     label: string;
 }
 
-const ratings: RatingItem[] = [
-    { value: 1, emoji: '😢', label: 'Bad' },
-    { value: 2, emoji: '😕', label: 'Poor' },
-    { value: 3, emoji: '😐', label: 'Okay' },
-    { value: 4, emoji: '🙂', label: 'Good' },
-    { value: 5, emoji: '😍', label: 'Excellent' },
+const ratings = [
+    { value: 1, emoji: '😢', key: 'bad' },
+    { value: 2, emoji: '😕', key: 'poor' },
+    { value: 3, emoji: '😐', key: 'okay' },
+    { value: 4, emoji: '🙂', key: 'good' },
+    { value: 5, emoji: '😍', key: 'excellent' },
 ];
 
 const RatingModal: React.FC<RatingModalProps> = ({ visible, onClose }) => {
+    const { t } = useTranslation();
 
     const handleRating = async (value: number): Promise<void> => {
         try {
@@ -44,10 +38,10 @@ const RatingModal: React.FC<RatingModalProps> = ({ visible, onClose }) => {
                 onClose();
 
                 Alert.alert(
-                    'How was your experience?',
-                    'Please contact our support team.',
+                    t('rating.title'),
+                    t('rating.supportMessage'),
                     [
-                        { text: 'Cancel', style: 'cancel' },
+                        { text: t('common.cancel'), style: 'cancel' },
                         {
                             text: 'OK',
                             onPress: () =>
@@ -82,7 +76,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ visible, onClose }) => {
                 <View style={styles.bottomSheet}>
                     <View style={styles.handle} />
 
-                    <Text style={styles.title}>How was your experience?</Text>
+                    <Text style={styles.title}>{t('rating.title')}</Text>
 
                     <View style={styles.row}>
                         {ratings.map((r) => (
@@ -92,13 +86,13 @@ const RatingModal: React.FC<RatingModalProps> = ({ visible, onClose }) => {
                                 style={styles.emojiBox}
                             >
                                 <Text style={styles.emoji}>{r.emoji}</Text>
-                                <Text style={styles.label}>{r.label}</Text>
+                                <Text style={styles.label}>{t(`rating.${r.key}`)}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
 
                     <TouchableOpacity onPress={handleCancel}>
-                        <Text style={styles.cancel}>Maybe Later</Text>
+                        <Text style={styles.cancel}>{t('rating.maybeLater')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

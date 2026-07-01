@@ -1,7 +1,6 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import calendarReducer from './calendarSlice';
 import authReducer from './authSlice';
 import distributorCalendarReducer from './distributorSlice';
@@ -9,11 +8,12 @@ import consumersReducer from './consumersSlice';
 import profileReducer from './distributorProfileSlice';
 import vendorProfileReducer from './vendorProfileSlice';
 import consumerProfileReducer from './consumerProfileSlice';
+import languageReducer from './languageSlice';
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['calendar', 'distributorCalendar', 'consumers', 'auth', 'profile', 'vendorProfile', 'consumerProfile'],
+  whitelist: ['calendar', 'distributorCalendar', 'consumers', 'auth', 'profile', 'vendorProfile', 'consumerProfile', 'language'],
   blacklist: [],
 };
 
@@ -25,6 +25,7 @@ const rootReducer = combineReducers({
   profile: profileReducer,
   vendorProfile: vendorProfileReducer,
   consumerProfile: consumerProfileReducer,
+  language: languageReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

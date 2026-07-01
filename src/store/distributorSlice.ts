@@ -1,10 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { REHYDRATE } from 'redux-persist';
-import {
-  getDistributorCalendar,
-  applyForDistributorLeave,
-  getDistributorMonthSummary,
-} from '../apiServices/allApi';
+import { getDistributorCalendar, applyForDistributorLeave, getDistributorMonthSummary, } from '../apiServices/allApi';
 
 /* -------------------- TYPES -------------------- */
 

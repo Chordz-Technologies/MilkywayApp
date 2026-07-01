@@ -1,26 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-  Alert,
-  ScrollView,
-  Modal
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Alert, ScrollView, Modal } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import {
-  getAcceptedMilkmen,
-  assignTemporaryDistributor,
-  deassignDistributor,
-} from '../../apiServices/allApi';
+import { getAcceptedMilkmen, assignTemporaryDistributor, deassignDistributor, } from '../../apiServices/allApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RouteParams = {
   consumerId: number;
@@ -51,12 +38,13 @@ const TemporaryDistributorModal = ({
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Temporary Assignment Period</Text>
+          <Text style={styles.title}>{t('temporaryDistributor.temporaryAssignmentPeriod')}</Text>
 
           {/* Start Date */}
           <TouchableOpacity
@@ -69,7 +57,7 @@ const TemporaryDistributorModal = ({
                 !startDate && styles.placeholderText,
               ]}
             >
-              {startDate ? startDate.toDateString() : 'Select Start Date'}
+              {startDate ? startDate.toDateString() : t('temporaryDistributor.selectStartDate')}
             </Text>
           </TouchableOpacity>
 
@@ -84,7 +72,7 @@ const TemporaryDistributorModal = ({
                 !endDate && styles.placeholderText,
               ]}
             >
-              {endDate ? endDate.toDateString() : 'Select End Date'}
+              {endDate ? endDate.toDateString() : t('temporaryDistributor.selectEndDate')}
             </Text>
           </TouchableOpacity>
 
@@ -123,7 +111,7 @@ const TemporaryDistributorModal = ({
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-              <Text>Cancel</Text>
+              <Text>{t('common.cancel')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -137,7 +125,7 @@ const TemporaryDistributorModal = ({
                 onSubmit(startDate, endDate);
               }}
             >
-              <Text style={{ color: '#fff' }}>Submit</Text>
+              <Text style={{ color: '#fff' }}>{t('temporaryDistributor.submit')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -151,16 +139,16 @@ const TemporaryDistributorAssignmentScreen = () => {
   const navigation = useNavigation();
   const params = route.params as RouteParams;
   const { user } = useSelector((state: RootState) => state.auth);
-
   const [distributors, setDistributors] = useState<Distributor[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedDistributorId, setSelectedDistributorId] = useState<number | null>(null);
   const [showTempModal, setShowTempModal] = useState(false);
+  const { t } = useTranslation();
 
   const fetchDistributors = useCallback(async () => {
     if (!user?.userID) {
-      Alert.alert('Error', 'User ID not found. Please log in again.');
+      Alert.alert(t('common.error'), t('temporaryDistributor.userIdNotFound'));
       setLoading(false);
       return;
     }
@@ -177,8 +165,7 @@ const TemporaryDistributorAssignmentScreen = () => {
 
       setDistributors(filteredDistributors);
     } catch (err: any) {
-      console.error('Error fetching distributors:', err);
-      Alert.alert('Error', 'Failed to load distributors');
+      Alert.alert(t('common.error'), t('temporaryDistributor.failedToLoadDistributors'));
     } finally {
       setLoading(false);
     }
@@ -190,17 +177,22 @@ const TemporaryDistributorAssignmentScreen = () => {
 
   const handleAssignTemporary = async (startDate: Date, endDate: Date) => {
     if (!selectedDistributorId) {
-      Alert.alert('Error', 'Please select a distributor');
+      Alert.alert(t('common.error'), t('temporaryDistributor.selectDistributor'));
       return;
     }
 
     Alert.alert(
-      'Assign Temporary Distributor',
-      `Are you sure you want to temporarily assign this distributor to ${params.consumerName}?`,
+      t('temporaryDistributor.assignTemporaryDistributor'),
+      t('temporaryDistributor.assignTemporaryConfirmation', {
+        consumerName: params.consumerName,
+      }),
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Assign',
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('temporaryDistributor.assign'),
           onPress: async () => {
             setSubmitting(true);
             try {
@@ -212,15 +204,15 @@ const TemporaryDistributorAssignmentScreen = () => {
                 end_date: endDate.toISOString().split('T')[0],
               });
 
-              Alert.alert('Success', 'Temporary distributor assigned successfully!', [
+              Alert.alert(t('common.success'),
+                t('temporaryDistributor.temporaryDistributorAssigned'), [
                 {
                   text: 'OK',
                   onPress: () => navigation.goBack(),
                 },
               ]);
             } catch (err: any) {
-              console.error('Error assigning temporary distributor:', err);
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to assign distributor');
+              Alert.alert(t('common.error'), err?.response?.data?.message || t('temporaryDistributor.failedAssign'));
             } finally {
               setSubmitting(false);
               setShowTempModal(false);
@@ -233,12 +225,17 @@ const TemporaryDistributorAssignmentScreen = () => {
 
   const handleDeassignTemporary = async () => {
     Alert.alert(
-      'Remove Temporary Distributor',
-      `Are you sure you want to remove the temporary distributor for ${params.consumerName}?`,
+      t('temporaryDistributor.removeTemporaryDistributor'),
+      t('temporaryDistributor.removeTemporaryConfirmation', {
+        consumerName: params.consumerName,
+      }),
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('temporaryDistributor.remove'),
           style: 'destructive',
           onPress: async () => {
             setSubmitting(true);
@@ -247,15 +244,14 @@ const TemporaryDistributorAssignmentScreen = () => {
                 customer_id: params.consumerId,
               });
 
-              Alert.alert('Success', 'Temporary distributor removed successfully!', [
+              Alert.alert(t('common.success'), t('temporaryDistributor.removeSuccess'), [
                 {
                   text: 'OK',
                   onPress: () => navigation.goBack(),
                 },
               ]);
             } catch (err: any) {
-              console.error('Error deassigning distributor:', err);
-              Alert.alert('Error', err?.response?.data?.message || 'Failed to remove distributor');
+              Alert.alert(t('common.error'), err?.response?.data?.message || t('temporaryDistributor.failedRemove'));
             } finally {
               setSubmitting(false);
             }
@@ -278,7 +274,7 @@ const TemporaryDistributorAssignmentScreen = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading distributors...</Text>
+        <Text style={styles.loadingText}>{t('temporaryDistributor.loadingDistributors')}</Text>
       </View>
     );
   }
@@ -292,7 +288,8 @@ const TemporaryDistributorAssignmentScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {params.isTemporary ? 'Remove Temporary Distributor' : 'Assign Temporary Distributor'}
+            {params.isTemporary ? t('temporaryDistributor.removeTemporaryDistributor')
+              : t('temporaryDistributor.assignTemporaryDistributor')}
           </Text>
           <View style={styles.placeholder} />
         </View>
@@ -303,7 +300,7 @@ const TemporaryDistributorAssignmentScreen = () => {
             <View style={styles.consumerHeader}>
               <Ionicons name="person-outline" size={24} color="#007AFF" />
               <View style={styles.consumerInfo}>
-                <Text style={styles.consumerLabel}>Consumer</Text>
+                <Text style={styles.consumerLabel}>{t('temporaryDistributor.consumer')}</Text>
                 <Text style={styles.consumerName}>{params.consumerName}</Text>
               </View>
             </View>
@@ -312,7 +309,7 @@ const TemporaryDistributorAssignmentScreen = () => {
               <View style={styles.currentDistributorInfo}>
                 <Ionicons name="person-circle-outline" size={20} color="#666" />
                 <Text style={styles.currentDistributorText}>
-                  {params.isTemporary ? 'Temporary: ' : 'Permanent: '}
+                  {params.isTemporary ? `${t('temporaryDistributor.temporary')}: ` : `${t('temporaryDistributor.permanent')}: `}
                   <Text style={styles.currentDistributorName}>
                     {params.currentDistributorName}
                   </Text>
@@ -327,9 +324,9 @@ const TemporaryDistributorAssignmentScreen = () => {
               <View style={styles.warningCard}>
                 <Ionicons name="information-circle" size={24} color="#FF9500" />
                 <View style={styles.warningContent}>
-                  <Text style={styles.warningTitle}>Temporary Assignment Active</Text>
+                  <Text style={styles.warningTitle}>{t('temporaryDistributor.temporaryAssignmentActive')}</Text>
                   <Text style={styles.warningText}>
-                    Remove the temporary distributor to restore the permanent distributor assignment.
+                    {t('temporaryDistributor.removeTemporaryDistributorInfo')}
                   </Text>
                 </View>
               </View>
@@ -344,7 +341,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                 ) : (
                   <>
                     <Ionicons name="close-circle-outline" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Remove Temporary Distributor</Text>
+                    <Text style={styles.buttonText}>{t('temporaryDistributor.removeTemporaryDistributor')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -356,10 +353,9 @@ const TemporaryDistributorAssignmentScreen = () => {
                 <View style={styles.instructionCard}>
                   <Ionicons name="information-circle" size={24} color="#007AFF" />
                   <View style={styles.instructionContent}>
-                    <Text style={styles.instructionTitle}>Temporary Assignment</Text>
+                    <Text style={styles.instructionTitle}>{t('temporaryDistributor.temporaryAssignment')}</Text>
                     <Text style={styles.instructionText}>
-                      Select a distributor to temporarily handle deliveries for this consumer. The
-                      permanent distributor will be restored when you remove this assignment.
+                      {t('temporaryDistributor.temporaryAssignmentDescription')}
                     </Text>
                   </View>
                 </View>
@@ -367,12 +363,12 @@ const TemporaryDistributorAssignmentScreen = () => {
 
               {/* Distributor List */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Available Distributors</Text>
+                <Text style={styles.sectionTitle}>{t('temporaryDistributor.availableDistributors')}</Text>
 
                 {distributors.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Ionicons name="people-outline" size={48} color="#ccc" />
-                    <Text style={styles.emptyText}>No other distributors available</Text>
+                    <Text style={styles.emptyText}>{t('temporaryDistributor.noOtherDistributorsAvailable')}</Text>
                   </View>
                 ) : (
                   distributors.map((distributor) => (
@@ -403,7 +399,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                             {distributor.milkman_contact}
                           </Text>
                           <Text style={styles.distributorCount}>
-                            {distributor.assigned_customers_count} consumers assigned
+                            {distributor.assigned_customers_count}{' '}{t('temporaryDistributor.consumersAssigned')}
                           </Text>
                         </View>
                       </View>
@@ -440,7 +436,7 @@ const TemporaryDistributorAssignmentScreen = () => {
                     ) : (
                       <>
                         <Ionicons name="person-add-outline" size={20} color="#fff" />
-                        <Text style={styles.buttonText}>Assign Temporary Distributor</Text>
+                        <Text style={styles.buttonText}>{t('temporaryDistributor.assignTemporaryDistributorButton')}</Text>
                       </>
                     )}
                   </TouchableOpacity>

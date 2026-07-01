@@ -4,22 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/index';
-import {
-  fetchAssignedConsumers,
-  markDelivery,
-  refreshConsumers,
-  setSelectedConsumer,
-  clearError,
-  selectConsumers,
-  selectConsumersLoading,
-  selectConsumersError,
-  selectMarkingDelivery,
-  selectConsumersRefreshing,
-  selectConsumersStats,
-  selectLastActiveDate,
-  checkDailyReset,
-  AssignedConsumer,
-} from '../../store/consumersSlice';
+import { fetchAssignedConsumers, markDelivery, refreshConsumers, setSelectedConsumer, clearError, selectConsumers, selectConsumersLoading, selectConsumersError, selectMarkingDelivery, selectConsumersRefreshing, selectConsumersStats, selectLastActiveDate, checkDailyReset, AssignedConsumer, } from '../../store/consumersSlice';
 import { getMilkmanExtraMilkRequests } from '../../apiServices/allApi';
 import { useDailyDeliveryReset } from '../../hooks/useDailyDeliveryReset';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
@@ -28,10 +13,8 @@ import { Linking } from 'react-native';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 import NetInfo from '@react-native-community/netinfo';
 import RatingModal from '../../screens/RatingModal';
-import {
-  incrementAppOpen,
-  shouldShowRating,
-} from '../../utils/ratingManager';
+import { incrementAppOpen, shouldShowRating, } from '../../utils/ratingManager';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
@@ -61,9 +44,9 @@ const safeParseMilkQuantity = (value: number | string | null | undefined): numbe
 const ConsumerListScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-
   useDailyDeliveryReset();
 
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const consumers = useSelector(selectConsumers);
   const loading = useSelector(selectConsumersLoading);
@@ -221,7 +204,7 @@ const ConsumerListScreen = () => {
         isLocked: isDelivered || isCancelled,
         canDeliver: false,
         canCancel: false,
-        nextAvailable: 'Tomorrow',
+        nextAvailable: t('consumerList.tomorrow'),
       };
     }
 
@@ -234,9 +217,9 @@ const ConsumerListScreen = () => {
       isLocked: false,
       canDeliver: true,
       canCancel: true,
-      nextAvailable: 'Now',
+      nextAvailable: t('consumerList.now'),
     };
-  }, [getTodayString]);
+  }, [getTodayString, t]);
 
   const formatAddress = useCallback((address?: string) => {
     if (!address) { return ''; }
@@ -248,7 +231,7 @@ const ConsumerListScreen = () => {
       requirement?: AssignedConsumer["milk_requirement"],
       editedMilk?: { cow_milk: string; buffalo_milk: string }
     ) => {
-      if (!requirement) return "No requirement specified";
+      if (!requirement) return t('consumerList.noRequirementSpecified');
 
       // If edited values are provided, use those
       const cow = editedMilk?.cow_milk
@@ -261,11 +244,11 @@ const ConsumerListScreen = () => {
 
       const total = cow + buffalo;
 
-      if (total === 0) return "No milk required";
+      if (total === 0) return t('consumerList.noMilkRequired');
 
-      return `Cow: ${cow}L\nBuffalo: ${buffalo}L\nTotal: ${total}L`;
+      return `${t('consumerList.cowMilk')}: ${cow}L\n${t('consumerList.buffaloMilk')}: ${buffalo}L\n${t('consumerList.total')}: ${total}L`;
     },
-    []
+    [t]
   );
 
   useEffect(() => {
@@ -297,12 +280,12 @@ const ConsumerListScreen = () => {
 
     if (isNewDay) {
       Alert.alert(
-        'New Day Detected',
-        'New day started! All delivery buttons have been unlocked. You can now mark deliveries for today.',
+        t('consumerList.newDayDetected'),
+        t('consumerList.newDayMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('consumerList.cancel'), style: 'cancel' },
           {
-            text: 'Refresh',
+            text: t('consumerList.refresh'),
             onPress: () => {
               dispatch(checkDailyReset()).then(() => {
                 dispatch(refreshConsumers(getMilkmanId()));
@@ -325,20 +308,31 @@ const ConsumerListScreen = () => {
 
     if (todayStatus.isLocked) {
       Alert.alert(
-        'Already Processed',
-        `Delivery for ${consumer.customer_name} has already been processed today.\n\nStatus: ${todayStatus.isDelivered ? 'Delivered' : 'Cancelled'}\n\nNext delivery available: Tomorrow`,
+        t('consumerList.alreadyProcessed'),
+        `${t('consumerList.deliveryCompleted', { name: consumer.customer_name, })}
+        ${t(todayStatus.isDelivered ? 'consumerList.delivered' : 'consumerList.cancelled')}
+        ${t('consumerList.nextDeliveryTomorrow')}`,
         [{ text: 'OK', style: 'default' }]
       );
       return;
     }
 
     Alert.alert(
-      'Mark as Delivered',
-      `Confirm delivery for:\n\n${consumer.customer_name}\nDate: ${today}\nAmount: ${getMilkRequirementText(consumer.milk_requirement, editedMilkMap[consumer.customer_id])}`,
+      t('consumerList.markDeliveredTitle'),
+      `${t('consumerList.confirmDelivery')} : ${consumer.customer_name}
+${t('consumerList.date')} : ${today}
+${t('consumerList.amount')} :
+${getMilkRequirementText(
+        consumer.milk_requirement,
+        editedMilkMap[consumer.customer_id]
+      )}`,
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Mark Delivered',
+          text: t('consumerList.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('consumerList.markDelivered'),
           style: 'default',
           onPress: async () => {
             try {
@@ -352,22 +346,35 @@ const ConsumerListScreen = () => {
                 cow_milk: Number(editedMilkMap[consumer.customer_id]?.cow_milk) || 0,
                 buffalo_milk: Number(editedMilkMap[consumer.customer_id]?.buffalo_milk) || 0,
                 reason: `Delivered as per requirement`,
-                remarks: `Delivery completed successfully for ${consumer.customer_name}`,
+                remarks: t('consumerList.deliveryCompleted', { name: consumer.customer_name }),
                 replaceExisting: true,
               })).unwrap();
 
               // Show appropriate message based on online/offline
               const message = result.isOffline
-                ? `Delivery marked offline for ${consumer.customer_name}.\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
-                : `Delivery marked as completed for ${consumer.customer_name}.\n\nButtons are now disabled until tomorrow.`;
+                ? `${t('consumerList.deliveryOffline', {
+                  name: consumer.customer_name,
+                })}
+${t('consumerList.syncMessage')}
+${t('consumerList.buttonsDisabled')}`
+                : `${t('consumerList.deliveryOnline', {
+                  name: consumer.customer_name,
+                })}
+${t('consumerList.buttonsDisabled')}`;
 
               Alert.alert(
-                result.isOffline ? '📱 Offline Mode' : 'Success!',
+                result.isOffline
+                  ? t('consumerList.offlineMode')
+                  : t('common.success'),
                 message,
                 [{ text: 'OK' }]
+
               );
             } catch (error: any) {
-              Alert.alert('Error', error || 'Failed to mark delivery. Please try again.');
+              Alert.alert(
+                t('common.error'),
+                error || t('consumerList.failedDelivery')
+              );
             }
             finally {
               setIsMarkingThisDelivery(false);
@@ -385,8 +392,15 @@ const ConsumerListScreen = () => {
 
     if (todayStatus.isLocked) {
       Alert.alert(
-        'Already Processed',
-        `Delivery for ${consumer.customer_name} has already been processed today.\n\nStatus: ${todayStatus.isDelivered ? 'Delivered' : 'Cancelled'}\n\nNext action available: Tomorrow`,
+        t('consumerList.alreadyProcessed'),
+        `${t('consumerList.deliveryAlreadyProcessed', {
+          name: consumer.customer_name,
+        })}
+${t('consumerList.status')}: ${todayStatus.isDelivered
+          ? t('consumerList.delivered')
+          : t('consumerList.cancelled')
+        }
+${t('consumerList.nextActionTomorrow')}`,
         [{ text: 'OK' }]
       );
       return;
@@ -402,23 +416,35 @@ const ConsumerListScreen = () => {
         status: 'cancelled',
         cow_milk: Number(editedMilkMap[consumer.customer_id]?.cow_milk) || 0,
         buffalo_milk: Number(editedMilkMap[consumer.customer_id]?.buffalo_milk) || 0,
-        reason: reason || 'No reason provided',
-        remarks: reason || `Delivery cancelled for ${consumer.customer_name}`,
+        reason: reason || t('consumerList.noReason'),
+        remarks: reason || t('consumerList.deliveryCancelled', { name: consumer.customer_name, }),
         replaceExisting: true,
       })).unwrap();
 
       // Show appropriate message based on online/offline
       const message = result.isOffline
-        ? `Delivery cancelled offline for ${consumer.customer_name}.\nReason: ${reason}\n\n⚠️ This will be synced to server when you go online.\n\nButtons are now disabled until tomorrow.`
-        : `Delivery cancelled for ${consumer.customer_name}.\nReason: ${reason}\n\nButtons are now disabled until tomorrow.`;
+        ? `${t('consumerList.deliveryCancelled', {
+          name: consumer.customer_name,
+        })}
+${t('consumerList.cancelReason')}: ${reason}
+${t('consumerList.syncMessage')}
+${t('consumerList.buttonsDisabled')}`
+        : `${t('consumerList.deliveryCancelled', {
+          name: consumer.customer_name,
+        })}
+${t('consumerList.cancelReason')}: ${reason}
+${t('consumerList.buttonsDisabled')}`;
 
       Alert.alert(
-        result.isOffline ? '📱 Offline Mode' : 'Cancelled',
+        result.isOffline ? t('consumerList.offlineMode') : t('consumerList.cancelledTitle'),
         message,
         [{ text: 'OK' }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error || 'Failed to cancel delivery. Please try again.');
+      Alert.alert(
+        t('common.error'),
+        error || t('consumerList.failedCancel')
+      );
     }
     finally {
       setIsMarkingCancelDelivery(false);
@@ -497,7 +523,7 @@ const ConsumerListScreen = () => {
             </View>
             <View style={styles.customerDetails}>
               <Text style={styles.customerName} numberOfLines={1}>
-                {item.customer_name || 'Unknown Customer'}
+                {item.customer_name || t('consumerList.unknownCustomer')}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -509,7 +535,7 @@ const ConsumerListScreen = () => {
                 <View style={styles.contactContainer}>
                   <Ionicons name="call" size={12} color="#007AFF" />
                   <Text style={styles.contactText} numberOfLines={1}>
-                    {item.customer_contact || 'Unknown Contact'}
+                    {item.customer_contact || t('consumerList.unknownContact')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -528,13 +554,13 @@ const ConsumerListScreen = () => {
                   color="#fff"
                 />
                 <Text style={styles.statusText}>
-                  {todayStatus.isDelivered ? 'Delivered' : 'Cancelled'}
+                  {todayStatus.isDelivered ? t('consumerList.delivered') : t('consumerList.cancelled')}
                 </Text>
               </View>
             ) : (
               <View style={[styles.statusBadge, styles.pendingBadge]}>
                 <Ionicons name="time" size={12} color="#fff" />
-                <Text style={styles.statusText}>Pending</Text>
+                <Text style={styles.statusText}>{t('consumerList.pending')}</Text>
               </View>
             )}
           </View>
@@ -552,7 +578,7 @@ const ConsumerListScreen = () => {
         <View style={styles.milkSection}>
           <View style={styles.milkHeader}>
             <Ionicons name="water" size={16} color="#007AFF" />
-            <Text style={styles.milkHeaderText}>Daily Milk Requirement</Text>
+            <Text style={styles.milkHeaderText}>{t('consumerList.dailyMilkRequirement')}</Text>
 
             {/* TOTAL MILK BADGE */}
             <View style={styles.totalMilkBadge}>
@@ -570,7 +596,7 @@ const ConsumerListScreen = () => {
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                 <View style={styles.milkType}>
                   <View style={[styles.milkTypeDot, { backgroundColor: '#34C759' }]} />
-                  <Text style={styles.milkTypeText}>Cow: </Text>
+                  <Text style={styles.milkTypeText}>{t('consumerList.cowMilk')}: </Text>
                 </View>
 
                 {isEditingThis ? (
@@ -607,7 +633,7 @@ const ConsumerListScreen = () => {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.milkType}>
                   <View style={[styles.milkTypeDot, { backgroundColor: '#FF9500' }]} />
-                  <Text style={styles.milkTypeText}>Buffalo: </Text>
+                  <Text style={styles.milkTypeText}>{t('consumerList.buffaloMilk')}: </Text>
                 </View>
 
                 {isEditingThis ? (
@@ -659,7 +685,7 @@ const ConsumerListScreen = () => {
                 }}
               >
                 <Text style={{ color: 'white', fontWeight: '600' }}>
-                  {isEditingThis ? 'Done' : 'Edit'}
+                  {isEditingThis ? t('consumerList.done') : t('consumerList.edit')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -671,7 +697,7 @@ const ConsumerListScreen = () => {
             <View style={styles.lockIndicator}>
               <Ionicons name="shield-checkmark" size={16} color="#6B7280" />
               <Text style={styles.lockIndicatorText}>
-                Processing completed - available again tomorrow
+                {t('consumerList.processingCompleted')}
               </Text>
             </View>
           )
@@ -685,7 +711,7 @@ const ConsumerListScreen = () => {
           >
             <Ionicons name="calendar" size={18} color="#007AFF" />
             <Text style={[styles.actionButtonText, { color: '#007AFF' }]}>
-              Calendar
+              {t('consumerList.calendar')}
             </Text>
           </TouchableOpacity>
 
@@ -709,7 +735,7 @@ const ConsumerListScreen = () => {
                   color="#fff"
                 />
                 <Text style={[styles.actionButtonText, { color: '#fff' }]}>
-                  {todayStatus.isDelivered ? 'Delivered' : 'Delivery'}
+                  {todayStatus.isDelivered ? t('consumerList.delivered') : t('consumerList.delivery')}
                 </Text>
               </View>
             )}
@@ -724,8 +750,8 @@ const ConsumerListScreen = () => {
             onPress={() => {
               if (todayStatus.isLocked) {
                 Alert.alert(
-                  'Already Processed',
-                  'This delivery has already been processed for today.',
+                  t('consumerList.alreadyProcessed'),
+                  t('consumerList.alreadyProcessedMessage'),
                   [{ text: 'OK' }]
                 );
                 return;
@@ -751,7 +777,7 @@ const ConsumerListScreen = () => {
                   styles.actionButtonText,
                   { color: cancelButtonDisabled ? '#999' : '#FF3B30' },
                 ]}>
-                  {todayStatus.isCancelled ? 'Cancelled' : 'Cancel'}
+                  {todayStatus.isCancelled ? t('consumerList.cancelled') : t('consumerList.cancel')}
                 </Text>
               </View>
             )}
@@ -763,7 +789,7 @@ const ConsumerListScreen = () => {
             <View style={styles.vendorInfo}>
               <Ionicons name="business" size={12} color="#8E8E93" />
               <Text style={styles.vendorText}>
-                Vendor: {item.provider.provider_name}
+                {t('consumerList.vendor')}: {item.provider.provider_name}
               </Text>
             </View>
           )}
@@ -772,7 +798,7 @@ const ConsumerListScreen = () => {
             <View style={styles.vendorInfo}>
               <Ionicons name="person" size={12} color="#8E8E93" />
               <Text style={styles.vendorText}>
-                Distributor: {item.milkman.milkman_name}
+                {t('consumerList.distributor')}: {item.milkman.milkman_name}
               </Text>
             </View>
           )}
@@ -781,7 +807,7 @@ const ConsumerListScreen = () => {
             <View style={styles.remarksInfo}>
               <Ionicons name="chatbubble" size={12} color="#8E8E93" />
               <Text style={styles.remarksText} numberOfLines={2}>
-                Today: {todayStatus.remarks}
+                {t('consumerList.today')}: {todayStatus.remarks}
               </Text>
             </View>
           )}
@@ -794,27 +820,26 @@ const ConsumerListScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
 
   return (
     <SafeAreaWrapper>
-
       <View style={styles.container}>
         {/* Offline indicator banner */}
         {!isOnline && (
           <View style={styles.offlineIndicatorBanner}>
             <Ionicons name="wifi-outline" size={16} color="#fff" />
-            <Text style={styles.offlineIndicatorText}>You're offline - using cached data</Text>
+            <Text style={styles.offlineIndicatorText}>{t('consumerList.offlineMessage')}</Text>
           </View>
         )}
 
         <View style={styles.modernHeader}>
 
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Daily Deliveries</Text>
+            <Text style={styles.headerTitle}>{t('consumerList.dailyDeliveries')}</Text>
             <Text style={styles.headerSubtitle}>
               {formatDate(getTodayString())}
             </Text>
@@ -861,7 +886,7 @@ const ConsumerListScreen = () => {
               <Ionicons name="people" size={20} color="#007AFF" />
             </View>
             <Text style={styles.statValue}>{stats.totalConsumers}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statLabel}>{t('consumerList.total')}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -871,7 +896,7 @@ const ConsumerListScreen = () => {
             <Text style={styles.statValue}>
               {consumers.filter(c => getTodayDeliveryStatus(c).isDelivered).length}
             </Text>
-            <Text style={styles.statLabel}>Delivered</Text>
+            <Text style={styles.statLabel}>{t('consumerList.delivered')}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -881,7 +906,7 @@ const ConsumerListScreen = () => {
             <Text style={styles.statValue}>
               {consumers.filter(c => getTodayDeliveryStatus(c).isCancelled).length}
             </Text>
-            <Text style={styles.statLabel}>Cancelled</Text>
+            <Text style={styles.statLabel}>{t('consumerList.cancelled')}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -891,7 +916,7 @@ const ConsumerListScreen = () => {
             <Text style={styles.statValue}>
               {consumers.filter(c => !getTodayDeliveryStatus(c).hasDelivery).length}
             </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>{t('consumerList.pending')}</Text>
           </View>
         </View>
 
@@ -908,7 +933,7 @@ const ConsumerListScreen = () => {
                 <Ionicons name="water" size={24} color="#007AFF" />
               </View>
               <View>
-                <Text style={styles.pendingTitle}>Approved Extra Milk Requests</Text>
+                <Text style={styles.pendingTitle}>{t('consumerList.approvedExtraMilkRequests')}</Text>
               </View>
             </View>
             <View style={styles.pendingRight}>
@@ -938,7 +963,7 @@ const ConsumerListScreen = () => {
               return (
                 <View style={[styles.modernErrorBanner, { backgroundColor: '#FFF9E6', borderColor: '#FFE5B4' }]}>
                   <Ionicons name="wifi-outline" size={20} color="#FF9500" />
-                  <Text style={[styles.errorText, { color: '#FF9500' }]}>No internet & no cached data available</Text>
+                  <Text style={[styles.errorText, { color: '#FF9500' }]}>{t('consumerList.noInternetNoCache')}</Text>
                 </View>
               );
             }
@@ -956,7 +981,7 @@ const ConsumerListScreen = () => {
                     }}
                     style={styles.errorRetryButton}
                   >
-                    <Text style={styles.errorRetryText}>Retry</Text>
+                    <Text style={styles.errorRetryText}>{t('common.retry')}</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -968,7 +993,7 @@ const ConsumerListScreen = () => {
 
         <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
           <TextInput
-            placeholder="Search Consumer..."
+            placeholder={t('consumerList.searchConsumer')}
             placeholderTextColor="#A0A0A0"
             value={searchText}
             onChangeText={setSearchText}
@@ -987,7 +1012,7 @@ const ConsumerListScreen = () => {
           loading && consumers.length === 0 ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.loadingText}>Loading your assigned consumers...</Text>
+              <Text style={styles.loadingText}>{t('consumerList.loadingConsumers')}</Text>
             </View>
           ) : (
             <FlatList
@@ -1008,13 +1033,13 @@ const ConsumerListScreen = () => {
                   <View style={styles.emptyIconContainer}>
                     <Ionicons name="people-outline" size={60} color="#C7C7CC" />
                   </View>
-                  <Text style={styles.emptyTitle}>No Consumers Assigned</Text>
+                  <Text style={styles.emptyTitle}>{t('consumerList.noConsumersAssigned')}</Text>
                   <Text style={styles.emptyText}>
-                    You don't have any consumers assigned yet. Contact your vendor to get started with deliveries.
+                    {t('consumerList.noConsumersMessage')}
                   </Text>
                   <TouchableOpacity onPress={handleRefresh} style={styles.modernRefreshButton}>
                     <Ionicons name="refresh" size={18} color="#fff" />
-                    <Text style={styles.modernRefreshButtonText}>Refresh</Text>
+                    <Text style={styles.modernRefreshButtonText}>{t('consumerList.refresh')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1043,23 +1068,23 @@ const ConsumerListScreen = () => {
               padding: 20
             }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
-                Select reason for cancellation
+                {t('consumerList.selectCancellationReason')}
               </Text>
 
               <ScrollView>
                 {[
-                  'Customer unavailable',
-                  'Address issue',
-                  'Product issue',
-                  'Weather/Traffic delay',
-                  'Other reason',
-                  'Payment pending',
-                  'Customer refused',
-                  'Milk not required today',
-                  'Door locked',
-                  'Phone not reachable',
-                  'Wrong address',
-                  'Shifted house'
+                  t('consumerList.customerUnavailable'),
+                  t('consumerList.addressIssue'),
+                  t('consumerList.productIssue'),
+                  t('consumerList.weatherTrafficDelay'),
+                  t('consumerList.otherReason'),
+                  t('consumerList.paymentPending'),
+                  t('consumerList.customerRefused'),
+                  t('consumerList.milkNotRequired'),
+                  t('consumerList.doorLocked'),
+                  t('consumerList.phoneNotReachable'),
+                  t('consumerList.wrongAddress'),
+                  t('consumerList.shiftedHouse'),
                 ].map((reason, idx) => (
                   <TouchableOpacity
                     key={idx}
@@ -1086,9 +1111,8 @@ const ConsumerListScreen = () => {
                   padding: 10
                 }}
               >
-                <Text style={{ fontSize: 16, color: 'red' }}>Close</Text>
+                <Text style={{ fontSize: 16, color: 'red' }}>{t('common.close')}</Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </Modal>

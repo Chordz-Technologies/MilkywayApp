@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { registerDistributor, clearError } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 interface DistributorPayload {
   full_name: string;
@@ -38,6 +39,7 @@ interface FormState {
 export default function DistributorRegistrationScreen({ navigation }: { navigation: any }) {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
+  const { t } = useTranslation();
 
   const scrollRef = useRef<ScrollView>(null);
   const [form, setForm] = useState<FormState>({
@@ -78,41 +80,28 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
   const validate = () => {
     setLocalError('');
-    if (!form.name.trim()) { return 'Full name is required'; }
+    if (!form.name.trim()) { return t('validation.fullNameRequired'); }
 
     const phone = form.phone.trim();
-    if (!phone) { return 'Phone number is required'; }
-    if (!/^[6-9]\d{9}$/.test(phone)) { return 'Phone number must be valid 10 digits starting with 6-9'; }
+    if (!phone) { return t('validation.phoneRequired'); }
+    if (!/^[6-9]\d{9}$/.test(phone)) { return t('validation.invalidPhone'); }
 
-    if (!form.flat.trim()) { return 'Flat/House is required'; }
-    if (!form.society.trim()) { return 'Society/Area is required'; }
-    if (!form.village.trim()) { return 'Village is required'; }
-    if (!form.tal.trim()) { return 'Tal is required'; }
-    if (!form.dist.trim()) { return 'District is required'; }
-    if (!form.state.trim()) { return 'State is required'; }
+    if (!form.flat.trim()) { return t('validation.flatRequired'); }
+    if (!form.society.trim()) { return t('validation.societyRequired'); }
+    if (!form.village.trim()) { return t('validation.villageRequired'); }
+    if (!form.tal.trim()) { return t('validation.talRequired'); }
+    if (!form.dist.trim()) { return t('validation.districtRequired'); }
+    if (!form.state.trim()) { return t('validation.stateRequired'); }
 
     // Added pincode validation
-    if (!form.pincode.trim()) { return 'Pincode is required'; }
-    if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
+    if (!form.pincode.trim()) { return t('validation.pincodeRequired'); }
+    if (!/^\d{6}$/.test(form.pincode.trim())) { return t('validation.invalidPincode'); }
 
-    if (!form.password) { return 'Password is required'; }
-    if (form.password.length < 6) { return 'Password must be at least 6 characters'; }
-    if (form.password !== form.confirmPassword) { return 'Passwords do not match'; }
+    if (!form.password) { return t('validation.passwordRequired'); }
+    if (form.password.length < 6) { return t('validation.passwordMinLength'); }
+    if (form.password !== form.confirmPassword) { return t('validation.passwordMismatch1'); }
 
     return '';
-  };
-
-  const showSuccessAlert = (message: string) => {
-    Alert.alert(
-      'Registration Successful',
-      `${message}\nYou will be redirected to Login.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.replace('Login'),
-        },
-      ],
-    );
   };
 
   const handleSubmit = async () => {
@@ -142,12 +131,12 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
       const result = await dispatch(registerDistributor(payload));
       if (registerDistributor.fulfilled.match(result)) {
-        Alert.alert('Registration Successful', `Distributor registration successful!\nYou will be redirected to Login.`, [
+        Alert.alert(t('registration.registrationSuccessful'), t('registration.distributorRegistrationSuccess'), [
           { text: 'OK', onPress: () => navigation.replace('Login') },
         ]);
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.log('Registration error:', err);
     }
   };
 
@@ -178,7 +167,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
               >
                 <Icon name="arrow-left" size={32} color="#333" />
               </TouchableOpacity>
-              <Text style={styles.title}>Distributor Registration</Text>
+              <Text style={styles.title}>{t('registration.distributorRegistration')}</Text>
             </View>
 
             {displayError ? (
@@ -188,18 +177,18 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             ) : null}
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Full Name<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.fullName')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.name}
                 onChangeText={text => handleInputChange('name', text)}
-                placeholder="Enter full name"
+                placeholder={t('registration.enterFullName')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.phoneNumber')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.phoneInputContainer}>
                 <Text style={styles.countryCode}>+91</Text>
                 <TextInput
@@ -209,7 +198,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                     const cleaned = text.replace(/\D/g, '').slice(0, 10);
                     handleInputChange('phone', cleaned);
                   }}
-                  placeholder="Enter phone number"
+                  placeholder={t('registration.enterPhoneNumber')}
                   keyboardType="number-pad"
                   maxLength={10}
                   placeholderTextColor="#888"
@@ -218,74 +207,74 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Flat / House<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.flatHouse')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.flat}
                 onChangeText={text => handleInputChange('flat', text)}
-                placeholder="Enter flat or house"
+                placeholder={t('registration.enterFlatHouse')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Society / Area<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.societyArea')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.society}
                 onChangeText={text => handleInputChange('society', text)}
-                placeholder="Enter society or area"
+                placeholder={t('registration.enterSocietyArea')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Village<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.village')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.village}
                 onChangeText={text => handleInputChange('village', text)}
-                placeholder="Enter village"
+                placeholder={t('registration.enterVillage')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Taluka<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.taluka')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.tal}
                 onChangeText={text => handleInputChange('tal', text)}
-                placeholder="Enter Taluka"
+                placeholder={t('registration.enterTaluka')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>District<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.district')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.dist}
                 onChangeText={text => handleInputChange('dist', text)}
-                placeholder="Enter District"
+                placeholder={t('registration.enterDistrict')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>State<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.state')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.state}
                 onChangeText={text => handleInputChange('state', text)}
-                placeholder="Enter State"
+                placeholder={t('registration.enterState')}
                 placeholderTextColor="#888"
               />
             </View>
 
             {/* Added Pincode Field */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.pincode')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.pincode}
@@ -293,7 +282,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
                   const cleaned = text.replace(/\D/g, '').slice(0, 6);
                   handleInputChange('pincode', cleaned);
                 }}
-                placeholder="Enter 6-digit pincode"
+                placeholder={t('registration.enterPincode')}
                 keyboardType="number-pad"
                 maxLength={6}
                 placeholderTextColor="#888"
@@ -301,13 +290,13 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.password')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.password}
                   onChangeText={text => handleInputChange('password', text)}
-                  placeholder="Enter password"
+                  placeholder={t('registration.enterPassword')}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#aaa"
@@ -322,13 +311,13 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Confirm Password<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.confirmPassword')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.confirmPassword}
                   onChangeText={text => handleInputChange('confirmPassword', text)}
-                  placeholder="Confirm password"
+                  placeholder={t('registration.reEnterPassword')}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#aaa"
@@ -344,7 +333,7 @@ export default function DistributorRegistrationScreen({ navigation }: { navigati
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
               <Text style={styles.buttonText}>
-                {isLoading ? 'Registering...' : 'Register'}
+                {isLoading ? t('registration.registering') : t('registration.register')}
               </Text>
             </TouchableOpacity>
           </ScrollView>

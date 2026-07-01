@@ -1,36 +1,16 @@
 import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  StyleSheet,
-  Modal,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, StyleSheet, Modal, } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import LeaveRequestModal from '../../components/LeaveRequestModal';
-import {
-  calendarScreenStyles,
-  calendarTheme,
-  colors,
-} from '../../styles/CalendorScreenStyle';
-import {
-  fetchDistributorCalendarData,
-  fetchDistributorMonthSummary,
-  submitDistributorLeaveRequest,
-  setCurrentMonth,
-  clearError,
-  cancelLeave,
-} from '../../store/distributorSlice';
+import { calendarScreenStyles, calendarTheme, colors, } from '../../styles/CalendorScreenStyle';
+import { fetchDistributorCalendarData, fetchDistributorMonthSummary, submitDistributorLeaveRequest, setCurrentMonth, clearError, cancelLeave, } from '../../store/distributorSlice';
 import { checkStoredAuth } from '../../store/authSlice';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 interface DistributorCalendarViewerProps {
   viewerRole?: 'distributor' | 'vendor';
@@ -39,16 +19,13 @@ interface DistributorCalendarViewerProps {
   showBackButton?: boolean;
 }
 
-type MarkedDates = Record<
-  string,
-  {
-    selected?: boolean;
-    marked?: boolean;
-    selectedColor?: string;
-    dotColor?: string;
-    dots?: Array<{ key?: string; color: string }>;
-  }
->;
+type MarkedDates = Record<string, {
+  selected?: boolean;
+  marked?: boolean;
+  selectedColor?: string;
+  dotColor?: string;
+  dots?: Array<{ key?: string; color: string }>;
+}>;
 
 interface LeaveRequestData {
   startDate: string;
@@ -76,21 +53,6 @@ const statusColors: Record<string, string> = {
 // Statuses allowed for vendor viewing (delivery-related only)
 const allowedVendorStatuses = ['delivered', 'pending', 'leave', 'pending_leave', 'cancelled'];
 
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
 // DISTRIBUTOR-ONLY MODAL
 const DistributorModals: React.FC<{
   showLeaveModal: boolean;
@@ -116,41 +78,44 @@ const DistributorModals: React.FC<{
 DistributorModals.displayName = 'DistributorModals';
 
 // STATUS LEGEND - Role-based filtering
-const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) => (
-  <View style={calendarScreenStyles.legendContainer}>
-    <Text style={calendarScreenStyles.legendTitle}>Status Legend</Text>
-    <View style={calendarScreenStyles.legendGrid}>
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered }]} />
-        <Text style={calendarScreenStyles.legendText}>Milk Delivered</Text>
-      </View>
+const StatusLegend: React.FC<{ isVendor: boolean }> = React.memo(({ isVendor }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={calendarScreenStyles.legendContainer}>
+      <Text style={calendarScreenStyles.legendTitle}>{t('calendar.statusLegend')}</Text>
+      <View style={calendarScreenStyles.legendGrid}>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.delivered')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending }]} />
-        <Text style={calendarScreenStyles.legendText}>Milk Delivery Pending</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.milkPending')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
-        <Text style={calendarScreenStyles.legendText}>Leave</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.leave')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending_leave }]} />
-        <Text style={calendarScreenStyles.legendText}>Pending Leave</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending_leave }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.pendingLeave')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
-        <Text style={calendarScreenStyles.legendText}>Milk Cancelled</Text>
-      </View>
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot]} />
-        <Text style={calendarScreenStyles.legendText}></Text>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.milkCancelled')}</Text>
+        </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot]} />
+          <Text style={calendarScreenStyles.legendText}></Text>
+        </View>
       </View>
     </View>
-  </View>
-));
+  )
+});
 
 StatusLegend.displayName = 'StatusLegend';
 
@@ -162,41 +127,47 @@ const MonthlySummary: React.FC<{
   isVendor: boolean;
   leavesCount: number;
 }> = React.memo(({ monthlySummary, currentMonth, currentYear, isVendor, leavesCount }) => {
+  const { t } = useTranslation();
   const totalDays = monthlySummary?.totalDays ?? leavesCount ?? 0;
   const distributed = monthlySummary?.distributed ?? 0;
   const totalMilk = monthlySummary?.totalMilk ?? 0;
   const leaves = monthlySummary?.leaves ?? leavesCount ?? 0;
 
-  return (
+  const monthNames = [
+    t('calendar.january'), t('calendar.february'), t('calendar.march'), t('calendar.april'),
+    t('calendar.may'), t('calendar.june'), t('calendar.july'), t('calendar.august'),
+    t('calendar.september'), t('calendar.october'), t('calendar.november'), t('calendar.december'),
+  ];
 
+  return (
     <View style={calendarScreenStyles.summaryContainer}>
       <Text style={calendarScreenStyles.summaryTitle}>
-        {monthNames[currentMonth]} {currentYear} - Summary
+        {monthNames[currentMonth]} {currentYear} - {t('calendar.summary')}
       </Text>
       <View style={calendarScreenStyles.summaryGrid}>
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="calendar-outline" size={24} color={colors.primary} />
           <Text style={calendarScreenStyles.summaryValue}>{totalDays}</Text>
-          <Text style={calendarScreenStyles.summaryLabel}>Total Days</Text>
+          <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.totalDays')}</Text>
         </View>
 
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="checkmark-circle-outline" size={24} color={'#4CAF50'} />
           <Text style={calendarScreenStyles.summaryValue}>{distributed}</Text>
-          <Text style={calendarScreenStyles.summaryLabel}>Distributed</Text>
+          <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.distributed')}</Text>
         </View>
 
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="water-outline" size={24} color={colors.primary} />
           <Text style={calendarScreenStyles.summaryValue}>{totalMilk}L</Text>
-          <Text style={calendarScreenStyles.summaryLabel}>Total Milk</Text>
+          <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.totalMilk')}</Text>
         </View>
 
         {/* {!isVendor && ( */}
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="calendar-outline" size={24} color={colors.danger} />
           <Text style={calendarScreenStyles.summaryValue}>{leaves}</Text>
-          <Text style={calendarScreenStyles.summaryLabel}>Leaves</Text>
+          <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.leaves')}</Text>
         </View>
         {/* )} */}
       </View>
@@ -240,11 +211,12 @@ const DetailsModal: React.FC<{
     });
   }
 
+  const { t } = useTranslation();
   const statusOrder = ['delivered', 'pending', 'cancelled'];
   const statusLabels: Record<string, string> = {
-    delivered: 'Delivered',
-    pending: 'Pending',
-    cancelled: 'Cancelled',
+    delivered: t('calendar.delivered'),
+    pending: t('calendar.pending'),
+    cancelled: t('calendar.cancelled'),
   };
 
   return (
@@ -279,9 +251,9 @@ const DetailsModal: React.FC<{
               marginBottom: 15,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{formatDate(date)} Details</Text>
+            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{formatDate(date)} {t('calendar.details')}</Text>
             <TouchableOpacity onPress={onClose} style={{ padding: 5 }}>
-              <Text style={{ fontSize: 16, color: colors.primary }}>Close</Text>
+              <Text style={{ fontSize: 16, color: colors.primary }}>{t('calendar.close')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -315,12 +287,12 @@ const DetailsModal: React.FC<{
                       ))
                     ) : (
                       <Text style={{ color: 'black', marginTop: 6 }}>
-                        {count} customers (names not available)
+                        {count} {t('calendar.customersNamesUnavailable')}
                       </Text>
                     )
                   ) : (
                     <Text style={{ color: 'black', marginTop: 6 }}>
-                      No {statusLabels[status] ?? status} Records
+                      {t('calendar.noRecords', { status: statusLabels[status] ?? status })}
                     </Text>
                   )}
                 </View>
@@ -344,6 +316,14 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
+
+  const monthNames = useMemo(
+    () => [t('calendar.january'), t('calendar.february'), t('calendar.march'), t('calendar.april'),
+    t('calendar.may'), t('calendar.june'), t('calendar.july'), t('calendar.august'),
+    t('calendar.september'), t('calendar.october'), t('calendar.november'), t('calendar.december')],
+    [t]
+  );
 
   const routeParams = route.params as {
     viewerRole?: 'distributor' | 'vendor';
@@ -368,8 +348,8 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
 
   const distributorName = useMemo(() => {
     if (actualTargetDistributorName) return actualTargetDistributorName;
-    return user?.name || 'Distributor';
-  }, [actualTargetDistributorName, user?.name]);
+    return user?.name || t('calendar.distributor');
+  }, [actualTargetDistributorName, user?.name, t]);
 
   const isVendor = actualViewerRole === 'vendor';
 
@@ -537,7 +517,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
   const handleLeaveSubmit = useCallback(
     async (leaveData: LeaveRequestData) => {
       if (isVendor || !distributorId) {
-        Alert.alert('Error', 'You do not have permission to submit leave requests');
+        Alert.alert(t('common.error'), t('calendar.noPermissionLeave'));
         return;
       }
       try {
@@ -547,10 +527,10 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
         const monthMM = (currentMonth + 1).toString().padStart(2, '0');
         const yearYYYY = currentYear.toString();
         await dispatch(fetchDistributorMonthSummary({ milkmanId: distributorId, month: monthMM, year: yearYYYY }));
-        Alert.alert('Success', 'Leave request submitted successfully!');
+        Alert.alert(t('common.success'), t('calendar.leaveRequestSuccess'));
         setShowLeaveModal(false);
       } catch (err) {
-        Alert.alert('Error', (err as string) || 'Failed to submit leave request');
+        t('common.error'), (err as string) || t('calendar.leaveRequestFailed')
       }
     },
     [distributorId, dispatch, isVendor]
@@ -578,15 +558,14 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
 
         // For leave-like statuses show a simple message
         if (visibleStatuses.includes('leave')) {
-          Alert.alert('Status', `Distributor was on leave on ${formatDate(day.dateString)}`);
+          Alert.alert(t('calendar.status'), `${t('calendar.distributorOnLeave')} ${formatDate(day.dateString)}`);
           return;
         }
         if (visibleStatuses.includes('pending_leave')) {
-          Alert.alert('Status', `Leave request pending approval for ${formatDate(day.dateString)}`);
+          Alert.alert(t('calendar.status'), `${t('calendar.leavePendingApproval')} ${formatDate(day.dateString)}`);
           return;
         }
-
-        Alert.alert('Status', `No visible details for ${day.dateString}`);
+        Alert.alert(t('calendar.status'), `${t('calendar.noVisibleDetails')} ${day.dateString}`);
         return;
       }
 
@@ -597,16 +576,16 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
         if (isVendor && !allowedVendorStatuses.includes(typeStr)) return;
 
         if (typeStr === 'leave') {
-          Alert.alert('Status', `Distributor was on leave on ${day.dateString}`);
+          Alert.alert(t('calendar.status'), `${t('calendar.distributorOnLeave')} ${day.dateString}`);
           return;
         }
         if (typeStr === 'pending_leave') {
-          Alert.alert('Status', `Leave request pending approval for ${day.dateString}`);
+          Alert.alert(t('calendar.status'), `${t('calendar.leavePendingApproval')} ${day.dateString}`);
           return;
         }
 
         // For other statuses without details, just show a simple alert
-        Alert.alert('Status', `Status: ${typeStr} on ${day.dateString}`);
+        Alert.alert(t('calendar.status'), `${t('calendar.status')}: ${typeStr} ${t('calendar.onDate')} ${day.dateString}`);
       }
     },
     [leaveTypes, isVendor]
@@ -632,11 +611,11 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
 
   const handleApplyLeave = useCallback(() => {
     if (isVendor) {
-      Alert.alert('Error', 'You do not have permission to apply for leave');
+      Alert.alert(t('common.error'), t('calendar.applyLeavePermission'));
       return;
     }
     if (!distributorId) {
-      Alert.alert('Error', 'Please login first');
+      Alert.alert(t('common.error'), t('calendar.loginFirst'));
       return;
     }
     setShowLeaveModal(true);
@@ -645,23 +624,30 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
   const handleCancelLeave = useCallback(
     (leaveId: string, leaveDate: string) => {
       if (isVendor) {
-        Alert.alert('Error', 'You do not have permission to cancel leave requests');
+        Alert.alert(t('common.error'), t('calendar.cancelLeavePermission'));
         return;
       }
 
-      Alert.alert('Cancel Leave', `Cancel leave for ${leaveDate}?`, [
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            if (distributorId) {
-              dispatch(cancelLeave({ leaveId, leaveDate, milkmanId: distributorId }));
-              Alert.alert('Success', 'Leave cancelled successfully!');
-            }
+      Alert.alert(
+        t('calendar.cancelLeave'),
+        `${t('calendar.cancelLeaveConfirm')} ${leaveDate}?`,
+        [
+          {
+            text: t('calendar.yesCancel'),
+            style: 'destructive',
+            onPress: () => {
+              if (distributorId) {
+                dispatch(cancelLeave({ leaveId, leaveDate, milkmanId: distributorId, }));
+                Alert.alert(t('common.success'), t('calendar.leaveCancelled')
+                );
+              }
+            },
           },
-        },
-        { text: 'No', style: 'cancel' },
-      ]);
+          {
+            text: t('calendar.no'),
+            style: 'cancel',
+          },
+        ]);
     },
     [dispatch, distributorId, isVendor]
   );
@@ -679,7 +665,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
   if (!isAuthenticated) {
     return (
       <View style={calendarScreenStyles.loadingContainer}>
-        <Text>Please login to view distributor calendar</Text>
+        <Text>{t('calendar.pleaseLoginDistributorCalendar')}</Text>
       </View>
     );
   }
@@ -688,7 +674,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
     return (
       <View style={calendarScreenStyles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text>Loading distributor calendar...</Text>
+        <Text>{t('calendar.loadingDistributorCalendar')}</Text>
       </View>
     );
   }
@@ -710,16 +696,16 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
 
           <View style={styles.headerContent}>
             <Text style={calendarScreenStyles.title}>
-              {distributorName} - Calendar
+              {distributorName} - {t('calendar.calendarTitle')}
             </Text>
             <View style={calendarScreenStyles.monthSelector}>
               <Text style={calendarScreenStyles.monthText}>
                 {monthNames[currentMonth]} {currentYear}
               </Text>
             </View>
-            {distributorId && (
+            {/* {distributorId && (
               <Text style={calendarScreenStyles.customerIdText}>Distributor ID: {distributorId}</Text>
-            )}
+            )} */}
           </View>
         </View>
 
@@ -730,7 +716,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
               style={calendarScreenStyles.retryButton}
               onPress={() => dispatch(clearError())}
             >
-              <Text style={calendarScreenStyles.retryButtonText}>Dismiss</Text>
+              <Text style={calendarScreenStyles.retryButtonText}>{t('calendar.dismiss')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -784,7 +770,7 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
           {!isVendor && (
             <>
               <View style={calendarScreenStyles.actionsContainer}>
-                <Text style={calendarScreenStyles.actionsTitle}>Quick Actions</Text>
+                <Text style={calendarScreenStyles.actionsTitle}>{t('calendar.quickActions')}</Text>
 
                 <TouchableOpacity
                   style={calendarScreenStyles.actionButton}
@@ -795,9 +781,9 @@ const DistributorCalendarScreen: React.FC<DistributorCalendarViewerProps> = ({
                     <Ionicons name="calendar-outline" size={22} color={colors.white} />
                   </View>
                   <View style={calendarScreenStyles.actionTextContainer}>
-                    <Text style={calendarScreenStyles.actionTitle}>Request Leave</Text>
+                    <Text style={calendarScreenStyles.actionTitle}>{t('calendar.requestLeave')}</Text>
                     <Text style={calendarScreenStyles.actionSubtitle}>
-                      Request leave for specific date
+                      {t('calendar.requestLeaveSubtitle')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward-outline" size={16} color={colors.gray500} />

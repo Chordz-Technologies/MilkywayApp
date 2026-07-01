@@ -1,11 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { REHYDRATE } from 'redux-persist';
-import {
-  getConsumerCalendar,
-  applyForLeave,
-  requestExtraMilk,
-  getConsumerSummary
-} from '../apiServices/allApi';
+import { getConsumerCalendar, applyForLeave, requestExtraMilk, getConsumerSummary } from '../apiServices/allApi';
 
 interface DeliveryCalendarItem {
   date: string;
@@ -115,17 +110,9 @@ export const fetchCalendarData = createAsyncThunk(
   'calendar/fetchCalendarData',
   async (params: { customerId: number; month: string }, thunkAPI) => {
     try {
-      console.log('📡 Fetching calendar data:', params);
       const response = await getConsumerCalendar({
         customer_id: params.customerId,
         month: params.month,
-      });
-
-      console.log('🔍 RAW API Response:', {
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-        keys: response.data ? Object.keys(response.data) : [],
-        hasData: !!response.data,
       });
 
       // ✅ Extract actual calendar array from response
@@ -135,12 +122,10 @@ export const fetchCalendarData = createAsyncThunk(
       // Handle different response structures
       if (Array.isArray(response.data)) {
         calendarArray = response.data;
-        console.log('✅ Direct array response');
       } else if (response.data && typeof response.data === 'object') {
         // Nested response structure
         if (Array.isArray(response.data.data)) {
           calendarArray = response.data.data;
-          console.log('✅ Extracted from response.data.data');
 
           // ✅ Extract summary if it exists
           summaryData = {
@@ -150,10 +135,8 @@ export const fetchCalendarData = createAsyncThunk(
             totalLeaves: response.data.total_leaves || response.data.totalLeaves || 0,
           };
 
-          console.log('📊 Extracted summary from response:', summaryData);
         } else if (Array.isArray(response.data.calendar)) {
           calendarArray = response.data.calendar;
-          console.log('✅ Extracted from response.data.calendar');
 
           summaryData = {
             totalMilk: response.data.total_milk || '0L',
@@ -163,14 +146,11 @@ export const fetchCalendarData = createAsyncThunk(
           };
         } else if (Array.isArray(response.data.deliveries)) {
           calendarArray = response.data.deliveries;
-          console.log('✅ Extracted from response.data.deliveries');
         } else if (Array.isArray(response.data.results)) {
           calendarArray = response.data.results;
-          console.log('✅ Extracted from response.data.results');
         } else {
           const keys = Object.keys(response.data);
           if (keys.length > 0 && keys[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log('🔄 Converting object with date keys to array');
             calendarArray = keys.map(date => ({
               date,
               status: response.data[date],
@@ -183,13 +163,6 @@ export const fetchCalendarData = createAsyncThunk(
         }
       }
 
-      console.log('✅ Final calendar array:', {
-        isArray: Array.isArray(calendarArray),
-        length: calendarArray?.length || 0,
-        firstItem: calendarArray?.[0],
-        lastItem: calendarArray?.[calendarArray.length - 1],
-      });
-
       return {
         data: calendarArray,
         summary: summaryData,
@@ -198,7 +171,6 @@ export const fetchCalendarData = createAsyncThunk(
       };
     } catch (error: any) {
       console.error('❌ fetchCalendarData error:', error);
-      console.error('Error details:', error.response?.data || error.message);
       return thunkAPI.rejectWithValue('Failed to fetch calendar data');
     }
   }
@@ -208,7 +180,6 @@ export const fetchConsumerSummary = createAsyncThunk(
   'calendar/fetchConsumerSummary',
   async (params: { customerId: number; month: string; year: string }, thunkAPI) => {
     try {
-      console.log('📡 Fetching consumer summary:', params);
       const response = await getConsumerSummary({
         customer_id: params.customerId,
         month: params.month,
@@ -217,8 +188,6 @@ export const fetchConsumerSummary = createAsyncThunk(
 
       // Backend returns { status, code, message, data: { ... } }
       const payload = response?.data?.data || response?.data;
-
-      console.log('📊 Consumer summary response payload:', payload);
 
       const summary = {
         // store numeric values; UI will format
@@ -435,23 +404,12 @@ const calendarSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCalendarData.fulfilled, (state, action) => {
-        console.log('📅 ========== FETCH CALENDAR DATA ==========');
-        console.log('📦 Payload:', {
-          month: action.payload.month,
-          customerId: action.payload.customerId,
-          dataLength: action.payload.data?.length || 0,
-          hasSummary: !!action.payload.summary,
-        });
-
         state.loading = false;
 
         // Log BEFORE merge (per-customer)
         const _custKey = String(action.payload.customerId);
         const beforeDelivery = state.deliveryTypesByCustomer[_custKey] || {};
         const beforeCalendar = state.calendarDataByCustomer[_custKey] || {};
-        console.log('📊 BEFORE MERGE (customer):');
-        console.log('  - deliveryTypes count:', Object.keys(beforeDelivery).length);
-        console.log('  - calendarData count:', Object.keys(beforeCalendar).length);
         if (Object.keys(beforeDelivery).length > 0) {
           const dates = Object.keys(beforeDelivery).sort();
           console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
@@ -497,15 +455,8 @@ const calendarSlice = createSlice({
             if (item.status === 'customer_paused' || item.status === 'leave') { leaveCount++; }
           });
 
-          console.log('✅ Processed data:', {
-            newDates: Object.keys(newDeliveryTypes).length,
-            delivered: deliveredCount,
-            leaves: leaveCount,
-          });
         } else {
           console.error('❌ Payload data is not an array!');
-          console.error('   Type:', typeof action.payload.data);
-          console.error('   Value:', action.payload.data);
         }
 
         // MERGE into per-customer storage instead of the global maps
@@ -576,16 +527,9 @@ const calendarSlice = createSlice({
         const _afterKey = String(action.payload.customerId);
         const afterDelivery = state.deliveryTypesByCustomer[_afterKey] || {};
         const afterCalendar = state.calendarDataByCustomer[_afterKey] || {};
-        console.log('📊 AFTER MERGE (customer):');
-        console.log('  - deliveryTypes count:', Object.keys(afterDelivery).length);
-        console.log('  - calendarData count:', Object.keys(afterCalendar).length);
         if (Object.keys(afterDelivery).length > 0) {
           const dates = Object.keys(afterDelivery).sort();
-          console.log('  - Date range:', `${dates[0]} to ${dates[dates.length - 1]}`);
-          console.log('  - Recent dates:', dates.slice(-5));
         }
-        console.log('  - Fetched months:', state.lastFetchedMonths);
-        console.log('  - Last updated:', new Date(state.lastUpdated).toISOString());
 
         // ✅ IMPROVED: Use backend summary, but validate and fallback to calculated values
         if (action.payload.summary) {
@@ -599,13 +543,6 @@ const calendarSlice = createSlice({
             totalDeliveries: typeof action.payload.summary.totalDeliveries === 'number' ? action.payload.summary.totalDeliveries : deliveredCount,
             totalLeaves: typeof action.payload.summary.totalLeaves === 'number' ? action.payload.summary.totalLeaves : leaveCount,
           };
-
-          console.log('📊 Summary validation (customer):', {
-            customerId: action.payload.customerId,
-            backendValues: action.payload.summary,
-            calculatedDeliveries: deliveredCount,
-            calculatedLeaves: leaveCount,
-          });
         } else {
           console.log('⚠️ No backend summary, using calculated values');
           const custKey = String(action.payload.customerId);
@@ -619,12 +556,6 @@ const calendarSlice = createSlice({
 
         const custKeyForFinal = String(action.payload.customerId);
         const finalSummary = state.monthlySummaryByCustomer[custKeyForFinal] || { totalMilk: '0L', totalBill: '₹0', totalDeliveries: 0, totalLeaves: 0 };
-        console.log('📊 Final Summary (customer):', finalSummary);
-        console.log('   - Total Milk:', finalSummary.totalMilk);
-        console.log('   - Total Bill:', finalSummary.totalBill);
-        console.log('   - Deliveries:', finalSummary.totalDeliveries);
-        console.log('   - Leaves:', finalSummary.totalLeaves);
-        console.log('=========================================');
 
         // Initialize leave and milk requests arrays for this customer
         const custId = action.payload.customerId;
@@ -765,8 +696,6 @@ const calendarSlice = createSlice({
       })
       .addCase(REHYDRATE, (state, action: any) => {
         if (action.payload?.calendar) {
-          console.log('🔄 ========== REHYDRATE ==========');
-          console.log('  - Restoring calendar from storage');
           // Support both new per-customer shape and older flat shape
           const calendarPayload = action.payload.calendar;
           const deliveryCount = calendarPayload.deliveryTypesByCustomer
@@ -776,10 +705,6 @@ const calendarSlice = createSlice({
             ? Object.keys(calendarPayload.calendarDataByCustomer).length
             : Object.keys(calendarPayload.calendarData || {}).length;
 
-          console.log('  - deliveryTypes entries:', deliveryCount);
-          console.log('  - calendarData entries:', calendarCount);
-          console.log('  - lastFetchedMonths:', calendarPayload.lastFetchedMonths);
-          console.log('===================================');
           // Merge payload carefully to avoid shape mismatch
           return { ...state, ...action.payload.calendar, loading: false };
         }

@@ -1,21 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    Alert,
-    Platform,
-    RefreshControl,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform, RefreshControl, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RazorpayCheckout from 'react-native-razorpay';
 import { getVendorSubscriptions, createOrder, verifyPayment } from '../../apiServices/allApi'; // ✅ import your APIs
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
     VendorSubscription: undefined;
@@ -38,6 +29,7 @@ const VendorSubscriptionScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         fetchSubscriptions();
@@ -55,17 +47,17 @@ const VendorSubscriptionScreen = () => {
                     id: item.id,
                     name: item.plan_name,
                     price: parseFloat(item.price),
-                    duration: `${item.duration} Days`,
+                    duration: `${item.duration} ${t('common.days')}`,
                     description: item.description,
                 }));
                 setSubscriptions(formattedData);
             } else {
-                Alert.alert('Error', 'No subscription plans found.');
+                Alert.alert(t('common.error'), t('subscription.noPlansFound'));
                 setSubscriptions([]);
             }
         } catch (error) {
             console.error('Error fetching subscriptions:', error);
-            Alert.alert('Error', 'Failed to load subscriptions.');
+            Alert.alert(t('common.error'), t('subscription.failedToLoad'));
         } finally {
             setIsLoading(false);
             setRefreshing(false);
@@ -92,7 +84,7 @@ const VendorSubscriptionScreen = () => {
 
             const data = orderRes.data?.data;
             if (!data || !data.order_id || !data.razorpay_key) {
-                Alert.alert("Error", "Invalid order response from server.");
+                Alert.alert(t('common.error'), t('subscription.invalidOrderResponse'));
                 setProcessingId(null);
                 return;
             }
@@ -107,11 +99,11 @@ const VendorSubscriptionScreen = () => {
                 currency: data.currency || 'INR',
                 key: razorpayKey,
                 amount: amount,
-                name: "Milk Vendor Subscription",
+                name: t('subscription.milkVendorSubscription'),
                 order_id: razorpayOrderId,
                 prefill: {
                     contact: data.vendor_contact_number || '',
-                    name: data.subscription_details?.vendor_name || 'Vendor',
+                    name: data.subscription_details?.vendor_name || t('subscription.vendor'),
                 },
                 theme: { color: '#007AFF' },
             };
@@ -128,16 +120,16 @@ const VendorSubscriptionScreen = () => {
                     });
 
                     if (verifyRes.data?.status === "success") {
-                        Alert.alert("Success", "Payment verified successfully!");
+                        Alert.alert(t('common.success'), t('subscription.paymentVerified'));
                     } else {
-                        Alert.alert("Error", "Payment verification failed. Please contact support.");
+                        Alert.alert(t('common.error'), t('subscription.paymentVerificationFailed'));
                     }
                 })
                 .catch((error) => {
-                    Alert.alert("Payment Failed", "Payment was not completed. Please try again.");
+                    Alert.alert(t('subscription.paymentFailed'), t('subscription.paymentNotCompleted'));
                 });
         } catch (error) {
-            Alert.alert("Error", "Something went wrong during payment.");
+            Alert.alert(t('common.error'), t('subscription.paymentError'));
         } finally {
             setProcessingId(null);
         }
@@ -176,7 +168,7 @@ const VendorSubscriptionScreen = () => {
                     ) : (
                         <>
                             <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                            <Text style={styles.subscribeText}>Subscribe Now</Text>
+                            <Text style={styles.subscribeText}>{t('subscription.subscribeNow')}</Text>
                         </>
                     )}
                 </TouchableOpacity>
@@ -188,7 +180,7 @@ const VendorSubscriptionScreen = () => {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FF9500" />
-                <Text style={styles.loadingText}>Loading subscriptions...</Text>
+                <Text style={styles.loadingText}>{t('subscription.loadingSubscriptions')}</Text>
             </View>
         );
     }
@@ -202,8 +194,8 @@ const VendorSubscriptionScreen = () => {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Subscriptions</Text>
-                        <Text style={styles.headerSubtitle}>Choose your preferred plan below</Text>
+                        <Text style={styles.headerTitle}>{t('subscription.subscriptions')}</Text>
+                        <Text style={styles.headerSubtitle}>{t('subscription.choosePlan')}</Text>
                     </View>
                 </View>
 
@@ -211,8 +203,8 @@ const VendorSubscriptionScreen = () => {
                 {subscriptions.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Ionicons name="gift-outline" size={64} color="#ccc" />
-                        <Text style={styles.emptyTitle}>No Packages Found</Text>
-                        <Text style={styles.emptySubtitle}>Subscription plans will appear here.</Text>
+                        <Text style={styles.emptyTitle}>{t('subscription.noPackagesFound')}</Text>
+                        <Text style={styles.emptySubtitle}>{t('subscription.plansAppearHere')}</Text>
                     </View>
                 ) : (
                     <FlatList

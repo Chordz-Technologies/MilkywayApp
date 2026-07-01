@@ -1,22 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
+import { useTranslation } from '../../i18n/LanguageProvider';
 import { RootState } from '../../store';
-import {
-  getAllVendors,
-  getDistributorDetailsById,
-  getJoinAssignmentStatus,
-  createRequest,
-} from '../../apiServices/allApi';
+import { getAllVendors, getDistributorDetailsById, getJoinAssignmentStatus, createRequest, } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type Vendor = {
@@ -39,6 +27,7 @@ type Vendor = {
 };
 
 const DistributorHomeScreen = () => {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -68,7 +57,7 @@ const DistributorHomeScreen = () => {
           joinStatusLocal = assignRes.data.status || 'accepted';
         }
       } catch (err: any) {
-        console.warn('Join assignment status API failed, falling back to provider field:', err.message);
+        console.log('Join assignment status API failed, falling back to provider field:', err.message);
       }
 
       if (joinedVendorData) {
@@ -106,7 +95,7 @@ const DistributorHomeScreen = () => {
       }
     } catch (err: any) {
       setVendors([]);
-      Alert.alert('Error', err?.message || 'Failed to load vendors');
+      Alert.alert(t('common.error'), err?.message || t('distributor.loadingVendors'));
     } finally {
       setLoading(false);
     }
@@ -118,7 +107,7 @@ const DistributorHomeScreen = () => {
 
   const sendJoinRequest = async (vendorId: string | number) => {
     if (!user?.userID) {
-      Alert.alert('Error', 'User not logged in');
+      Alert.alert(t('common.error'), t('login.unknownRole'));
       return;
     }
 
@@ -129,17 +118,17 @@ const DistributorHomeScreen = () => {
         user_type: 'milkman',
         vendor: Number(vendorId),
       });
-      Alert.alert('Success', 'Join request sent successfully!');
+      Alert.alert(t('common.success'), t('distributor.joinVendor'));
       await loadData();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send join request');
+      Alert.alert(t('common.error'), err.message || t('distributor.failedToSendJoinRequest'));
     } finally {
       setSubmittingId(null);
     }
   };
 
   const getVillage = (vendor: Vendor): string =>
-    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || 'N/A';
+    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || t('common.noData');
 
   const getCowRate = (vendor: Vendor): string => {
     const rate = vendor.cr;
@@ -167,7 +156,7 @@ const DistributorHomeScreen = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1976D2" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -178,12 +167,12 @@ const DistributorHomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>
-              {joinStatus === 'accepted' && joinedVendor ? 'Your Vendor' : 'Available Vendors'}
+              {joinStatus === 'accepted' && joinedVendor ? t('distributor.yourVendor') : t('distributor.availableVendors')}
             </Text>
             <Text style={styles.subtitle}>
               {joinStatus === 'accepted' && joinedVendor
-                ? 'Connected vendor details'
-                : 'Find and connect with vendors'}
+                ? t('distributor.connectedVendorDetails')
+                : t('distributor.findAndConnectWithVendors')}
             </Text>
           </View>
         </View>
@@ -191,7 +180,7 @@ const DistributorHomeScreen = () => {
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#1976D2" />
-            <Text style={styles.loadingText}>Loading vendors...</Text>
+            <Text style={styles.loadingText}>{t('distributor.loadingVendors')}</Text>
           </View>
         ) : (
           <FlatList
@@ -205,7 +194,7 @@ const DistributorHomeScreen = () => {
                     <Ionicons name="business" size={24} color="#1976D2" />
                   </View>
                   <View style={styles.cardTitleContainer}>
-                    <Text style={styles.vendorName}>{item.name || 'Vendor'}</Text>
+                    <Text style={styles.vendorName}>{item.name || t('common.vendor')}</Text>
                     {joinStatus === 'accepted' && joinedVendor && (
                       <View style={styles.statusBadge}>
                         <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
@@ -218,7 +207,7 @@ const DistributorHomeScreen = () => {
                 <View style={styles.infoSection}>
                   <View style={styles.infoRow}>
                     <Ionicons name="call-outline" size={18} color="#666" />
-                    <Text style={styles.infoText}>{item.contact || 'N/A'}</Text>
+                    <Text style={styles.infoText}>{item.contact || t('common.noData')}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="location-outline" size={18} color="#666" />
@@ -228,12 +217,12 @@ const DistributorHomeScreen = () => {
 
                 <View style={styles.ratesContainer}>
                   <View style={styles.rateBox}>
-                    <Text style={styles.rateLabel}>Cow Milk</Text>
+                    <Text style={styles.rateLabel}>{t('common.cowMilk')}</Text>
                     <Text style={styles.rateValue}>{getCowRate(item)}</Text>
                   </View>
                   <View style={styles.rateDivider} />
                   <View style={styles.rateBox}>
-                    <Text style={styles.rateLabel}>Buffalo Milk</Text>
+                    <Text style={styles.rateLabel}>{t('common.buffaloMilk')}</Text>
                     <Text style={styles.rateValue}>{getBuffaloRate(item)}</Text>
                   </View>
                 </View>
@@ -254,7 +243,7 @@ const DistributorHomeScreen = () => {
                       ) : (
                         <>
                           <Ionicons name="add-circle-outline" size={20} color="#fff" />
-                          <Text style={styles.buttonText}>Join Vendor</Text>
+                          <Text style={styles.buttonText}>{t('distributor.joinVendor')}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -264,8 +253,8 @@ const DistributorHomeScreen = () => {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="storefront-outline" size={64} color="#ccc" />
-                <Text style={styles.emptyText}>No vendors available</Text>
-                <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
+                <Text style={styles.emptyText}>{t('distributor.noVendors')}</Text>
+                <Text style={styles.emptySubtext}>{t('common.checkYourPincodeOrTryAgainLater')}</Text>
               </View>
             }
           />

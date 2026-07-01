@@ -1,8 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import {
-  getDistributorAssignedConsumers,
-  markDeliveryAsSuccessful,
-} from '../apiServices/allApi';
+import { getDistributorAssignedConsumers, markDeliveryAsSuccessful, } from '../apiServices/allApi';
 import NetInfo from '@react-native-community/netinfo';
 import { saveOfflineDelivery } from '../realm/offlineDeliveryRealm';
 
@@ -216,7 +213,6 @@ export const markDelivery = createAsyncThunk(
 
       // 🌐 ONLINE: Call API normally
       const response = await markDeliveryAsSuccessful(payload);
-      console.log("Delivery data payload:", payload);
       return {
         ...payload,
         timestamp: new Date().toISOString(),

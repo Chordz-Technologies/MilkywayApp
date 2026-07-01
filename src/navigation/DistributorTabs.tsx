@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from '../i18n/LanguageProvider';
 import DistributorCalendarScreen from '../screens/Distributor/DistributorCalendorScreen';
 import DistributorHomeScreen from '../screens/Distributor/DistributorHomeScreen';
 import DistributorProfileScreen from '../screens/Distributor/DistributorProfileScreen';
@@ -46,7 +47,23 @@ const getTabBarIcon = (
 };
 
 export default function DistributorTabs() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+
+  const getTabLabel = (routeName: keyof DistributorTabParamList) => {
+    switch (routeName) {
+      case 'Consumers':
+        return t('distributor.consumers');
+      case 'Calendar':
+        return t('distributor.calendar');
+      case 'Vendors':
+        return t('distributor.vendors');
+      case 'Profile':
+        return t('distributor.profile');
+      default:
+        return routeName;
+    }
+  };
 
   return (
     <Tab.Navigator
@@ -56,9 +73,9 @@ export default function DistributorTabs() {
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
-          paddingBottom: insets.bottom + 8, // Add safe area bottom padding
+          paddingBottom: insets.bottom + 8,
           paddingTop: 8,
-          height: 60 + insets.bottom, // Increase height for safe area
+          height: 60 + insets.bottom,
           backgroundColor: '#fff',
           borderTopWidth: 1,
           borderTopColor: '#eee',
@@ -67,30 +84,26 @@ export default function DistributorTabs() {
           fontSize: 12,
           fontWeight: '500',
         },
-        // Use the external function
         tabBarIcon: ({ color, size, focused }) =>
           getTabBarIcon(route.name, focused, color, size),
+        tabBarLabel: getTabLabel(route.name),
       })}
     >
       <Tab.Screen
         name="Consumers"
         component={ConsumersList}
-        options={{ tabBarLabel: 'Consumers' }}
       />
       <Tab.Screen
         name="Calendar"
         component={DistributorCalendarScreen}
-        options={{ tabBarLabel: 'Calendar' }}
       />
       <Tab.Screen
         name="Vendors"
         component={DistributorHomeScreen}
-        options={{ tabBarLabel: 'Vendors' }}
       />
       <Tab.Screen
         name="Profile"
         component={DistributorProfileScreen}
-        options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
   );

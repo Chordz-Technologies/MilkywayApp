@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { EventEmitter } from "eventemitter3"; // use eventemitter3 for TS compatibility
+import { EventEmitter } from "eventemitter3"; 
 import notifee from "@notifee/react-native";
 
 export interface AppNotification {
@@ -19,8 +19,8 @@ export async function showLocalNotification(notification: Partial<AppNotificatio
         notificationEmitter.emit("newNotification");
 
         await notifee.displayNotification({
-            title: notification.title || "नवीन नोटिफिकेशन",
-            body: notification.body || "मजकूर उपलब्ध नाही",
+            title: notification.title,
+            body: notification.body,
             android: { channelId: "default", smallIcon: "ic_launcher" },
         });
     } catch (e) {
@@ -36,8 +36,8 @@ export async function saveNotification(notification: Partial<AppNotification>): 
 
         notifications.unshift({
             id: Date.now().toString(),
-            title: notification.title || "नवीन नोटिफिकेशन",
-            body: notification.body || "मजकूर उपलब्ध नाही",
+            title: notification.title || "",
+            body: notification.body || "",
             timestamp: new Date().toISOString(),
             read: false,
         });

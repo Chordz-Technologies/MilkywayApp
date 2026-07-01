@@ -1,31 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-    Platform,
-    Alert,
-    ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Alert, ScrollView, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import {
-    getAcceptedMilkmen,
-    assignDistributorForExtraMilk,
-    deassignDistributor,
-} from '../../apiServices/allApi';
+import { getAcceptedMilkmen, assignDistributorForExtraMilk, deassignDistributor, } from '../../apiServices/allApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RouteParams = {
     consumerId: number;
     consumerName: string;
     requestId: number;
     currentDistributorId?: number;
-    currentDistributorName?: string;
+    currentDistributorName: string;
     isTemporary?: boolean;
 };
 
@@ -42,15 +30,15 @@ const MilkRequestDistributorAssignScreen = () => {
     const navigation = useNavigation();
     const params = route.params as RouteParams;
     const { user } = useSelector((state: RootState) => state.auth);
-
     const [distributors, setDistributors] = useState<Distributor[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [selectedDistributorId, setSelectedDistributorId] = useState<number | null>(null);
+    const { t } = useTranslation();
 
     const fetchDistributors = useCallback(async () => {
         if (!user?.userID) {
-            Alert.alert('Error', 'User ID not found. Please log in again.');
+            Alert.alert(t('common.error'), t('temporaryDistributor.userIdNotFound'));
             setLoading(false);
             return;
         }
@@ -67,8 +55,7 @@ const MilkRequestDistributorAssignScreen = () => {
 
             setDistributors(filteredDistributors);
         } catch (err: any) {
-            console.error('Error fetching distributors:', err);
-            Alert.alert('Error', 'Failed to load distributors');
+            Alert.alert(t('common.error'), t('temporaryDistributor.failedToLoadDistributors'));
         } finally {
             setLoading(false);
         }
@@ -80,17 +67,22 @@ const MilkRequestDistributorAssignScreen = () => {
 
     const handleAssignTemporary = async () => {
         if (!selectedDistributorId) {
-            Alert.alert('Error', 'Please select a distributor');
+            Alert.alert(t('common.error'), t('temporaryDistributor.selectDistributor'));
             return;
         }
 
         Alert.alert(
-            'Assign Distributor',
-            `Are you sure you want to assign this distributor to ${params.consumerName}?`,
+            t('temporaryDistributor.assignDistributor'),
+            t('temporaryDistributor.assignConfirmation', {
+                consumerName: params.consumerName,
+            }),
             [
-                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Assign',
+                    text: t('common.cancel'),
+                    style: 'cancel',
+                },
+                {
+                    text: t('temporaryDistributor.assign'),
                     onPress: async () => {
                         setSubmitting(true);
                         try {
@@ -99,7 +91,7 @@ const MilkRequestDistributorAssignScreen = () => {
                                 milkman_id: selectedDistributorId,
                             });
 
-                            Alert.alert('Success', 'Distributor assigned successfully!', [
+                            Alert.alert(t('common.success'), t('temporaryDistributor.assignSuccess'), [
                                 {
                                     text: 'OK',
                                     onPress: () => {
@@ -109,9 +101,7 @@ const MilkRequestDistributorAssignScreen = () => {
                                 },
                             ]);
                         } catch (err: any) {
-                            console.error('Error assigning distributor:', err);
-                            console.log("Consumer Full response:", JSON.stringify(err?.response?.data, null, 2));
-                            Alert.alert('Error', err?.response?.data?.message || 'Failed to assign distributor');
+                            Alert.alert(t('common.error'), err?.response?.data?.message || t('temporaryDistributor.failedAssign'));
                         } finally {
                             setSubmitting(false);
                         }
@@ -123,12 +113,18 @@ const MilkRequestDistributorAssignScreen = () => {
 
     const handleDeassignTemporary = async () => {
         Alert.alert(
-            'Remove Temporary Distributor',
-            `Are you sure you want to remove the temporary distributor and restore ${params.currentDistributorName} for ${params.consumerName}?`,
+            t('temporaryDistributor.removeTemporaryDistributor'),
+            t('temporaryDistributor.removeConfirmation', {
+                consumerName: params.consumerName,
+                distributorName: params.currentDistributorName,
+            }),
             [
-                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Remove',
+                    text: t('common.cancel'),
+                    style: 'cancel',
+                },
+                {
+                    text: t('temporaryDistributor.remove'),
                     style: 'destructive',
                     onPress: async () => {
                         setSubmitting(true);
@@ -137,15 +133,14 @@ const MilkRequestDistributorAssignScreen = () => {
                                 customer_id: params.consumerId,
                             });
 
-                            Alert.alert('Success', 'Temporary distributor removed successfully!', [
+                            Alert.alert(t('common.success'), t('temporaryDistributor.removeSuccess'), [
                                 {
                                     text: 'OK',
                                     onPress: () => navigation.goBack(),
                                 },
                             ]);
                         } catch (err: any) {
-                            console.error('Error deassigning distributor:', err);
-                            Alert.alert('Error', err?.response?.data?.message || 'Failed to remove distributor');
+                            Alert.alert(t('common.error'), err?.response?.data?.message || t('temporaryDistributor.failedRemove'));
                         } finally {
                             setSubmitting(false);
                         }
@@ -168,7 +163,7 @@ const MilkRequestDistributorAssignScreen = () => {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Loading distributors...</Text>
+                <Text style={styles.loadingText}>{t('temporaryDistributor.loadingDistributors')}</Text>
             </View>
         );
     }
@@ -182,7 +177,7 @@ const MilkRequestDistributorAssignScreen = () => {
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>
-                        {params.isTemporary ? 'Remove Distributor' : 'Assign Distributor'}
+                        {params.isTemporary ? t('temporaryDistributor.removeDistributor') : t('temporaryDistributor.assignDistributor')}
                     </Text>
                     <View style={styles.placeholder} />
                 </View>
@@ -193,7 +188,7 @@ const MilkRequestDistributorAssignScreen = () => {
                         <View style={styles.consumerHeader}>
                             <Ionicons name="person-outline" size={24} color="#007AFF" />
                             <View style={styles.consumerInfo}>
-                                <Text style={styles.consumerLabel}>Consumer</Text>
+                                <Text style={styles.consumerLabel}>{t('temporaryDistributor.consumer')}</Text>
                                 <Text style={styles.consumerName}>{params.consumerName}</Text>
                             </View>
                         </View>
@@ -202,7 +197,7 @@ const MilkRequestDistributorAssignScreen = () => {
                             <View style={styles.currentDistributorInfo}>
                                 <Ionicons name="person-circle-outline" size={20} color="#666" />
                                 <Text style={styles.currentDistributorText}>
-                                    {params.isTemporary ? 'Temporary: ' : 'Permanent: '}
+                                    {params.isTemporary ? `${t('temporaryDistributor.temporary')}: ` : `${t('temporaryDistributor.permanent')}: `}
                                     <Text style={styles.currentDistributorName}>
                                         {params.currentDistributorName}
                                     </Text>
@@ -217,9 +212,9 @@ const MilkRequestDistributorAssignScreen = () => {
                             <View style={styles.warningCard}>
                                 <Ionicons name="information-circle" size={24} color="#FF9500" />
                                 <View style={styles.warningContent}>
-                                    <Text style={styles.warningTitle}>Temporary Assignment Active</Text>
+                                    <Text style={styles.warningTitle}>{t('temporaryDistributor.temporaryAssignmentActive')}</Text>
                                     <Text style={styles.warningText}>
-                                        Remove the temporary distributor to restore the permanent distributor assignment.
+                                        {t('temporaryDistributor.removeTemporaryDistributorInfo')}
                                     </Text>
                                 </View>
                             </View>
@@ -234,7 +229,7 @@ const MilkRequestDistributorAssignScreen = () => {
                                 ) : (
                                     <>
                                         <Ionicons name="close-circle-outline" size={20} color="#fff" />
-                                        <Text style={styles.buttonText}>Remove Temporary Distributor</Text>
+                                        <Text style={styles.buttonText}>{t('temporaryDistributor.removeTemporaryDistributor')}</Text>
                                     </>
                                 )}
                             </TouchableOpacity>
@@ -246,9 +241,9 @@ const MilkRequestDistributorAssignScreen = () => {
                                 <View style={styles.instructionCard}>
                                     <Ionicons name="information-circle" size={24} color="#007AFF" />
                                     <View style={styles.instructionContent}>
-                                        <Text style={styles.instructionTitle}>Assign Distributor</Text>
+                                        <Text style={styles.instructionTitle}>{t('temporaryDistributor.assignDistributor')}</Text>
                                         <Text style={styles.instructionText}>
-                                            Select a distributor to handle extra milk deliveries for this consumer.
+                                            {t('temporaryDistributor.assignDistributorInfo')}
                                         </Text>
                                     </View>
                                 </View>
@@ -256,12 +251,12 @@ const MilkRequestDistributorAssignScreen = () => {
 
                             {/* Distributor List */}
                             <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Available Distributors</Text>
+                                <Text style={styles.sectionTitle}>{t('temporaryDistributor.availableDistributors')}</Text>
 
                                 {distributors.length === 0 ? (
                                     <View style={styles.emptyCard}>
                                         <Ionicons name="people-outline" size={48} color="#ccc" />
-                                        <Text style={styles.emptyText}>No other distributors available</Text>
+                                        <Text style={styles.emptyText}>{t('temporaryDistributor.noOtherDistributorsAvailable')}</Text>
                                     </View>
                                 ) : (
                                     distributors.map((distributor) => (
@@ -292,7 +287,8 @@ const MilkRequestDistributorAssignScreen = () => {
                                                         {distributor.milkman_contact}
                                                     </Text>
                                                     <Text style={styles.distributorCount}>
-                                                        {distributor.assigned_customers_count} consumers assigned
+                                                        {distributor.assigned_customers_count}{' '}
+                                                        {t('temporaryDistributor.consumersAssigned')}
                                                     </Text>
                                                 </View>
                                             </View>
@@ -328,7 +324,7 @@ const MilkRequestDistributorAssignScreen = () => {
                                         ) : (
                                             <>
                                                 <Ionicons name="person-add-outline" size={20} color="#fff" />
-                                                <Text style={styles.buttonText}>Assign Distributor</Text>
+                                                <Text style={styles.buttonText}>{t('temporaryDistributor.assignDistributorButton')}</Text>
                                             </>
                                         )}
                                     </TouchableOpacity>

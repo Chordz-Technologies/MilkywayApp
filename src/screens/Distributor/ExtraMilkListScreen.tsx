@@ -1,21 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    FlatList,
-    Platform,
-    TextInput
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, FlatList, Platform, TextInput } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch } from 'react-redux';
 import { getMilkmanExtraMilkRequests, markExtraMilkDelivery } from '../../apiServices/allApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
     ExtraMilkList: { milkmanId: number; today: string };
@@ -35,8 +26,9 @@ type Props = {
 
 const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
     const { milkmanId, today } = route.params;
-    const dispatch = useDispatch();
+    const { t } = useTranslation();
 
+    const dispatch = useDispatch();
     const [extraRequests, setExtraRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
@@ -74,8 +66,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
                 : [];
             setExtraRequests(normalized);
         } catch (err) {
-            console.error('Error fetching extra milk requests:', err);
-            Alert.alert('Error', 'Failed to fetch extra milk requests.');
+            Alert.alert(t('common.error'), t('extraMilk.errorFetchingExtraMilk'));
         } finally {
             setLoading(false);
         }
@@ -83,12 +74,17 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
 
     const handleMarkExtraDelivered = useCallback(async (request: any) => {
         Alert.alert(
-            'Mark Extra Milk Delivered',
-            `Mark extra milk request for ${request.customer_name} as delivered?`,
+            t('extraMilk.markExtraMilkTitle'),
+            t('extraMilk.markExtraMilkMessage', {
+                name: request.customer_name,
+            }),
             [
-                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Mark Delivered',
+                    text: t('common.cancel'),
+                    style: 'cancel',
+                },
+                {
+                    text: t('extraMilk.markDelivered'),
                     onPress: async () => {
                         try {
                             await markExtraMilkDelivery({
@@ -96,11 +92,11 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
                                 status: 'delivered',
                             });
                             setExtraRequests(prev => prev.filter(r => (r.id || r.request_id) !== (request.id || request.request_id)));
-                            Alert.alert('Success', 'Extra milk request marked as delivered');
+                            Alert.alert(t('common.success'), t('extraMilk.extraMilkDeliveredSuccess'));
                             navigation.goBack();
                         } catch (err: any) {
                             console.error(err);
-                            Alert.alert('Error', 'Failed to mark extra milk delivered');
+                            Alert.alert(t('common.error'), t('extraMilk.failedMarkExtraMilk'));
                         }
                     },
                 },
@@ -129,7 +125,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <View style={styles.headerContent}>
-                <Text style={styles.headerTitle}>Extra Milk Requests</Text>
+                <Text style={styles.headerTitle}>{t('extraMilk.extraMilkRequests')}</Text>
                 <Text style={styles.headerSubtitle}>
                     {formatDate(today)}
                 </Text>
@@ -164,7 +160,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
 
                 <View style={[styles.statusBadge, { backgroundColor: '#FFF9F0' }]}>
                     <Text style={[styles.statusText, { color: '#FF9500' }]}>
-                        EXTRA
+                        {t('extraMilk.extra')}
                     </Text>
                 </View>
             </View>
@@ -173,7 +169,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.addressSection}>
                 <Ionicons name="location" size={14} color="#FF9500" />
                 <Text style={styles.addressText} numberOfLines={2}>
-                    {item.customer_address || 'No address'}
+                    {item.customer_address || t('extraMilk.noAddress')}
                 </Text>
             </View>
 
@@ -181,7 +177,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.milkSection}>
                 <View style={styles.milkHeader}>
                     <Ionicons name="water" size={16} color="#007AFF" />
-                    <Text style={styles.milkHeaderText}>Extra Milk Requirement</Text>
+                    <Text style={styles.milkHeaderText}>{t('extraMilk.extraMilkRequirement')}</Text>
 
                     <View style={styles.totalMilkBadge}>
                         <Text style={styles.totalMilkBadgeText}>
@@ -200,10 +196,10 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
 
                 <View style={styles.milkDetails}>
                     <Text style={styles.milkTypeText}>
-                        Cow: {item.cow_milk_extra}L
+                        {t('consumerList.cowMilk')}: {item.cow_milk_extra}L
                     </Text>
                     <Text style={styles.milkTypeText}>
-                        Buffalo: {item.buffalo_milk_extra}L
+                        {t('consumerList.buffaloMilk')}: {item.buffalo_milk_extra}L
                     </Text>
                 </View>
             </View>
@@ -216,7 +212,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
             >
                 <Ionicons name="checkmark-circle" size={18} color="#fff" />
                 <Text style={[styles.actionButtonText, { color: '#fff' }]}>
-                    Delivered Extra Milk
+                    {t('extraMilk.deliveredExtraMilk')}
                 </Text>
             </TouchableOpacity>
         </View>
@@ -226,7 +222,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text>Loading Extra Milk Requests...</Text>
+                <Text>{t('extraMilk.loadingExtraMilk')}</Text>
             </View>
         );
     }
@@ -234,7 +230,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
     if (!extraRequests.length) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>No Extra Milk Requests for today.</Text>
+                <Text>{t('extraMilk.noExtraMilkToday')}</Text>
             </View>
         );
     }
@@ -246,7 +242,7 @@ const ExtraMilkListScreen: React.FC<Props> = ({ navigation, route }) => {
 
                 <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
                     <TextInput
-                        placeholder="Search Consumer..."
+                        placeholder={t('consumerList.searchConsumer')}
                         placeholderTextColor="#A0A0A0"
                         value={searchText}
                         onChangeText={setSearchText}

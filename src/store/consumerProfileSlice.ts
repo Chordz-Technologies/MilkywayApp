@@ -53,9 +53,7 @@ export const fetchConsumerProfile = createAsyncThunk<
   async (userID, { rejectWithValue }) => {
     if (!userID) { return rejectWithValue('User ID is required'); }
     try {
-      console.log('🔍 Fetching consumer profile for ID:', userID);
       const response = await getConsumerDetailsById(userID);
-      console.log('✅ Consumer API Response:', response);
 
       if (!response?.data) {
         console.log('❌ No data in response');
@@ -66,7 +64,6 @@ export const fetchConsumerProfile = createAsyncThunk<
       return response.data;
     } catch (error: any) {
       console.error('❌ Fetch consumer profile error:', error);
-      console.log('❌ Error details:', JSON.stringify(error?.response?.data, null, 2));
       if (error?.response?.status === 404) {
         return rejectWithValue('Consumer profile not found. Please create a consumer profile first.');
       }
@@ -107,9 +104,7 @@ export const updateConsumerProfile = createAsyncThunk<
         throw new Error('No valid data to update');
       }
 
-      console.log('🔄 Updating consumer profile:', { id, data: cleanData });
       const response = await updateCustomerProfile(id, cleanData);
-      console.log('✅ Consumer update response:', response);
 
       if (!response?.data) {
         throw new Error('No response data received');

@@ -1,19 +1,10 @@
 import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-  Animated,
-  Image,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ImageSourcePropType,
-} from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Animated, Image, NativeScrollEvent, NativeSyntheticEvent, ImageSourcePropType, } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import colors from '../theme/colors';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
+import { useTranslation } from '../i18n/LanguageProvider';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type RootStackParamList = {
   TermsConditions: undefined;
@@ -28,25 +19,29 @@ type Props = {
 const { width } = Dimensions.get('window');
 
 type Slide = {
-  title: string;
-  desc: string;
+  id: 'fresh' | 'vendors' | 'delivery';
+  titleKey: string;
+  descKey: string;
   image: ImageSourcePropType;
 };
 
 const slides: Slide[] = [
   {
-    title: 'Fresh & Pure Milk',
-    desc: 'Sourced daily from trusted local farms, our milk is 100% pure.',
+    id: 'fresh',
+    titleKey: 'slides.freshTitle',
+    descKey: 'slides.freshDesc',
     image: require('../assets/cowSlide.png'),
   },
   {
-    title: 'Find Vendors Near You',
-    desc: 'Easily discover verified milk vendors in your neighborhood.',
+    id: 'vendors',
+    titleKey: 'slides.vendorsTitle',
+    descKey: 'slides.vendorsDesc',
     image: require('../assets/farmerSlide.png'),
   },
   {
-    title: 'Fast & Reliable Delivery',
-    desc: 'Get fresh milk delivered straight to your doorstep.',
+    id: 'delivery',
+    titleKey: 'slides.deliveryTitle',
+    descKey: 'slides.deliveryDesc',
     image: require('../assets/deliverySlide.png'),
   },
 ];
@@ -54,6 +49,7 @@ const slides: Slide[] = [
 const Slides: React.FC<Props> = ({ navigation }) => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [current, setCurrent] = useState<number>(0);
+  const { t } = useTranslation();
 
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -67,6 +63,10 @@ const Slides: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaWrapper>
       <View style={styles.container}>
+        <View style={styles.languageRow}>
+          <LanguageSwitcher />
+        </View>
+
         <Animated.ScrollView
           horizontal
           pagingEnabled
@@ -80,14 +80,14 @@ const Slides: React.FC<Props> = ({ navigation }) => {
           onMomentumScrollEnd={handleScrollEnd}
         >
           {slides.map((slide) => (
-            <View style={styles.slide} key={slide.title}>
-              <Text style={styles.title}>{slide.title}</Text>
-              <Text style={styles.desc}>{slide.desc}</Text>
+            <View style={styles.slide} key={slide.id}>
+              <Text style={styles.title}>{t(slide.titleKey)}</Text>
+              <Text style={styles.desc}>{t(slide.descKey)}</Text>
               <Image source={slide.image} style={styles.image} />
 
-              {slide.title === 'Fast & Reliable Delivery' && (
+              {slide.id === 'delivery' && (
                 <TouchableOpacity style={styles.startBtn} onPress={handleGetStarted}>
-                  <Text style={styles.startBtnText}>Get Started</Text>
+                  <Text style={styles.startBtnText}>{t('slides.getStarted')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -114,6 +114,7 @@ export default Slides;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.primary },
+  languageRow: { alignItems: 'flex-end', paddingHorizontal: 18, paddingTop: 12 },
   slide: { width, justifyContent: 'center', alignItems: 'center', padding: 30 },
   image: { width: 300, height: 300, resizeMode: 'contain', marginVertical: 40 },
   title: { fontSize: 26, fontWeight: 'bold', color: colors.white, marginVertical: 14 },

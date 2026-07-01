@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { registerCustomer, clearError } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 interface UserPayload {
   first_name: string;
@@ -44,11 +45,11 @@ interface FormState {
 export default function ConsumerRegistrationScreen({ navigation }: { navigation: any }) {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
-
   const [cowCapacity, setCowCapacity] = useState<string>('');
   const [buffaloCapacity, setBuffaloCapacity] = useState<string>('');
   const [hasCow, setHasCow] = useState(false);
   const [hasBuffalo, setHasBuffalo] = useState(false);
+  const { t } = useTranslation();
 
   const [form, setForm] = useState<FormState>({
     firstName: '',
@@ -91,38 +92,38 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
   const validate = () => {
     setLocalError('');
-    if (!form.firstName.trim()) { return 'First Name is required'; }
-    if (!form.lastName.trim()) { return 'Last Name is required'; }
-    if (!form.password) { return 'Password is required'; }
-    if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
-    if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return 'Please enter a valid email address'; }
+    if (!form.firstName.trim()) { return t('validation.firstNameRequired'); }
+    if (!form.lastName.trim()) { return t('validation.lastNameRequired'); }
+    if (!form.password) { return t('validation.passwordRequired'); }
+    if (form.password.length < 6) { return t('validation.passwordMinLength'); }
+    if (form.password !== form.confirmPassword) { return t('validation.passwordMismatch1'); }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return t('validation.invalidEmail'); }
 
     const phone = form.phone.trim();
-    if (!phone) { return 'Phone number is required'; }
-    if (!/^[6-9]\d{9}$/.test(phone)) { return 'Phone number must be valid 10 digits starting with 6-9'; }
+    if (!phone) { return t('validation.phoneRequired'); }
+    if (!/^[6-9]\d{9}$/.test(phone)) { return t('validation.invalidPhone'); }
 
     // Validate address parts separately
-    if (!form.flat.trim()) { return 'Flat/House is required'; }
-    if (!form.society.trim()) { return 'Society/Area is required'; }
-    if (!form.village.trim()) { return 'Village is required'; }
-    if (!form.tal.trim()) { return 'Tal is required'; }
-    if (!form.dist.trim()) { return 'District is required'; }
-    if (!form.state.trim()) { return 'State is required'; }
+    if (!form.flat.trim()) { return t('validation.flatRequired'); }
+    if (!form.society.trim()) { return t('validation.societyRequired'); }
+    if (!form.village.trim()) { return t('validation.villageRequired'); }
+    if (!form.tal.trim()) { return t('validation.talRequired'); }
+    if (!form.dist.trim()) { return t('validation.districtRequired'); }
+    if (!form.state.trim()) { return t('validation.stateRequired'); }
 
     // Added pincode validation
-    if (!form.pincode.trim()) { return 'Pincode is required'; }
-    if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
+    if (!form.pincode.trim()) { return t('validation.pincodeRequired'); }
+    if (!/^\d{6}$/.test(form.pincode.trim())) { return t('validation.invalidPincode'); }
 
-    if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
+    if (!hasCow && !hasBuffalo) { return t('validation.selectMilkType'); }
 
     if (hasCow) {
       const capacity = Number(cowCapacity);
-      if (isNaN(capacity) || capacity <= 0) { return 'Please enter a valid capacity for Cow milk'; }
+      if (isNaN(capacity) || capacity <= 0) { return t('validation.invalidCowCapacity'); }
     }
     if (hasBuffalo) {
       const capacity = Number(buffaloCapacity);
-      if (isNaN(capacity) || capacity <= 0) { return 'Please enter a valid capacity for Buffalo milk'; }
+      if (isNaN(capacity) || capacity <= 0) { return t('validation.invalidBuffaloCapacity'); }
     }
     return '';
   };
@@ -164,7 +165,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
       const result = await dispatch(registerCustomer(userPayload));
 
       if (registerCustomer.fulfilled.match(result)) {
-        Alert.alert('Registration Successful', 'Consumer registration successful!\nYou will be redirected to Login.', [
+        Alert.alert(t('registration.registrationSuccessful'), t('registration.consumerRegistrationSuccess'), [
           {
             text: 'OK',
             onPress: () => navigation.replace('Login'),
@@ -172,7 +173,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
         ]);
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.log('Registration error:', err);
     }
   };
 
@@ -203,7 +204,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
               >
                 <Icon name="arrow-left" size={32} color="#333" />
               </TouchableOpacity>
-              <Text style={styles.title}>Consumer Registration</Text>
+              <Text style={styles.title}>{t('registration.consumerRegistration')}</Text>
             </View>
 
             {displayError ? (
@@ -215,13 +216,13 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* First Name */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                First Name<Text style={styles.required}> *</Text>
+                {t('registration.firstName')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.firstName}
                 onChangeText={(text) => handleInputChange('firstName', text)}
-                placeholder="Enter your first name"
+                placeholder={t('registration.enterFirstName')}
                 placeholderTextColor="#888"
               />
             </View>
@@ -229,25 +230,25 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Last Name */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Last Name<Text style={styles.required}> *</Text>
+                {t('registration.lastName')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.lastName}
                 onChangeText={(text) => handleInputChange('lastName', text)}
-                placeholder="Enter your last name"
+                placeholder={t('registration.enterLastName')}
                 placeholderTextColor="#888"
               />
             </View>
 
             {/* Email */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('registration.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.email}
                 onChangeText={(text) => handleInputChange('email', text)}
-                placeholder="Enter your email address"
+                placeholder={t('registration.enterEmail')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="#888"
@@ -257,7 +258,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Phone Number */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Phone Number<Text style={styles.required}> *</Text>
+                {t('registration.phoneNumber')}<Text style={styles.required}> *</Text>
               </Text>
               <View style={styles.phoneInputContainer}>
                 <Text style={styles.countryCode}>+91</Text>
@@ -268,7 +269,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     const cleaned = text.replace(/\D/g, '').slice(0, 10);
                     handleInputChange('phone', cleaned);
                   }}
-                  placeholder="Enter phone number"
+                  placeholder={t('registration.enterPhoneNumber')}
                   keyboardType="number-pad"
                   maxLength={10}
                   placeholderTextColor="#888"
@@ -279,14 +280,14 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Password */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Password<Text style={styles.required}> *</Text>
+                {t('registration.password')}<Text style={styles.required}> *</Text>
               </Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.password}
                   onChangeText={(text) => handleInputChange('password', text)}
-                  placeholder="Enter your password"
+                  placeholder={t('registration.enterPassword')}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -306,14 +307,14 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Confirm Password */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Confirm Password<Text style={styles.required}> *</Text>
+                {t('registration.confirmPassword')}<Text style={styles.required}> *</Text>
               </Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.confirmPassword}
                   onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                  placeholder="Re-enter your password"
+                  placeholder={t('registration.reEnterPassword')}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -333,78 +334,78 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Address Fields */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Flat / House<Text style={styles.required}> *</Text>
+                {t('registration.flatHouse')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.flat}
                 onChangeText={(text) => handleInputChange('flat', text)}
-                placeholder="Enter flat or house"
+                placeholder={t('registration.enterFlatHouse')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Society / Area<Text style={styles.required}> *</Text>
+                {t('registration.societyArea')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.society}
                 onChangeText={(text) => handleInputChange('society', text)}
-                placeholder="Enter society or area"
+                placeholder={t('registration.enterSocietyArea')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Village<Text style={styles.required}> *</Text>
+                {t('registration.village')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.village}
                 onChangeText={(text) => handleInputChange('village', text)}
-                placeholder="Enter village"
+                placeholder={t('registration.enterVillage')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Taluka<Text style={styles.required}> *</Text>
+                {t('registration.taluka')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.tal}
                 onChangeText={(text) => handleInputChange('tal', text)}
-                placeholder="Enter Taluka"
+                placeholder={t('registration.enterTaluka')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                District<Text style={styles.required}> *</Text>
+                {t('registration.district')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.dist}
                 onChangeText={(text) => handleInputChange('dist', text)}
-                placeholder="Enter District"
+                placeholder={t('registration.enterDistrict')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                State<Text style={styles.required}> *</Text>
+                {t('registration.state')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
                 value={form.state}
                 onChangeText={(text) => handleInputChange('state', text)}
-                placeholder="Enter State"
+                placeholder={t('registration.enterState')}
                 placeholderTextColor="#888"
               />
             </View>
@@ -412,7 +413,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
             {/* Added Pincode Field */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Pincode<Text style={styles.required}> *</Text>
+                {t('registration.pincode')}<Text style={styles.required}> *</Text>
               </Text>
               <TextInput
                 style={styles.input}
@@ -421,7 +422,7 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                   const cleaned = text.replace(/\D/g, '').slice(0, 6);
                   handleInputChange('pincode', cleaned);
                 }}
-                placeholder="Enter 6-digit pincode"
+                placeholder={t('registration.enterPincode')}
                 keyboardType="number-pad"
                 maxLength={6}
                 placeholderTextColor="#888"
@@ -430,26 +431,26 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
 
             {/* Milk Types */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Milk Types:</Text>
+              <Text style={styles.label}>{t('registration.milkTypes')}</Text>
               <View style={styles.milkTypeRow}>
                 <TouchableOpacity
                   style={[styles.milkTypeButton, hasCow && styles.milkTypeSelected]}
                   onPress={() => setHasCow((v) => !v)}
                 >
-                  <Text style={[styles.milkTypeText, hasCow && styles.milkTypeTextSelected]}>Cow</Text>
+                  <Text style={[styles.milkTypeText, hasCow && styles.milkTypeTextSelected]}>{t('registration.cow')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.milkTypeButton, hasBuffalo && styles.milkTypeSelected]}
                   onPress={() => setHasBuffalo((v) => !v)}
                 >
-                  <Text style={[styles.milkTypeText, hasBuffalo && styles.milkTypeTextSelected]}>Buffalo</Text>
+                  <Text style={[styles.milkTypeText, hasBuffalo && styles.milkTypeTextSelected]}>{t('registration.buffalo')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {hasCow && (
               <View style={styles.milkDetailsSection}>
-                <Text style={styles.sectionTitle}>Cow Milk for daily requirement</Text>
+                <Text style={styles.sectionTitle}>{t('registration.cowMilkDailyRequirement')}</Text>
                 <View style={styles.milkTypeInputRow}>
                   <TextInput
                     style={styles.compactInputBox}
@@ -459,14 +460,14 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     placeholder="0"
                     placeholderTextColor="#888"
                   />
-                  <Text style={styles.cowTypeLabel}>ltrs</Text>
+                  <Text style={styles.cowTypeLabel}>{t('registration.liters')}</Text>
                 </View>
               </View>
             )}
 
             {hasBuffalo && (
               <View style={styles.milkDetailsSection}>
-                <Text style={styles.sectionTitle}>Buffalo Milk for daily requirement</Text>
+                <Text style={styles.sectionTitle}>{t('registration.buffaloMilkDailyRequirement')}</Text>
                 <View style={styles.milkTypeInputRow}>
                   <TextInput
                     style={styles.compactInputBox}
@@ -475,13 +476,13 @@ export default function ConsumerRegistrationScreen({ navigation }: { navigation:
                     onChangeText={setBuffaloCapacity}
                     placeholder="0"
                     placeholderTextColor="#888" />
-                  <Text style={styles.cowTypeLabel}>ltrs</Text>
+                  <Text style={styles.cowTypeLabel}>{t('registration.liters')}</Text>
                 </View>
               </View>
             )}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-              <Text style={styles.buttonText}>{isLoading ? 'Registering...' : 'Register'}</Text>
+              <Text style={styles.buttonText}>{isLoading ? t('registration.registering') : t('registration.register')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </TouchableWithoutFeedback>

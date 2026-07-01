@@ -1,21 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
+import { useTranslation } from '../../i18n/LanguageProvider';
 import { RootState } from '../../store';
-import {
-  getAllVendors,
-  getConsumerDetailsById,
-  createRequest,
-} from '../../apiServices/allApi';
+import { getAllVendors, getConsumerDetailsById, createRequest, } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 
 type Vendor = {
@@ -42,6 +31,7 @@ type Vendor = {
 };
 
 const ConsumerHomeScreen = () => {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,8 +95,7 @@ const ConsumerHomeScreen = () => {
       }
     } catch (err: any) {
       setVendors([]);
-      Alert.alert('Error', err?.message || 'Failed to load vendors');
-      console.log('❌ Error details:', JSON.stringify(err?.response?.data, null, 2));
+      Alert.alert(t('common.error'), err?.message || t('consumer.failedToLoadVendors'));
     } finally {
       setLoading(false);
     }
@@ -118,7 +107,7 @@ const ConsumerHomeScreen = () => {
 
   const sendJoinRequest = async (vendorId: string | number) => {
     if (!user?.userID) {
-      Alert.alert('Error', 'User not logged in');
+      Alert.alert(t('common.error'), t('login.unknownRole'));
       return;
     }
 
@@ -130,17 +119,17 @@ const ConsumerHomeScreen = () => {
         vendor: Number(vendorId),
       });
 
-      Alert.alert('Success', 'Join request sent successfully!');
+      Alert.alert(t('common.success'), t('consumer.joinVendor'));
       loadData();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send join request');
+      Alert.alert(t('common.error'), err.message || t('consumer.failedToSendJoinRequest'));
     } finally {
       setSubmittingId(null);
     }
   };
 
   const getVillage = (vendor: Vendor): string =>
-    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || 'N/A';
+    vendor.village || vendor.tal || vendor.address?.village || vendor.address?.tal || t('common.noData');
 
   const getCowRate = (vendor: Vendor): string => {
     let rate = vendor.cr || vendor.cow_rate;
@@ -185,7 +174,7 @@ const ConsumerHomeScreen = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1976D2" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -195,9 +184,11 @@ const ConsumerHomeScreen = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>{joinedVendor ? 'Your Vendor' : 'Available Vendors'}</Text>
+            <Text style={styles.title}>
+              {joinedVendor ? t('consumer.yourVendor') : t('consumer.availableVendors')}
+            </Text>
             <Text style={styles.subtitle}>
-              {joinedVendor ? 'Connected vendor details' : 'Find and connect with vendors'}
+              {joinedVendor ? t('consumer.connectedVendorDetails') : t('consumer.findAndConnectWithVendors')}
             </Text>
           </View>
         </View>
@@ -205,7 +196,7 @@ const ConsumerHomeScreen = () => {
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#1976D2" />
-            <Text style={styles.loadingText}>Loading vendors...</Text>
+            <Text style={styles.loadingText}>{t('consumer.loadingVendors')}</Text>
           </View>
         ) : (
           <FlatList
@@ -219,7 +210,7 @@ const ConsumerHomeScreen = () => {
                     <Ionicons name="business" size={24} color="#1976D2" />
                   </View>
                   <View style={styles.cardTitleContainer}>
-                    <Text style={styles.vendorName}>{item.name || 'Vendor'}</Text>
+                    <Text style={styles.vendorName}>{item.name || t('common.vendor')}</Text>
                     {joinedVendor && (
                       <View style={styles.statusBadge}>
                         <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
@@ -232,7 +223,7 @@ const ConsumerHomeScreen = () => {
                 <View style={styles.infoSection}>
                   <View style={styles.infoRow}>
                     <Ionicons name="call-outline" size={18} color="#666" />
-                    <Text style={styles.infoText}>{item.contact || 'N/A'}</Text>
+                    <Text style={styles.infoText}>{item.contact || t('common.noData')}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="location-outline" size={18} color="#666" />
@@ -242,12 +233,12 @@ const ConsumerHomeScreen = () => {
 
                 <View style={styles.ratesContainer}>
                   <View style={styles.rateBox}>
-                    <Text style={styles.rateLabel}>Cow Milk</Text>
+                    <Text style={styles.rateLabel}>{t('common.cowMilk')}</Text>
                     <Text style={styles.rateValue}>{getCowRate(item)}</Text>
                   </View>
                   <View style={styles.rateDivider} />
                   <View style={styles.rateBox}>
-                    <Text style={styles.rateLabel}>Buffalo Milk</Text>
+                    <Text style={styles.rateLabel}>{t('common.buffaloMilk')}</Text>
                     <Text style={styles.rateValue}>{getBuffaloRate(item)}</Text>
                   </View>
                 </View>
@@ -266,7 +257,7 @@ const ConsumerHomeScreen = () => {
                     ) : (
                       <>
                         <Ionicons name="add-circle-outline" size={20} color="#fff" />
-                        <Text style={styles.buttonText}>Join Vendor</Text>
+                        <Text style={styles.buttonText}>{t('consumer.joinVendor')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -276,8 +267,8 @@ const ConsumerHomeScreen = () => {
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
                 <Ionicons name="storefront-outline" size={64} color="#ccc" />
-                <Text style={styles.emptyText}>No vendors available</Text>
-                <Text style={styles.emptySubtext}>Check your pincode or try again later</Text>
+                <Text style={styles.emptyText}>{t('consumer.noVendors')}</Text>
+                <Text style={styles.emptySubtext}>{t('common.checkYourPincodeOrTryAgainLater')}</Text>
               </View>
             )}
           />

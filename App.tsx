@@ -8,17 +8,11 @@ import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messag
 import NetInfo from '@react-native-community/netinfo';
 import analytics from "@react-native-firebase/analytics";
 import crashlytics from "@react-native-firebase/crashlytics";
-
-import {
-  requestUserPermission,
-  sendFCMTokenToServer,
-  setupNotificationListeners,
-  clearAllNotifications,
-  showLocalNotification,
-} from "../MilkywayApp/src/notifications/FCM";
+import { requestUserPermission, sendFCMTokenToServer, setupNotificationListeners, clearAllNotifications, showLocalNotification, } from "../MilkywayApp/src/notifications/FCM";
 import { syncOfflineData } from "./src/utils/syncOfflineData";
 import UpdateModal from './src/screens/UpdateModal';
 import { useAppUpdate } from './src/utils/useAppUpdate';
+import { LanguageProvider } from './src/i18n/LanguageProvider';
 
 export default function App() {
   const { showUpdate, forceUpdate, setShowUpdate } = useAppUpdate();
@@ -109,14 +103,14 @@ export default function App() {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <SafeAreaProvider>
-          <AppNavigator />
-
-          <UpdateModal
-            visible={showUpdate}
-            forceUpdate={forceUpdate}   // you are not using force update now
-            onClose={() => setShowUpdate(false)}
-          />
-
+          <LanguageProvider>
+            <AppNavigator />
+            <UpdateModal
+              visible={showUpdate}
+              forceUpdate={forceUpdate}   // you are not using force update now
+              onClose={() => setShowUpdate(false)}
+            />
+          </LanguageProvider>
         </SafeAreaProvider>
       </PersistGate>
     </Provider>

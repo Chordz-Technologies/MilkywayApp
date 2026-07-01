@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    Alert,
-    Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform, } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RazorpayCheckout from 'react-native-razorpay';
 import { getCustomerBills, verifyConsumerPayment, createConsumerOrder } from '../../apiServices/allApi'; // ✅ import your APIs
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type RootStackParamList = {
     VendorSubscription: undefined;
@@ -46,7 +39,8 @@ type BillLineItem = {
     is_extra: boolean;
 };
 
-const VendorSubscriptionScreen = () => {
+const ConsumerSubscriptionScreen = () => {
+    const { t } = useTranslation();
     const navigation = useNavigation<NavigationProp>();
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -77,10 +71,10 @@ const VendorSubscriptionScreen = () => {
             if (billsArray.length > 0) {
                 const formattedData: Subscription[] = billsArray.map((item: any) => ({
                     id: item.id || 0,
-                    name: `Monthly Bill`,
+                    name: t('subscription.monthlyBill'),
                     price: parseFloat(item.total_amount) || 0,
                     duration: `${formatDate(item.start_date)} → ${formatDate(item.end_date)}`,
-                    description: `Status: ${item.status}`,
+                    description: `${t('subscription.status')}: ${item.status}`,
                     total_regular_cow: item.total_regular_cow || 0,
                     total_regular_buffalo: item.total_regular_buffalo || 0,
                     total_extra_cow: item.total_extra_cow || 0,
@@ -89,12 +83,11 @@ const VendorSubscriptionScreen = () => {
                 }));
                 setSubscriptions(formattedData);
             } else {
-                Alert.alert('Error', 'No bills found.');
+                Alert.alert(t('common.error'), t('subscription.noBills'));
                 setSubscriptions([]);
             }
         } catch (error: any) {
-            console.error('❌ Error fetching bills:', error);
-            Alert.alert('Error', 'Failed to load bills.');
+            Alert.alert(t('common.error'), t('subscription.failedToLoad'));
         } finally {
             setIsLoading(false);
         }
@@ -118,7 +111,7 @@ const VendorSubscriptionScreen = () => {
             const data = orderRes.data?.data;
 
             if (!data || !data.order_id || !data.razorpay_key_id) {
-                Alert.alert("Error", "Invalid order response from server.");
+                Alert.alert(t('common.error'), t('subscription.invalidOrder'));
                 setProcessingId(null);
                 return;
             }
@@ -129,11 +122,11 @@ const VendorSubscriptionScreen = () => {
 
             // Step 2: Open Razorpay Checkout
             const options = {
-                description: "Consumer Payment",
+                description: t('subscription.consumerPayment'),
+                name: t('subscription.consumerPayment'),
                 currency: data.currency || "INR",
                 key: razorpayKey,
                 amount: amount,
-                name: "Consumer Payment",
                 order_id: razorpayOrderId,
                 prefill: {
                     name: data.user_name || "Customer",
@@ -144,7 +137,6 @@ const VendorSubscriptionScreen = () => {
 
             RazorpayCheckout.open(options)
                 .then(async (paymentData) => {
-                    console.log("✅ Razorpay Payment Success:", paymentData);
 
                     // Step 3: Verify Payment
                     const verifyRes = await verifyConsumerPayment({
@@ -154,14 +146,14 @@ const VendorSubscriptionScreen = () => {
                     });
 
                     if (verifyRes.data?.status === "success") {
-                        Alert.alert("Success", "Payment verified successfully!");
+                        Alert.alert(t('common.success'), t('subscription.paymentVerified'));
                         fetchSubscriptions(); // refresh bills after successful payment
                     } else {
-                        Alert.alert("Error", "Payment verification failed. Please contact support.");
+                        Alert.alert(t('common.error'), t('subscription.paymentVerificationFailed'));
                     }
                 })
                 .catch((error) => {
-                    Alert.alert("Payment Failed", "Payment was not completed. Please try again.");
+                    Alert.alert(t('common.error'), t('subscription.paymentFailed'));
                 });
         } catch (error: any) {
             console.error("❌ Error during payment:", error);
@@ -185,15 +177,15 @@ const VendorSubscriptionScreen = () => {
         const isBuffalo = desc.includes('buffalo');
 
         if (item.is_extra) {
-            if (isCow) return 'Cow Extra';
-            if (isBuffalo) return 'Buffalo Extra';
-            return 'Extra Milk';
+            if (isCow) return t('subscription.cowExtra');
+            if (isBuffalo) return t('subscription.buffaloExtra');
+            return t('subscription.extraMilk');
         }
 
-        if (isCow) return 'Cow';
-        if (isBuffalo) return 'Buffalo';
+        if (isCow) return t('subscription.cow');
+        if (isBuffalo) return t('subscription.buffalo');
 
-        return 'Milk';
+        return t('subscription.milk');
     };
 
     const renderLineItem = ({ item }: { item: BillLineItem }) => (
@@ -238,41 +230,41 @@ const VendorSubscriptionScreen = () => {
                 {/* Display additional info: start date, end date, total */}
                 <View style={styles.summaryGrid}>
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Start Date</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.startDate')}</Text>
                         <Text style={styles.summaryValue}>
                             {item.duration.split("→")[0].trim()}
                         </Text>
                     </View>
 
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>End Date</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.endDate')}</Text>
                         <Text style={styles.summaryValue}>
                             {item.duration.split("→")[1].trim()}
                         </Text>
                     </View>
 
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Cow Milk</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.cowMilk')}</Text>
                         <Text style={styles.summaryValue}>{item.total_regular_cow} L</Text>
                     </View>
 
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Buffalo Milk</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.buffaloMilk')}</Text>
                         <Text style={styles.summaryValue}>{item.total_regular_buffalo} L</Text>
                     </View>
 
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Extra Cow Milk</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.extraCowMilk')}</Text>
                         <Text style={styles.summaryValue}>{item.total_extra_cow} L</Text>
                     </View>
 
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Extra Buffalo Milk</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.extraBuffaloMilk')}</Text>
                         <Text style={styles.summaryValue}>{item.total_extra_buffalo} L</Text>
                     </View>
 
                     <View style={styles.summaryItemFull}>
-                        <Text style={styles.summaryLabel}>Total Amount</Text>
+                        <Text style={styles.summaryLabel}>{t('subscription.totalAmount')}</Text>
                         <Text style={[styles.summaryValue, { fontSize: 16 }]}>
                             ₹{item.price}
                         </Text>
@@ -281,15 +273,15 @@ const VendorSubscriptionScreen = () => {
 
                 {/* Daily Milk Delivery Table */}
                 <View style={styles.tableContainer}>
-                    <Text style={styles.tableTitle}>Milk Deliveries :</Text>
+                    <Text style={styles.tableTitle}> {t('subscription.milkDeliveries')}</Text>
 
                     {/* Table Header */}
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderText, { flex: 1.3 }]}>Date</Text>
-                        <Text style={[styles.tableHeaderText, { flex: 1.4 }]}>Type</Text>
-                        <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>Quantity</Text>
-                        <Text style={[styles.tableHeaderText, { flex: 0.8 }]}>Rate</Text>
-                        <Text style={[styles.tableHeaderText, { flex: 1 }]}>Amount</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.3 }]}>{t('subscription.date')}</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.4 }]}>{t('subscription.type')}</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1.2 }]}>{t('subscription.quantity')}</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 0.8 }]}>{t('subscription.rate')}</Text>
+                        <Text style={[styles.tableHeaderText, { flex: 1 }]}>{t('subscription.amount')}</Text>
                     </View>
 
                     {/* Scrollable Rows */}
@@ -316,7 +308,7 @@ const VendorSubscriptionScreen = () => {
                     ) : (
                         <>
                             <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                            <Text style={styles.subscribeText}>Pay Now</Text>
+                            <Text style={styles.subscribeText}>{t('subscription.payNow')}</Text>
                         </>
                     )}
                 </TouchableOpacity>
@@ -328,7 +320,7 @@ const VendorSubscriptionScreen = () => {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FF9500" />
-                <Text style={styles.loadingText}>Loading bills...</Text>
+                <Text style={styles.loadingText}>{t('subscription.loadingBills')}</Text>
             </View>
         );
     }
@@ -342,8 +334,8 @@ const VendorSubscriptionScreen = () => {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Monthly Bills</Text>
-                        <Text style={styles.headerSubtitle}>Pay your bills below</Text>
+                        <Text style={styles.headerTitle}>{t('subscription.monthlyBills')}</Text>
+                        <Text style={styles.headerSubtitle}>{t('subscription.payBills')}</Text>
                     </View>
                 </View>
 
@@ -351,8 +343,8 @@ const VendorSubscriptionScreen = () => {
                 {subscriptions.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Ionicons name="gift-outline" size={64} color="#ccc" />
-                        <Text style={styles.emptyTitle}>No Packages Found</Text>
-                        <Text style={styles.emptySubtitle}>Subscription plans will appear here.</Text>
+                        <Text style={styles.emptyTitle}>{t('subscription.noPackages')}</Text>
+                        <Text style={styles.emptySubtitle}>{t('subscription.noPackagesSubtitle')}</Text>
                     </View>
                 ) : (
                     <FlashList
@@ -368,7 +360,7 @@ const VendorSubscriptionScreen = () => {
     );
 };
 
-export default VendorSubscriptionScreen;
+export default ConsumerSubscriptionScreen;
 
 const styles = StyleSheet.create({
     container: {

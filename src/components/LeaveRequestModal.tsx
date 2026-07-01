@@ -1,17 +1,9 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  StyleSheet,
-  Modal,
-  Platform,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Modal, Platform, } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { colors } from '../styles/CalendorScreenStyle';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 interface LeaveRequestModalProps {
   isVisible: boolean;
@@ -33,6 +25,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
   const [leaveType, setLeaveType] = useState<'single' | 'multiple'>('single');
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const { t } = useTranslation();
 
   const resetForm = () => {
     setStartDate(null);
@@ -43,17 +36,17 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
 
   const handleSubmit = () => {
     if (!startDate) {
-      Alert.alert('Error', 'Please select start date');
+      Alert.alert(t('common.error'), t('leave.selectStartDate'));
       return;
     }
 
     if (leaveType === 'multiple' && !endDate) {
-      Alert.alert('Error', 'Please select end date');
+      Alert.alert(t('common.error'), t('leave.selectEndDate'));
       return;
     }
 
     if (!reason.trim()) {
-      Alert.alert('Error', 'Please enter reason for leave');
+      Alert.alert(t('common.error'), t('leave.reasonRequired'));
       return;
     }
 
@@ -96,7 +89,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Apply for Leave</Text>
+            <Text style={styles.modalTitle}>{t('leave.title')}</Text>
             <TouchableOpacity onPress={handleClose}>
               <Ionicons name="close-outline" size={24} color="#333" />
             </TouchableOpacity>
@@ -104,14 +97,14 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
 
           {/* Leave Type Selection */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Leave Type</Text>
+            <Text style={styles.sectionTitle}>{t('leave.selectType')}</Text>
             <View style={styles.radioContainer}>
               <TouchableOpacity
                 style={[styles.radioButton, leaveType === 'single' && styles.radioSelected]}
                 onPress={() => setLeaveType('single')}
               >
                 <Text style={[styles.radioText, leaveType === 'single' && styles.radioTextSelected]}>
-                  Single Day
+                  {t('leave.singleDay')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -119,7 +112,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
                 onPress={() => setLeaveType('multiple')}
               >
                 <Text style={[styles.radioText, leaveType === 'multiple' && styles.radioTextSelected]}>
-                  Multiple Days
+                  {t('leave.multipleDays')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -127,7 +120,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
 
           {/* Date Selection */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Select Date{leaveType === 'multiple' ? 's' : ''}</Text>
+            <Text style={styles.sectionTitle}>{t('leave.selectDates')}{leaveType === 'multiple' ? 's' : ''}</Text>
 
             <TouchableOpacity
               style={styles.dateButton}
@@ -135,7 +128,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
             >
               <Ionicons name="calendar-outline" size={20} color={colors.primary || '#007AFF'} />
               <Text style={styles.dateButtonText}>
-                {startDate ? startDate.toDateString() : 'Select Start Date'}
+                {startDate ? startDate.toDateString() : t('leave.startDate')}
               </Text>
             </TouchableOpacity>
 
@@ -146,7 +139,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
               >
                 <Ionicons name="calendar-outline" size={20} color={colors.primary || '#007AFF'} />
                 <Text style={styles.dateButtonText}>
-                  {endDate ? endDate.toDateString() : 'Select End Date'}
+                  {endDate ? endDate.toDateString() : t('leave.endDate')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -154,10 +147,10 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
 
           {/* Reason Input */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Reason for Leave</Text>
+            <Text style={styles.sectionTitle}>{t('leave.reason')}</Text>
             <TextInput
               style={styles.reasonInput}
-              placeholder="Enter reason (e.g., Personal work, Festival, etc.)"
+              placeholder={t('leave.enterReason')}
               value={reason}
               onChangeText={setReason}
               multiline
@@ -168,7 +161,7 @@ export default function LeaveRequestModal({ isVisible, onClose, onSubmit }: Leav
 
           {/* Submit Button */}
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Apply for Leave</Text>
+            <Text style={styles.submitButtonText}>{t('leave.submit')}</Text>
           </TouchableOpacity>
 
           {/* Date Pickers */}

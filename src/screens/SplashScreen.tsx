@@ -1,10 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Image,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, Image, StyleSheet, Dimensions, } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';

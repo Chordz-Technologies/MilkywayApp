@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { registerVendor, clearError } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 interface CowMilkDetail {
   name: string;
@@ -63,11 +64,12 @@ interface FormState {
 export default function VendorRegisterScreen({ navigation }: { navigation: any }) {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
+  const { t } = useTranslation();
 
   const [cowMilk, setCowMilk] = useState<CowMilkDetail[]>([
-    { name: 'Gir Cow', capacity: '', rate: '' },
-    { name: 'Deshi', capacity: '', rate: '' },
-    { name: 'Jarshi', capacity: '', rate: '' },
+    { name: t('registration.girCow'), capacity: '', rate: '' },
+    { name: t('registration.deshiCow'), capacity: '', rate: '' },
+    { name: t('registration.jerseyCow'), capacity: '', rate: '' },
   ]);
 
   const [buffaloCapacity, setBuffaloCapacity] = useState<string>('');
@@ -119,43 +121,43 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
   const validate = () => {
     setLocalError('');
-    if (!form.name.trim()) { return 'Name is required'; }
-    if (!form.password) { return 'Password is required'; }
-    if (form.password.length < 6) { return 'Password should be at least 6 characters'; }
-    if (form.password !== form.confirmPassword) { return 'Password and Confirm Password do not match'; }
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return 'Please enter a valid email address'; }
+    if (!form.name.trim()) { return t('validation.fullNameRequired'); }
+    if (!form.password) { return t('validation.passwordRequired'); }
+    if (form.password.length < 6) { return t('validation.passwordMinLength'); }
+    if (form.password !== form.confirmPassword) { return t('validation.passwordMismatch1'); }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { return t('validation.invalidEmail'); }
 
     const phone = form.phone.trim();
-    if (!phone) { return 'Phone number is required'; }
-    if (!/^[6-9]\d{9}$/.test(phone)) { return 'Phone number must be valid 10 digits starting with 6-9'; }
+    if (!phone) { return t('validation.phoneRequired'); }
+    if (!/^[6-9]\d{9}$/.test(phone)) { return t('validation.invalidPhone'); }
 
     if (
       !form.flat.trim() || !form.society.trim() || !form.village.trim() ||
       !form.tal.trim() || !form.dist.trim() || !form.state.trim()
-    ) { return 'All address fields (Flat, Society, Village, Tal, Dist, State) are required'; }
+    ) { return t('validation.addressRequired'); }
 
     // ✅ Added pincode validation
-    if (!form.pincode.trim()) { return 'Pincode is required'; }
-    if (!/^\d{6}$/.test(form.pincode.trim())) { return 'Pincode must be exactly 6 digits'; }
+    if (!form.pincode.trim()) { return t('validation.pincodeRequired'); }
+    if (!/^\d{6}$/.test(form.pincode.trim())) { return t('validation.invalidPincode'); }
 
-    if (!hasCow && !hasBuffalo) { return 'Select at least one milk type (Cow or Buffalo)'; }
+    if (!hasCow && !hasBuffalo) { return t('validation.milkTypeRequired'); }
 
     if (hasCow) {
       for (const c of cowMilk) {
         if (c.capacity && (isNaN(Number(c.capacity)) || Number(c.capacity) <= 0)) {
-          return `Please enter valid capacity for ${c.name}`;
+          return t('validation.cowCapacityInvalid', { name: c.name });
         }
         if (c.capacity && (!c.rate.trim() || isNaN(Number(c.rate)) || Number(c.rate) <= 0)) {
-          return `Please enter valid rate for ${c.name}`;
+          return t('validation.cowRateInvalid', { name: c.name });
         }
       }
     }
 
     if (hasBuffalo) {
       const capacity = Number(buffaloCapacity);
-      if (isNaN(capacity) || capacity <= 0) { return 'Please enter a valid capacity for Buffalo milk'; }
+      if (isNaN(capacity) || capacity <= 0) { return t('validation.buffaloCapacityInvalid'); }
       if (!buffaloRate.trim() || isNaN(Number(buffaloRate)) || Number(buffaloRate) <= 0) {
-        return 'Please enter a valid Buffalo milk rate';
+        return t('validation.buffaloRateInvalid');
       }
     }
 
@@ -212,21 +214,15 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
         vendorPayload.buffalo_milk_litre = Number(buffaloCapacity);
       }
 
-      console.log('Vendor Payload:', vendorPayload);
-
       const result = await dispatch(registerVendor(vendorPayload));
       if (registerVendor.fulfilled.match(result)) {
-        showSuccessAlert('Vendor registration successful!');
+        Alert.alert(t('registration.registrationSuccessful'), t('registration.vendorRegistrationSuccess'), [
+          { text: 'OK', onPress: () => navigation.replace('Login') },
+        ]);
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.log('Registration error:', err);
     }
-  };
-
-  const showSuccessAlert = (message: string) => {
-    Alert.alert('Registration Successful', `${message}\nYou will be redirected to Login.`, [
-      { text: 'OK', onPress: () => navigation.replace('Login') },
-    ]);
   };
 
   const displayError = error || localError;
@@ -256,7 +252,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
               >
                 <Icon name="arrow-left" size={26} color="#333" />
               </TouchableOpacity>
-              <Text style={styles.title}>Vendor Registration</Text>
+              <Text style={styles.title}>{t('registration.vendorRegistration')}</Text>
             </View>
 
             {displayError && (
@@ -267,23 +263,23 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
             {/* Basic Information */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Full Name<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.fullName')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.name}
                 onChangeText={text => handleInputChange('name', text)}
-                placeholder="Enter your full name"
+                placeholder={t('registration.enterFullName')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('registration.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.email}
                 onChangeText={text => handleInputChange('email', text)}
-                placeholder="Enter your email address"
+                placeholder={t('registration.enterEmail')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="#888"
@@ -291,7 +287,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.phoneNumber')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.phoneInputContainer}>
                 <Text style={styles.countryCode}>+91</Text>
                 <TextInput
@@ -301,7 +297,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                     const cleaned = text.replace(/\D/g, '').slice(0, 10);
                     handleInputChange('phone', cleaned);
                   }}
-                  placeholder="Enter phone number"
+                  placeholder={t('registration.enterPhoneNumber')}
                   keyboardType="number-pad"
                   maxLength={10}
                   placeholderTextColor="#888"
@@ -310,13 +306,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Password<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.password')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.password}
                   onChangeText={text => handleInputChange('password', text)}
-                  placeholder="Enter your password"
+                  placeholder={t('registration.enterPassword')}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -333,13 +329,13 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Confirm Password<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.confirmPassword')}<Text style={styles.required}> *</Text></Text>
               <View style={styles.inputBoxRelative}>
                 <TextInput
                   style={[styles.input, styles.inputWithIcon]}
                   value={form.confirmPassword}
                   onChangeText={text => handleInputChange('confirmPassword', text)}
-                  placeholder="Re-enter your password"
+                  placeholder={t('registration.reEnterPassword')}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -357,74 +353,74 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
             {/* Address Fields */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Flat / House<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.flatHouse')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.flat}
                 onChangeText={text => handleInputChange('flat', text)}
-                placeholder="Enter flat or house"
+                placeholder={t('registration.enterFlatHouse')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Society / Area<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.societyArea')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.society}
                 onChangeText={text => handleInputChange('society', text)}
-                placeholder="Enter society or area"
+                placeholder={t('registration.enterSocietyArea')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Village<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.village')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.village}
                 onChangeText={text => handleInputChange('village', text)}
-                placeholder="Enter village"
+                placeholder={t('registration.enterVillage')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Taluka<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.taluka')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.tal}
                 onChangeText={text => handleInputChange('tal', text)}
-                placeholder="Enter Taluka"
+                placeholder={t('registration.enterTaluka')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>District<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.district')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.dist}
                 onChangeText={text => handleInputChange('dist', text)}
-                placeholder="Enter District"
+                placeholder={t('registration.enterDistrict')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>State<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.state')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.state}
                 onChangeText={text => handleInputChange('state', text)}
-                placeholder="Enter State"
+                placeholder={t('registration.enterState')}
                 placeholderTextColor="#888"
               />
             </View>
 
             {/* Added Pincode Field */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Pincode<Text style={styles.required}> *</Text></Text>
+              <Text style={styles.label}>{t('registration.pincode')}<Text style={styles.required}> *</Text></Text>
               <TextInput
                 style={styles.input}
                 value={form.pincode}
@@ -432,7 +428,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                   const cleaned = text.replace(/\D/g, '').slice(0, 6);
                   handleInputChange('pincode', cleaned);
                 }}
-                placeholder="Enter 6-digit pincode"
+                placeholder={t('registration.enterPincode')}
                 keyboardType="number-pad"
                 maxLength={6}
                 placeholderTextColor="#888"
@@ -441,44 +437,44 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
 
             {/* Global Milk Rate Fields (Optional) */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Cow Milk Rate (₹ per litre)</Text>
+              <Text style={styles.label}>{t('registration.cowMilkRate')}</Text>
               <TextInput
                 style={styles.input}
                 value={cowMilkRate}
                 keyboardType="numeric"
                 onChangeText={setCowMilkRate}
-                placeholder="Enter cow milk rate"
+                placeholder={t('registration.enterCowMilkRate')}
                 placeholderTextColor="#888"
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Buffalo Milk Rate (₹ per litre)</Text>
+              <Text style={styles.label}>{t('registration.buffaloMilkRate')}</Text>
               <TextInput
                 style={styles.input}
                 value={buffaloMilkRate}
                 keyboardType="numeric"
                 onChangeText={setBuffaloMilkRate}
-                placeholder="Enter buffalo milk rate"
+                placeholder={t('registration.enterBuffaloMilkRate')}
                 placeholderTextColor="#888"
               />
             </View>
 
             {/* Milk Types Toggle */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Milk Types:</Text>
+              <Text style={styles.label}>{t('registration.milkTypes')}</Text>
               <View style={styles.milkTypeRow}>
                 <TouchableOpacity
                   style={[styles.milkTypeButton, hasCow && styles.milkTypeSelected]}
                   onPress={() => setHasCow(!hasCow)}
                 >
-                  <Text style={[styles.milkTypeText, hasCow && styles.milkTypeTextSelected]}>Cow</Text>
+                  <Text style={[styles.milkTypeText, hasCow && styles.milkTypeTextSelected]}>{t('registration.cow')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.milkTypeButton, hasBuffalo && styles.milkTypeSelected]}
                   onPress={() => setHasBuffalo(!hasBuffalo)}
                 >
-                  <Text style={[styles.milkTypeText, hasBuffalo && styles.milkTypeTextSelected]}>Buffalo</Text>
+                  <Text style={[styles.milkTypeText, hasBuffalo && styles.milkTypeTextSelected]}>{t('registration.buffalo')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -486,7 +482,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             {/* Cow Milk Section */}
             {hasCow && (
               <View style={styles.milkDetailsSection}>
-                <Text style={styles.sectionTitle}>Cow Milk Types</Text>
+                <Text style={styles.sectionTitle}>{t('registration.cowMilkTypes')}</Text>
                 {cowMilk.map((item, idx) => (
                   <View key={idx} style={styles.milkTypeBlock}>
                     <View style={styles.milkTypeInputRow}>
@@ -494,7 +490,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                         style={styles.cowTypeInput}
                         value={item.name}
                         onChangeText={val => handleCowMilkChange(idx, 'name', val)}
-                        placeholder="Cow Type"
+                        placeholder={t('registration.cowType')}
                         editable={idx > 2}
                       />
                       <TextInput
@@ -505,16 +501,16 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                         placeholder="0"
                         placeholderTextColor="#888"
                       />
-                      <Text style={styles.ltrsLabel}>ltrs</Text>
+                      <Text style={styles.ltrsLabel}>{t('registration.liters')}</Text>
                     </View>
                     <View style={styles.rateRow}>
-                      <Text style={styles.rateLabel}>Rate</Text>
+                      <Text style={styles.rateLabel}>{t('registration.rate')}</Text>
                       <TextInput
                         style={styles.rateInput}
                         value={item.rate}
                         keyboardType="numeric"
                         onChangeText={val => handleCowMilkChange(idx, 'rate', val)}
-                        placeholder="per litre"
+                        placeholder={t('registration.perLitre')}
                         placeholderTextColor="#888"
                       />
                     </View>
@@ -526,12 +522,12 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             {/* Buffalo Milk Section */}
             {hasBuffalo && (
               <View style={styles.milkDetailsSection}>
-                <Text style={styles.sectionTitle}>Buffalo Milk</Text>
+                <Text style={styles.sectionTitle}>{t('registration.buffaloMilk')}</Text>
                 <View style={styles.milkTypeBlock}>
                   <View style={styles.milkTypeInputRow}>
                     <TextInput
                       style={styles.cowTypeInput}
-                      value="Buffalo"
+                      value={t('registration.buffalo')}
                       editable={false}
                     />
                     <TextInput
@@ -542,16 +538,16 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
                       placeholder="0"
                       placeholderTextColor="#888"
                     />
-                    <Text style={styles.ltrsLabel}>ltrs</Text>
+                    <Text style={styles.ltrsLabel}>{t('registration.liters')}</Text>
                   </View>
                   <View style={styles.rateRow}>
-                    <Text style={styles.rateLabel}>Rate</Text>
+                    <Text style={styles.rateLabel}>{t('registration.rate')}</Text>
                     <TextInput
                       style={styles.rateInput}
                       value={buffaloRate}
                       keyboardType="numeric"
                       onChangeText={setBuffaloRate}
-                      placeholder="per litre"
+                      placeholder={t('registration.perLitre')}
                       placeholderTextColor="#888"
                     />
                   </View>
@@ -560,7 +556,7 @@ export default function VendorRegisterScreen({ navigation }: { navigation: any }
             )}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-              <Text style={styles.buttonText}>{isLoading ? 'Registering...' : 'Register'}</Text>
+              <Text style={styles.buttonText}>{isLoading ? t('registration.registering') : t('registration.register')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </TouchableWithoutFeedback>

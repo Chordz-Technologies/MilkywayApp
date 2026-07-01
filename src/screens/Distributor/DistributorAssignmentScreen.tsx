@@ -1,26 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  RefreshControl,
-  BackHandler,
-  Platform,
-  TextInput,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, RefreshControl, BackHandler, Platform, TextInput, } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/index';
-import {
-  getAcceptedMilkmen,
-  assignConsumerToDistributor,
-} from '../../apiServices/allApi';
+import { getAcceptedMilkmen, assignConsumerToDistributor, } from '../../apiServices/allApi';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 type Distributor = {
   id: number;
@@ -59,9 +45,8 @@ const AssignDistributorScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<AssignDistributorRouteProp>();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-
+  const { t } = useTranslation();
   const { consumer } = route.params;
-
   const [distributors, setDistributors] = useState<Distributor[]>([]);
   const [filteredDistributors, setFilteredDistributors] = useState<Distributor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -90,8 +75,8 @@ const AssignDistributorScreen = () => {
   }, [handleGoBack]);
 
   const getConsumerName = useCallback(() => {
-    return consumer.name || 'Unknown Consumer';
-  }, [consumer]);
+    return consumer.name || t('assignDistributor.unknownConsumer');
+  }, [consumer, t]);
 
   const fetchDistributors = useCallback(async () => {
     setError(null);
@@ -101,15 +86,15 @@ const AssignDistributorScreen = () => {
       const vendorId = user?.userID;
 
       if (!vendorId) {
-        throw new Error('Vendor ID not found. Please log in again.');
+        throw new Error(t('assignDistributor.vendorNotFound'));
       }
 
       // Verify vendor match first
       if (Number(vendorId) !== Number(consumer.vendor)) {
 
         Alert.alert(
-          'Vendor Mismatch',
-          'This consumer belongs to a different vendor. You cannot assign distributors to consumers from other vendors.',
+          t('assignDistributor.vendorMismatch'),
+          t('assignDistributor.vendorMismatchMessage'),
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
         return;
@@ -124,8 +109,8 @@ const AssignDistributorScreen = () => {
         const transformedDistributors = data.map((item: any, index: number) => {
           const distributor = {
             id: item.milkman_id || item.id || index + 1,
-            full_name: item.milkman_name || item.full_name || `Distributor ${index + 1}`,
-            phone_number: item.milkman_contact || item.phone_number || 'N/A',
+            full_name: item.milkman_name || item.full_name || `${t('assignDistributor.distributor')} ${index + 1}`,
+            phone_number: item.milkman_contact || item.phone_number || t('common.notAvailable'),
             email: item.email || '',
             status: item.status || 'active',
             vendor_id: Number(vendorId), // All distributors from this API belong to current vendor
@@ -147,10 +132,9 @@ const AssignDistributorScreen = () => {
       }
 
     } catch (err: any) {
-      console.error('❌ Error fetching distributors:', err);
-      let errorMessage = 'Failed to load distributors.';
+      let errorMessage = t('assignDistributor.failedLoad');
       if (err.response?.status === 404) {
-        errorMessage = 'No distributors found for this vendor.';
+        errorMessage = t('assignDistributor.noDistributors');
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -196,7 +180,7 @@ const AssignDistributorScreen = () => {
       const selectedDistributor = distributors.find(d => d.id === distributorId);
 
       if (!selectedDistributor) {
-        Alert.alert('Error', 'Selected distributor not found.');
+        Alert.alert(t('common.error'), t('assignDistributor.distributorNotFound'));
         return;
       }
 
@@ -205,12 +189,12 @@ const AssignDistributorScreen = () => {
       const distributorVendorId = Number(selectedDistributor.vendor_id);
 
       if (currentVendorId !== consumerVendorId) {
-        Alert.alert('Error', 'Consumer belongs to a different vendor.');
+        Alert.alert(t('common.error'), t('assignDistributor.consumerDifferentVendor'));
         return;
       }
 
       if (currentVendorId !== distributorVendorId) {
-        Alert.alert('Error', 'Distributor belongs to a different vendor.');
+        Alert.alert(t('common.error'), t('assignDistributor.distributorDifferentVendor'));
         return;
       }
 
@@ -223,16 +207,18 @@ const AssignDistributorScreen = () => {
       const response = await assignConsumerToDistributor(assignmentData);
 
       Alert.alert(
-        'Success!',
-        `${getConsumerName()} has been assigned to ${selectedDistributor.full_name}.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.navigate('VendorHome' as never);
-            },
+        t('common.success'),
+        t('assignDistributor.assignSuccess', {
+          consumer: getConsumerName(),
+          distributor: selectedDistributor.full_name,
+        }), [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.navigate('VendorHome' as never);
           },
-        ]
+        },
+      ]
       );
 
     } catch (err: any) {
@@ -241,9 +227,8 @@ const AssignDistributorScreen = () => {
       const apiMessage = err.response?.data?.message;
 
       Alert.alert(
-        'Assignment Error',
-        apiMessage ?? 'Something went wrong while assigning.'
-      );
+        t('assignDistributor.assignmentError'),
+        apiMessage ?? t('assignDistributor.somethingWentWrong'));
     }
     finally {
       setProcessing(false);
@@ -274,7 +259,9 @@ const AssignDistributorScreen = () => {
             <Text style={styles.status}>{item.status?.toUpperCase()}</Text>
             {item.assigned_customers_count !== undefined && item.assigned_customers_count > 0 && (
               <Text style={styles.customerCount}>
-                {item.assigned_customers_count} customers assigned
+                {t('assignDistributor.customersAssigned', {
+                  count: item.assigned_customers_count,
+                })}
               </Text>
             )}
           </View>
@@ -299,7 +286,7 @@ const AssignDistributorScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -313,8 +300,11 @@ const AssignDistributorScreen = () => {
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Assign Distributor</Text>
-            <Text style={styles.headerSubtitle}>For: {getConsumerName()}</Text>
+            <Text style={styles.headerTitle}>{t('assignDistributor.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('assignDistributor.forConsumer', {
+              consumer: getConsumerName(),
+            })}
+            </Text>
           </View>
         </View>
 
@@ -322,7 +312,7 @@ const AssignDistributorScreen = () => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search distributors..."
+            placeholder={t('assignDistributor.searchDistributor')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#8E8E93"
@@ -334,7 +324,7 @@ const AssignDistributorScreen = () => {
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={fetchDistributors} style={styles.retryButton}>
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -343,7 +333,7 @@ const AssignDistributorScreen = () => {
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text>Loading distributors...</Text>
+            <Text>{t('assignDistributor.loadingDistributors')}</Text>
           </View>
         ) : (
           <FlatList
@@ -362,16 +352,15 @@ const AssignDistributorScreen = () => {
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
                 <Ionicons name="business-outline" size={80} color="#E5E5EA" />
-                <Text style={styles.emptyTitle}>No Distributors Available</Text>
+                <Text style={styles.emptyTitle}>{t('assignDistributor.noDistributorsAvailable')}</Text>
                 <Text style={styles.emptyText}>
                   {searchQuery
-                    ? `No distributors match "${searchQuery}".`
-                    : 'No distributors available for assignment from your vendor account.'
-                  }
+                    ? t('assignDistributor.noSearchResult', { query: searchQuery, })
+                    : t('assignDistributor.noDistributorMessage')}
                 </Text>
                 <TouchableOpacity onPress={fetchDistributors} style={styles.refreshButton}>
                   <Ionicons name="refresh-outline" size={20} color="#fff" />
-                  <Text style={styles.refreshButtonText}>Refresh</Text>
+                  <Text style={styles.refreshButtonText}>{t('common.refresh')}</Text>
                 </TouchableOpacity>
               </View>
             )}

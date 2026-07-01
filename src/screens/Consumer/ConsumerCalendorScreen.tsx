@@ -1,43 +1,20 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, StyleSheet, } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import { calendarScreenStyles, calendarTheme, colors } from '../../styles/CalendorScreenStyle';
-import {
-  fetchCalendarData,
-  setCurrentMonth,
-  clearError,
-  LeaveItem,
-  ExtraMilkItem,
-  submitLeaveRequest,
-  submitExtraMilk,
-  fetchConsumerSummary,
-  cancelLeave,
-} from '../../store/calendarSlice';
+import { fetchCalendarData, setCurrentMonth, clearError, LeaveItem, submitLeaveRequest, submitExtraMilk, fetchConsumerSummary, } from '../../store/calendarSlice';
 import { selectConsumers } from '../../store/consumersSlice';
 import { checkStoredAuth } from '../../store/authSlice';
 import { getUnreadCount, markAllAsRead, showLocalNotification, notificationEmitter } from "../../notifications/NotificationService";
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import SafeAreaWrapper from '../../styles/SafeAreaWrapper';
 import RatingModal from '../../screens/RatingModal';
-import {
-  incrementAppOpen,
-  shouldShowRating,
-} from '../../utils/ratingManager';
-
-const SEEN_CUSTOMERS_KEY = 'seen_consumers_v1';
+import { incrementAppOpen, shouldShowRating, } from '../../utils/ratingManager';
+import { useTranslation } from '../../i18n/LanguageProvider';
 
 interface CalendarViewerProps {
   viewerRole?: 'consumer' | 'distributor' | 'vendor';
@@ -45,20 +22,17 @@ interface CalendarViewerProps {
   targetConsumerName?: string;
   showBackButton?: boolean;
 }
-type MarkedDates = Record<
-  string,
-  {
-    selected?: boolean;
-    marked?: boolean;
-    selectedColor?: string;
-    dotColor?: string;
-    dots?: Array<{
-      key: string;
-      color: string;
-      selectedDotColor?: string;
-    }>;
-  }
->;
+type MarkedDates = Record<string, {
+  selected?: boolean;
+  marked?: boolean;
+  selectedColor?: string;
+  dotColor?: string;
+  dots?: Array<{
+    key: string;
+    color: string;
+    selectedDotColor?: string;
+  }>;
+}>;
 
 interface LeaveRequestData {
   startDate: string;
@@ -86,14 +60,6 @@ const statusColors: Record<string, string> = {
   missed: '#2196F3',
   not_requested: '#FF9800',
 };
-
-// Statuses allowed for vendor viewing (delivery-related only)
-const allowedVendorStatuses = ['delivered', 'vendor_unavailable', 'distributor_unavailable', 'cancelled', 'missed'];
-
-const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 
 // CONSUMER-ONLY MODALS
 const ConsumerModals: React.FC<{
@@ -142,46 +108,49 @@ const ConsumerModals: React.FC<{
 ConsumerModals.displayName = 'ConsumerModals';
 
 // STATUS LEGEND - Role-based filtering
-const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = React.memo(({ isDistributor, isVendor }) => (
-  <View style={calendarScreenStyles.legendContainer}>
-    <Text style={calendarScreenStyles.legendTitle}>
-      {isDistributor ? 'My Delivery Record' : 'Status Legend'}
-    </Text>
-    <View style={calendarScreenStyles.legendGrid}>
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered }]} />
-        <Text style={calendarScreenStyles.legendText}>Delivered</Text>
-      </View>
+const StatusLegend: React.FC<{ isDistributor: boolean; isVendor: boolean }> = React.memo(({ isDistributor }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={calendarScreenStyles.legendContainer}>
+      <Text style={calendarScreenStyles.legendTitle}>
+        {isDistributor ? t('calendar.myDeliveryRecord') : t('calendar.statusLegend')}
+      </Text>
+      <View style={calendarScreenStyles.legendGrid}>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.delivered')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
-        <Text style={calendarScreenStyles.legendText}>Cancel Delivery</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.cancelled }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.cancelDelivery')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
-        <Text style={calendarScreenStyles.legendText}>
-          {isDistributor ? 'Leave' : 'Leave'}
-        </Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.leave }]} />
+          <Text style={calendarScreenStyles.legendText}>
+            {isDistributor ? t('calendar.leave') : t('calendar.leave')}
+          </Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.extra_milk }]} />
-        <Text style={calendarScreenStyles.legendText}>Extra Milk</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.extra_milk }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.extraMilk')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending_extra_milk }]} />
-        <Text style={calendarScreenStyles.legendText}>Pending Extra Milk</Text>
-      </View>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.pending_extra_milk }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.pendingExtraMilk')}</Text>
+        </View>
 
-      <View style={calendarScreenStyles.legendItem}>
-        <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered_extra_milk }]} />
-        <Text style={calendarScreenStyles.legendText}>Extra Milk Delivered</Text>
+        <View style={calendarScreenStyles.legendItem}>
+          <View style={[calendarScreenStyles.legendDot, { backgroundColor: statusColors.delivered_extra_milk }]} />
+          <Text style={calendarScreenStyles.legendText}>{t('calendar.extraMilkDelivered')}</Text>
+        </View>
       </View>
     </View>
-  </View>
-));
+  )
+});
 
 StatusLegend.displayName = 'StatusLegend';
 
@@ -193,7 +162,8 @@ const MonthlySummary: React.FC<{
   isDistributor: boolean;
   isVendor: boolean;
   leavesCount: number;
-}> = React.memo(({ monthlySummary, currentMonth, currentYear, isDistributor, isVendor, leavesCount }) => {
+}> = React.memo(({ monthlySummary, currentMonth, currentYear, isDistributor, leavesCount }) => {
+  const { t } = useTranslation();
   const formatMilkQuantity = (quantity: number | string) => {
     const num = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
     if (isNaN(num)) { return '0L'; }
@@ -206,10 +176,16 @@ const MonthlySummary: React.FC<{
     return `₹${num}`;
   };
 
+  const monthNames = [
+    t('calendar.january'), t('calendar.february'), t('calendar.march'), t('calendar.april'),
+    t('calendar.may'), t('calendar.june'), t('calendar.july'), t('calendar.august'),
+    t('calendar.september'), t('calendar.october'), t('calendar.november'), t('calendar.december'),
+  ];
+
   return (
     <View style={calendarScreenStyles.summaryContainer}>
       <Text style={calendarScreenStyles.summaryTitle}>
-        {monthNames[currentMonth]} {currentYear} - {isDistributor ? 'Delivery Summary' : 'Summary'}
+        {monthNames[currentMonth]} {currentYear} - {isDistributor ? t('calendar.deliveryRecord') : t('calendar.summary')}
       </Text>
       <View style={calendarScreenStyles.summaryGrid}>
         <View style={calendarScreenStyles.summaryItem}>
@@ -218,7 +194,7 @@ const MonthlySummary: React.FC<{
             {formatMilkQuantity(monthlySummary?.totalMilk)}
           </Text>
           <Text style={calendarScreenStyles.summaryLabel}>
-            {isDistributor ? 'Total Delivered' : 'Total Milk'}
+            {isDistributor ? t('calendar.totalDelivered') : t('calendar.totalMilk')}
           </Text>
         </View>
 
@@ -227,14 +203,14 @@ const MonthlySummary: React.FC<{
           <Text style={calendarScreenStyles.summaryValue}>
             {monthlySummary?.totalDeliveries || 0}
           </Text>
-          <Text style={calendarScreenStyles.summaryLabel}>Total Deliveries</Text>
+          <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.totalDeliveries')}</Text>
         </View>
 
         <View style={calendarScreenStyles.summaryItem}>
           <Ionicons name="calendar-outline" size={24} color={colors.danger} />
           <Text style={calendarScreenStyles.summaryValue}>{leavesCount || 0}</Text>
           <Text style={calendarScreenStyles.summaryLabel}>
-            {isDistributor ? 'Customer Leaves' : 'Total Leaves'}
+            {isDistributor ? t('calendar.customerLeaves') : t('calendar.totalLeaves')}
           </Text>
         </View>
 
@@ -244,7 +220,7 @@ const MonthlySummary: React.FC<{
             <Text style={calendarScreenStyles.summaryValue}>
               {formatCurrency(monthlySummary?.totalBill)}
             </Text>
-            <Text style={calendarScreenStyles.summaryLabel}>Total Bill</Text>
+            <Text style={calendarScreenStyles.summaryLabel}>{t('calendar.totalBill')}</Text>
           </View>
         )}
       </View>
@@ -264,6 +240,14 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   const navigation = useNavigation();
   const route = useRoute();
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const { t } = useTranslation();
+
+  const monthNames = useMemo(
+    () => [t('calendar.january'), t('calendar.february'), t('calendar.march'), t('calendar.april'),
+    t('calendar.may'), t('calendar.june'), t('calendar.july'), t('calendar.august'),
+    t('calendar.september'), t('calendar.october'), t('calendar.november'), t('calendar.december')],
+    [t]
+  );
 
   const routeParams = route.params as {
     viewerRole?: 'consumer' | 'distributor' | 'vendor';
@@ -294,8 +278,8 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       if (consumer?.customer_name) { return consumer.customer_name; }
     }
 
-    return user?.name || 'Consumer';
-  }, [actualTargetConsumerName, customerId, consumers, user?.name]);
+    return user?.name || t('requests.consumer');
+  }, [actualTargetConsumerName, customerId, consumers, user?.name, t]);
 
   const isDistributor = actualViewerRole === 'distributor';
   const isVendor = actualViewerRole === 'vendor';
@@ -333,7 +317,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   const [selectedDate, setSelectedDate] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const prevCustomerRef = useRef<number | null>(null);
-  const fetchedCustomerIds = useRef<Set<number>>(new Set());
   const [localDeliveryTypes, setLocalDeliveryTypes] = useState<Record<string, string> | null>(null);
   const [localCalendarData, setLocalCalendarData] = useState<Record<string, any> | null>(null);
   const [localMonthlySummary, setLocalMonthlySummary] = useState<any | null>(null);
@@ -454,7 +437,7 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
     notificationEmitter.on('newNotification', updateBadge);
 
     // Handle FCM foreground messages
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
+    const unsubscribe = messaging().onMessage(async () => {
       async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
         console.log("Foreground message:", remoteMessage);
         const notificationRaw = remoteMessage.notification || {
@@ -590,11 +573,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
   // Debug: log per-customer delivery types and markedDates to help diagnose missing dots
   useEffect(() => {
     try {
-      console.log('🧭 Calendar Debug - customerId:', customerId);
-      console.log('  deliveryTypes for customer:', deliveryTypes);
-      console.log('  calendarDataForCustomer (sample 5):', Object.keys(calendarDataForCustomer || {}).slice(0, 5));
-      const markedKeys = Object.keys(markedDates || {});
-      console.log('  markedDates count:', markedKeys.length, 'sample:', markedKeys.slice(0, 5));
     } catch (e) {
       // swallow logging errors
       console.error('Calendar debug error:', e);
@@ -605,9 +583,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
     setSelectedDate(day.dateString);
 
     // Check for extra milk requests first
-    const extraMilkForDate = milkRequestsForCustomer.find(
-      (request: ExtraMilkItem) => normalizeDate(request?.date) === day.dateString
-    );
 
     // Check for leave requests
     const leaveForDate = leavesForCustomer.find(
@@ -616,8 +591,8 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
 
     if (leaveForDate) {
       Alert.alert(
-        'Leave',
-        `On leave 🏠 on ${formatDate(day.dateString)}`,
+        t('calendar.leave'),
+        `${t('calendar.onLeave')} ${t('calendar.onDate')} ${formatDate(day.dateString)}`,
         [{ text: 'OK' }]
       );
       return;
@@ -629,21 +604,6 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
       const deliveryForDate = consumerData?.deliveryHistory?.find(d => d?.date === day.dateString);
 
       if (deliveryForDate) {
-        const getStatusText = (status: string) => {
-          switch (status) {
-            case 'delivered':
-              return isDistributor ? 'You delivered successfully ✅' : 'Delivered ✅';
-            case 'vendor_unavailable':
-            case 'distributor_unavailable':
-              return isDistributor ? 'You were unavailable ❌' : 'Unavailable ❌';
-            case 'cancelled':
-              return isDistributor ? 'You cancelled delivery ❌' : 'Cancelled ❌';
-            case 'missed':
-              return isDistributor ? 'Delivery was missed ❌' : 'Missed ❌';
-            default:
-              return status;
-          }
-        };
       }
     }
 
@@ -655,26 +615,26 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
 
         const messageMap: Record<string, string> = isDistributor
           ? {
-            delivered: 'Daily milk delivered successfully ✅',
-            vendor_unavailable: 'You were unavailable ❌',
-            distributor_unavailable: 'You were unavailable ❌',
-            cancelled: 'You cancelled delivery ❌',
-            leave: 'Customer was on leave 🏠',
-            missed: 'Delivery was missed ❌',
-            extra_milk: 'Customer requested extra milk 🥛',
-            pending_extra_milk: 'Extra milk request pending for approval 🥛',
-            delivered_extra_milk: 'Extra milk delivered 🥛✅',
+            delivered: t('calendar.dailyMilkDelivered'),
+            vendor_unavailable: t('calendar.youCancelledDelivery'),
+            distributor_unavailable: t('calendar.distributorUnavailable'),
+            cancelled: t('calendar.youCancelledDelivery'),
+            leave: t('calendar.customerOnLeave'),
+            missed: t('calendar.deliveryMissed'),
+            extra_milk: t('calendar.customerRequestedExtraMilk'),
+            pending_extra_milk: t('calendar.pendingExtraMilkApproval'),
+            delivered_extra_milk: t('calendar.extraMilkDelivered'),
           }
           : {
-            delivered: 'Daily milk delivered successfully ✅',
-            vendor_unavailable: 'Vendor unavailable ❌',
-            distributor_unavailable: 'Distributor unavailable ❌',
-            cancelled: 'Delivery cancelled ❌',
-            leave: 'On leave 🏠',
-            extra_milk: 'Extra milk requested 🥛',
-            delivered_extra_milk: 'Extra milk delivered 🥛✅',
-            missed: 'Delivery missed ❌',
-            pending_extra_milk: 'Extra milk request pending for approval 🥛',
+            delivered: t('calendar.dailyMilkDelivered'),
+            vendor_unavailable: t('calendar.vendorUnavailable'),
+            distributor_unavailable: t('calendar.distributorUnavailable'),
+            cancelled: t('calendar.deliveryCancelled'),
+            leave: t('calendar.onLeave'),
+            extra_milk: t('calendar.extraMilkRequested'),
+            delivered_extra_milk: t('calendar.extraMilkDelivered'),
+            missed: t('calendar.deliveryMissed'),
+            pending_extra_milk: t('calendar.pendingExtraMilkApproval'),
           };
 
         const messagesToShow = statuses
@@ -682,8 +642,8 @@ const ConsumerCalendarScreen: React.FC<CalendarViewerProps> = ({
           .filter(Boolean) as string[];
 
         if (messagesToShow.length > 0) {
-          Alert.alert('Status', `${messagesToShow.join('\n')}
-on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
+          Alert.alert(t('calendar.status'), `${messagesToShow.join('\n')}\n${t('calendar.onDate')}
+           ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
         }
       }
     }
@@ -759,10 +719,10 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
       const monthMM = (currentMonth + 1).toString().padStart(2, '0');
       const yearYYYY = currentYear.toString();
       await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-      Alert.alert('Success', 'Leave request submitted successfully!');
+      Alert.alert(t('common.success'), t('calendar.leaveRequestSuccess'));
       closeLeaveModal();
     } catch (err) {
-      Alert.alert('Error', typeof err === 'string' ? err : 'Failed to submit leave request');
+      Alert.alert(t('common.error'), typeof err === 'string' ? err : t('calendar.leaveRequestFailed'));
     }
   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeLeaveModal]);
 
@@ -776,33 +736,13 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
       const monthMM = (currentMonth + 1).toString().padStart(2, '0');
       const yearYYYY = currentYear.toString();
       await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-      Alert.alert('Success', 'Extra milk request submitted successfully!');
+      Alert.alert(t('common.success'), t('calendar.extraMilkSuccess'));
       closeExtraMilkModal();
     } catch (err) {
-      Alert.alert('Error', typeof err === 'string' ? err : 'Failed to request extra milk');
+      Alert.alert(t('common.error'), typeof err === 'string' ? err : t('calendar.extraMilkFailed'));
     }
   }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear, closeExtraMilkModal]);
 
-  const handleCancelLeave = useCallback((leaveId: string, leaveDate: string) => {
-    if (isDistributor || isVendor || customerId === null) { return; }
-
-    Alert.alert('Cancel Leave', `Cancel leave for ${leaveDate}?`, [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: async () => {
-          dispatch(cancelLeave({ leaveId, leaveDate, customerId }));
-          const monthString = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}`;
-          await dispatch(fetchCalendarData({ customerId, month: monthString }));
-          const monthMM = (currentMonth + 1).toString().padStart(2, '0');
-          const yearYYYY = currentYear.toString();
-          await dispatch(fetchConsumerSummary({ customerId, month: monthMM, year: yearYYYY }));
-          Alert.alert('Success', 'Leave cancelled successfully!');
-        },
-      },
-    ]);
-  }, [isDistributor, isVendor, customerId, dispatch, currentMonth, currentYear]);
 
   if (!isAuthenticated || loading) {
     return (
@@ -820,7 +760,7 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.backButtonStyle}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('calendar.goBack')}
               accessibilityRole="button"
             >
               <Ionicons name="arrow-back" size={24} color="#007AFF" />
@@ -829,7 +769,7 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
 
           <View style={styles.headerContent}>
             <Text style={calendarScreenStyles.title}>
-              {consumerName} - Calendar
+              {consumerName} - {t('consumer.calendar')}
             </Text>
 
             <View style={calendarScreenStyles.monthSelector}>
@@ -838,11 +778,11 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
               </Text>
             </View>
 
-            {customerId !== null && (
+            {/* {customerId !== null && (
               <Text style={calendarScreenStyles.customerIdText}>
                 Customer ID: {customerId}
               </Text>
-            )}
+            )} */}
           </View>
 
           {/* Notification Icon - Placeholder for future implementation */}
@@ -935,13 +875,13 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
                   style={calendarScreenStyles.actionButton}
                   onPress={openLeaveModal}
                   activeOpacity={0.7}
-                  accessibilityLabel="Apply for leave"
+                  accessibilityLabel={t('calendar.applyForLeave')}
                 >
                   <View style={calendarScreenStyles.actionIcon}>
                     <Ionicons name="calendar-outline" size={22} color={colors.white} />
                   </View>
                   <View style={calendarScreenStyles.actionTextContainer}>
-                    <Text style={calendarScreenStyles.actionTitle}>Apply for Leave</Text>
+                    <Text style={calendarScreenStyles.actionTitle}>{t('calendar.applyForLeave')}</Text>
                   </View>
                 </TouchableOpacity>
 
@@ -949,13 +889,13 @@ on ${formatDate(day.dateString)}`, [{ text: 'OK' }]);
                   style={calendarScreenStyles.actionButton}
                   onPress={openExtraMilkModal}
                   activeOpacity={0.7}
-                  accessibilityLabel="Request extra milk"
+                  accessibilityLabel={t('calendar.requestExtraMilk')}
                 >
                   <View style={calendarScreenStyles.actionIcon}>
                     <Ionicons name="add-circle-outline" size={22} color={colors.white} />
                   </View>
                   <View style={calendarScreenStyles.actionTextContainer}>
-                    <Text style={calendarScreenStyles.actionTitle}>Request Extra Milk</Text>
+                    <Text style={calendarScreenStyles.actionTitle}>{t('calendar.requestExtraMilk')}</Text>
                   </View>
                 </TouchableOpacity>
               </View>
