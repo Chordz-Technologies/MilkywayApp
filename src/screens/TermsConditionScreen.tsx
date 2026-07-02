@@ -6,7 +6,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import SafeAreaWrapper from '../styles/SafeAreaWrapper';
 import colors from '../theme/colors';
 import { useTranslation } from '../i18n/LanguageProvider';
-import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type RootStackParamList = {
     Login: undefined;
@@ -33,9 +32,6 @@ const TermsConditionScreen: React.FC<Props> = ({ navigation }) => {
     return (
         <SafeAreaWrapper>
             <View style={styles.container}>
-                <View style={styles.languageRow}>
-                    <LanguageSwitcher />
-                </View>
 
                 <Text style={styles.header}>{t('terms.title')}</Text>
 
@@ -75,15 +71,12 @@ const styles = StyleSheet.create({
         padding: 30,
         backgroundColor: colors.white,
     },
-    languageRow: {
-        alignItems: 'flex-end',
-        marginBottom: 12,
-    },
     header: {
         fontSize: 22,
         fontWeight: 'bold',
         color: colors.primary,
         marginBottom: 18,
+        marginTop: 8,
         textAlign: 'center',
     },
     text: {

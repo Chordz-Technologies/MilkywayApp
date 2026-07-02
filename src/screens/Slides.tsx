@@ -63,9 +63,6 @@ const Slides: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaWrapper>
       <View style={styles.container}>
-        <View style={styles.languageRow}>
-          <LanguageSwitcher />
-        </View>
 
         <Animated.ScrollView
           horizontal
@@ -79,15 +76,31 @@ const Slides: React.FC<Props> = ({ navigation }) => {
           scrollEventThrottle={16}
           onMomentumScrollEnd={handleScrollEnd}
         >
-          {slides.map((slide) => (
+          {slides.map((slide, index) => (
             <View style={styles.slide} key={slide.id}>
+
+              {index === 0 && (
+                <View style={styles.languageRow}>
+                  <LanguageSwitcher />
+                </View>
+              )}
+
               <Text style={styles.title}>{t(slide.titleKey)}</Text>
-              <Text style={styles.desc}>{t(slide.descKey)}</Text>
+
+              <Text style={styles.desc}>
+                {t(slide.descKey)}
+              </Text>
+
               <Image source={slide.image} style={styles.image} />
 
               {slide.id === 'delivery' && (
-                <TouchableOpacity style={styles.startBtn} onPress={handleGetStarted}>
-                  <Text style={styles.startBtnText}>{t('slides.getStarted')}</Text>
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={handleGetStarted}
+                >
+                  <Text style={styles.startBtnText}>
+                    {t('slides.getStarted')}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -114,7 +127,7 @@ export default Slides;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.primary },
-  languageRow: { alignItems: 'flex-end', paddingHorizontal: 18, paddingTop: 12 },
+  languageRow: { position: 'absolute', top: 20, right: 20, zIndex: 10, },
   slide: { width, justifyContent: 'center', alignItems: 'center', padding: 30 },
   image: { width: 300, height: 300, resizeMode: 'contain', marginVertical: 40 },
   title: { fontSize: 26, fontWeight: 'bold', color: colors.white, marginVertical: 14 },
