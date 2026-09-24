@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from '../i18n/LanguageProvider';
 import { Language } from '../i18n/translations';
 
-const options: Language[] = ['en', 'mr'];
+const options: Language[] = ['en', 'mr', 'hi'];
 
 const LanguageSwitcher = () => {
   const { language, setLanguage, t } = useTranslation();
@@ -20,7 +20,7 @@ const LanguageSwitcher = () => {
             style={[styles.option, isActive && styles.activeOption]}
           >
             <Text style={[styles.optionText, isActive && styles.activeText]}>
-              {option === 'en' ? 'English' : 'मराठी'}
+              {option === 'en' ? 'English' : option === 'mr' ? 'मराठी' : option === 'hi' ? 'हिंदी' : ''}
             </Text>
           </TouchableOpacity>
         );
